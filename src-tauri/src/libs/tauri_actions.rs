@@ -14,7 +14,7 @@ use super::response::{SaveAccessTokenResponse, SaveTokenResponse, GreetResponse}
 pub fn test_command() -> String {
     println!("access token path: {}", &*ACCESS_TOKEN_FILE);
     println!("ENV_FILE: {}", ENV_FILE);
-    return env::var("DB_PASSWORD").unwrap();
+    return env::var("DB_PASSWORD").unwrap_or_else(|_| "default_google_tasks_desktop_secret_key".to_string());
 }
 
 #[tauri::command]

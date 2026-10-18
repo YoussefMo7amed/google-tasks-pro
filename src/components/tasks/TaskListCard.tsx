@@ -35,20 +35,24 @@ import TaskListHeader from "./TaskListHeader";
 import SortableTaskItem from "./SortableTaskItem";
 import TaskListItem from "./TaskListItem";
 import AddTaskInput from "./AddTaskInput";
+import TaskDetailModal from "./TaskDetailModal";
 
 interface TaskListCardProps {
   taskList: AppTaskList;
   isActive: boolean;
   isDragOverlay?: boolean;
+  dragHandleProps?: Record<string, any>;
 }
 
 export default function TaskListCard({ 
   taskList, 
   isActive, 
-  isDragOverlay = false 
+  isDragOverlay = false,
+  dragHandleProps,
 }: TaskListCardProps) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [sortBy, setSortBy] = useState<string>("my_order");
+  const [detailTask, setDetailTask] = useState<AppTask | null>(null);
   const { 
     createTask, 
     createSubtask,
@@ -241,18 +245,19 @@ export default function TaskListCard({
     <Paper
       elevation={0}
       sx={{
-        width: 280,
-        minWidth: 280,
-        minHeight: 200,
-        maxHeight: isDragOverlay ? "none" : "calc(100vh - 150px)",
+        width: 330,
+        minWidth: 330,
+        height: isDragOverlay ? "auto" : "calc(100% - 16px)",
+        maxHeight: isDragOverlay ? "none" : "calc(100% - 16px)",
         flexShrink: 0,
         bgcolor: "background.paper",
-        borderRadius: 2,
-        border: 1,
+        borderRadius: "16px",
+        border: "1px solid",
         borderColor: isActive ? "primary.main" : "divider",
         display: "flex",
         flexDirection: "column",
-        transition: "border-color 0.2s",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+        boxShadow: isActive ? "0 0 0 1px rgba(138, 180, 248, 0.35)" : "none",
         overflow: "hidden",
         pointerEvents: isDragOverlay ? "none" : "auto",
       }}
@@ -263,6 +268,7 @@ export default function TaskListCard({
         listId={taskList.id}
         currentSort={sortBy}
         onSortChange={handleSortChange}
+        dragHandleProps={dragHandleProps}
       />
 
       {/* Add Task */}
@@ -325,6 +331,7 @@ export default function TaskListCard({
                 onAddSubtask={handleAddSubtask}
                 onIndent={handleIndentTask}
                 onUnindent={handleUnindentTask}
+                onOpenDetail={setDetailTask}
                 parentTaskTitle={task.parent ? taskTitleMap.get(task.parent) : undefined}
               />
             ))}
@@ -361,6 +368,7 @@ export default function TaskListCard({
                   onDelete={handleTaskDelete}
                   onMove={handleTaskMove}
                   onUnindent={handleUnindentTask}
+                  onOpenDetail={setDetailTask}
                   parentTaskTitle={task.parent ? taskTitleMap.get(task.parent) : undefined}
                 />
               ))}
@@ -368,6 +376,19 @@ export default function TaskListCard({
           </>
         )}
       </List>
+
+      {/* Task Detail Modal / Sub-Window */}
+      <TaskDetailModal
+        task={detailTask}
+        open={Boolean(detailTask)}
+        onClose={() => setDetailTask(null)}
+        onUpdate={handleTaskUpdate}
+        onToggle={handleTaskToggle}
+        onStar={handleTaskStar}
+        onDelete={handleTaskDelete}
+        onMove={handleTaskMove}
+        onAddSubtask={handleAddSubtask}
+      />
     </Paper>
   );
 }

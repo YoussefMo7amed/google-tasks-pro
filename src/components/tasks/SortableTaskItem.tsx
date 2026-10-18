@@ -23,6 +23,7 @@ interface SortableTaskItemProps {
   onIndent?: (task: AppTask) => void;
   onUnindent?: (task: AppTask) => void;
   parentTaskTitle?: string;
+  onOpenDetail?: (task: AppTask) => void;
 }
 
 export default function SortableTaskItem({

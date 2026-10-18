@@ -4,3 +4,6 @@ export { default as TaskListItem } from "./TaskListItem";
 export { default as AddTaskInput } from "./AddTaskInput";
 export { default as TaskListsContainer } from "./TaskListsContainer";
 export { default as SortableTaskCard } from "./SortableTaskCard";
+export { default as TaskDetailModal } from "./TaskDetailModal";
+export { default as EisenhowerMatrixView } from "./EisenhowerMatrixView";
+export { default as AnalyticsView } from "./AnalyticsView";

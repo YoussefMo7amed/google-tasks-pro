@@ -4,7 +4,7 @@
  * Provides task lists data and operations to components.
  */
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import { 
   taskListsAtom, 
@@ -12,47 +12,120 @@ import {
   taskListsErrorAtom,
   toastAtom,
   starredTaskIdsAtom,
+  isOnlineAtom,
 } from "../store";
 import { scheduleAllTaskNotifications } from "../services/notification.service";
+import { offlineCacheService } from "../services/offline-cache.service";
+import { syncQueueService } from "../services/sync-queue.service";
 import { useServices } from "./useServices";
 import { AppTaskList } from "../types/app";
 
 export function useTaskLists() {
-  const { taskLists: service, starred } = useServices();
+  const { taskLists: service, tasks: taskService, starred } = useServices();
   const [taskLists, setTaskLists] = useRecoilState(taskListsAtom);
   const [loading, setLoading] = useRecoilState(taskListsLoadingAtom);
   const [error, setError] = useRecoilState(taskListsErrorAtom);
+  const setIsOnline = useSetRecoilState(isOnlineAtom);
   const setToast = useSetRecoilState(toastAtom);
   const setStarredIds = useSetRecoilState(starredTaskIdsAtom);
 
+  const isFetchingRef = useRef(false);
+  const taskListsRef = useRef(taskLists);
+  taskListsRef.current = taskLists;
+
   /**
-   * Fetch all task lists
+   * Fetch all task lists with offline-first caching
    */
   const fetchTaskLists = useCallback(async (forceRefresh = false) => {
-    if (!service) return;
+    // 1. Immediately load from offline cache if state is empty
+    const cached = offlineCacheService.loadSnapshot();
+    if (cached && taskListsRef.current.length === 0) {
+      setTaskLists(cached);
+      setLoading(false);
+    }
 
-    setLoading(true);
+    if (!service) {
+      setLoading(false);
+      return;
+    }
+
+    // Prevent concurrent overlapping requests
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    // If offline, don't attempt network call
+    if (!navigator.onLine) {
+      setIsOnline(false);
+      isFetchingRef.current = false;
+      setLoading(false);
+      if (cached) {
+        setTaskLists(cached);
+        setError(null);
+      }
+      return;
+    }
+
+    if (taskListsRef.current.length === 0) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
+      // 2. First, drain any pending offline sync queue
+      if (taskService && syncQueueService.getPendingCount() > 0) {
+        try {
+          const { syncedCount } = await syncQueueService.drainQueue(taskService);
+          if (syncedCount > 0) {
+            setToast({
+              title: "Synced with Google Tasks",
+              body: `Synced ${syncedCount} offline change${syncedCount > 1 ? "s" : ""}`,
+              type: "success",
+            });
+          }
+        } catch (queueErr) {
+          console.warn("Error draining sync queue:", queueErr);
+        }
+      }
+
+      // 3. Fetch fresh data from Google Tasks API
       const lists = await service.getAll(forceRefresh);
       setTaskLists(lists);
+      setIsOnline(true);
+      setError(null);
 
-      // Update starred IDs
-      const starredIds = await starred.getAll();
-      setStarredIds(starredIds);
+      // Save fresh snapshot to cache
+      offlineCacheService.saveSnapshot(lists);
 
-      // Schedule notifications for all tasks with due dates
+      // Update starred IDs in background
+      starred.getAll().then(setStarredIds).catch(console.warn);
+
+      // Schedule notifications in background without blocking UI
       const allTasks = lists.flatMap(list => list.tasks);
-      await scheduleAllTaskNotifications(allTasks);
+      scheduleAllTaskNotifications(allTasks).catch(console.warn);
     } catch (err) {
+      console.error("fetchTaskLists error:", err);
+      const isNetErr = !navigator.onLine || (err instanceof Error && err.message.toLowerCase().includes("network"));
+      if (isNetErr) {
+        setIsOnline(false);
+        if (cached || taskListsRef.current.length > 0) {
+          setError(null);
+          setToast({
+            title: "Offline Mode",
+            body: "Viewing cached tasks. Changes will sync when online.",
+            type: "info",
+          });
+          return;
+        }
+      }
+
       const message = err instanceof Error ? err.message : "Failed to load task lists";
       setError(message);
       setToast({ title: "Error", body: message, type: "error" });
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [service, starred, setTaskLists, setLoading, setError, setToast, setStarredIds]);
+  }, [service, taskService, starred, setTaskLists, setLoading, setError, setToast, setStarredIds, setIsOnline]);
 
   /**
    * Create a new task list

@@ -3,8 +3,10 @@
 
 mod libs;
 
+#[cfg(debug_assertions)]
 use specta::collect_types;
 use tauri_plugin_log::LogTarget;
+#[cfg(debug_assertions)]
 use tauri_specta::ts;
 
 use libs::filehelper::ENV_FILE;
@@ -35,6 +37,8 @@ fn run_specta() {
 
 fn main() {
     dotenv::from_filename(ENV_FILE).ok();
+    dotenv::from_filename("../.env").ok();
+    dotenv::dotenv().ok();
     run_specta();
 
     // Create notification scheduler

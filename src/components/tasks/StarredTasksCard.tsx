@@ -54,15 +54,15 @@ export default function StarredTasksCard() {
     <Paper
       elevation={0}
       sx={{
-        width: 320,
-        minWidth: 320,
-        minHeight: 200,
-        maxHeight: "calc(100vh - 150px)",
+        width: 360,
+        minWidth: 360,
+        height: "calc(100% - 16px)",
+        maxHeight: "calc(100% - 16px)",
         flexShrink: 0,
         bgcolor: "background.paper",
-        borderRadius: 2,
-        border: 1,
-        borderColor: "warning.main",
+        borderRadius: "16px",
+        border: "1px solid",
+        borderColor: "divider",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",

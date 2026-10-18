@@ -9,6 +9,7 @@ use std::sync::Mutex;
 use tauri::AppHandle;
 
 /// A scheduled notification waiting to be shown
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ScheduledNotification {
     pub task_id: String,
@@ -53,6 +54,7 @@ impl NotificationScheduler {
     }
 
     /// Check for due notifications and show them
+    #[allow(dead_code)]
     pub fn check_and_notify(&self, app: &AppHandle) {
         let now = Utc::now();
         let mut scheduled = self.scheduled.lock().unwrap();

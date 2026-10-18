@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import {
   Box,
-  Typography,
   Snackbar,
   Alert,
 } from "@mui/material";
@@ -28,7 +27,10 @@ import {
 import Header from "./components/ui/Header";
 import SplashScreen from "./components/ui/SplashScreen";
 import LoginChoice from "./components/ui/LoginChoice";
-import { Sidebar, DisclaimerBanner } from "./components/layout";
+import { Sidebar } from "./components/layout";
+import { aiCopilotOpenAtom, settingsOpenAtom } from "./store";
+import AICopilotModal from "./components/ai/AICopilotModal";
+import SettingsDialog from "./components/ui/SettingsDialog";
 import { listen_for_auth_code } from "./helpers/eventlistner";
 import { SettingsStore } from "./helpers/DBStores";
 import settings from "./config/settings";
@@ -45,8 +47,22 @@ function App() {
   const [attemptedLogout, setAttemptedLogout] =
     useRecoilState<boolean>(attemptLogoutState);
   const [toastMessage, setToastMessage] = useRecoilState(messageState);
+  const [aiCopilotOpen, setAiCopilotOpen] = useRecoilState(aiCopilotOpenAtom);
+  const [settingsOpen, setSettingsOpen] = useRecoilState(settingsOpenAtom);
   const setIsOnline = useSetRecoilState(isOnlineSelector);
   const refreshIsOnline = () => setIsOnline(() => navigator.onLine);
+
+  // Global keyboard shortcut: Cmd+K / Ctrl+K to toggle AI Copilot
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setAiCopilotOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [setAiCopilotOpen]);
 
   // Handle toast messages with MUI Snackbar
   const handleCloseToast = () => {
@@ -121,23 +137,33 @@ function App() {
   }, []);
 
   // Network status listeners
-  window.addEventListener("online", () => {
-    setToastMessage({
-      title: "Network Changed",
-      body: "Internet restored",
-      type: "success",
-    });
-    refreshIsOnline();
-  });
+  useEffect(() => {
+    const handleOnline = () => {
+      setToastMessage({
+        title: "Network Changed",
+        body: "Internet restored - syncing changes",
+        type: "success",
+      });
+      refreshIsOnline();
+    };
 
-  window.addEventListener("offline", () => {
-    setToastMessage({
-      title: "Network Changed",
-      body: "No internet",
-      type: "error",
-    });
-    refreshIsOnline();
-  });
+    const handleOffline = () => {
+      setToastMessage({
+        title: "Network Changed",
+        body: "Working offline - changes will sync when reconnected",
+        type: "info",
+      });
+      refreshIsOnline();
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [refreshIsOnline, setToastMessage]);
 
   return (
     <Box
@@ -149,9 +175,6 @@ function App() {
         bgcolor: "background.default",
       }}
     >
-      {/* Disclaimer Banner */}
-      <DisclaimerBanner />
-
       {/* Main Layout */}
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Sidebar - only show when logged in */}
@@ -180,27 +203,6 @@ function App() {
               onSignInAnother={() => handleLogin(true)}
             />
           )}
-
-          {/* Footer */}
-          <Box
-            component="footer"
-            textAlign="center"
-            py={1.5}
-            sx={{ borderTop: 1, borderColor: "divider" }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              <a
-                href="https://codad5.me"
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                codad5
-              </a>
-              {" © "}
-              {new Date().getFullYear()}
-            </Typography>
-          </Box>
         </Box>
       </Box>
 
@@ -230,6 +232,22 @@ function App() {
           )}
         </Alert>
       </Snackbar>
+
+      {/* AI Copilot Assistant Modal */}
+      <AICopilotModal
+        open={aiCopilotOpen}
+        onClose={() => setAiCopilotOpen(false)}
+        onOpenSettings={() => {
+          setAiCopilotOpen(false);
+          setSettingsOpen(true);
+        }}
+      />
+
+      {/* Global Settings Dialog */}
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </Box>
   );
 }

@@ -1,15 +1,13 @@
 use std::io::Write;
-use std::env;
 use lazy_static::lazy_static;
-use tauri::api::path::{resolve_path, BaseDirectory};
-use tauri::Env;
+use tauri::api::path::local_data_dir;
 
 pub const ENV_FILE: &str = "../.env.local";
 
-
+#[allow(dead_code)]
 pub const USERS_FILES: [&str; 4] = ["access_token.db", "auth_code.db", "tasks.json", "user_profile.json"];
 
-
+#[allow(dead_code)]
 pub fn initialize_user_files() {
     for file in USERS_FILES.iter() {
         let file_path = get_app_local_data_dir(file);
@@ -17,32 +15,26 @@ pub fn initialize_user_files() {
     }
 }
 
-// const PATHS = 
 pub fn get_app_local_data_dir(file_name: &str) -> String {
-    let context = tauri::generate_context!();
-    // let path = BaseDirectory::AppLocalData.variable()
-    let path = resolve_path(
-        &context.config(),
-        context.package_info(),
-        &Env::default(),
-        file_name,
-        Some(BaseDirectory::AppLocalData),
-    ).expect("failed to resolve path");
-    let path = path.to_str().unwrap().to_string();
-    println!("path: {} \n file name: {} \n", path, file_name);
-    // check if file exists
-    if !std::path::Path::new(&path).exists() {
-        println!("File does not exist, creating file {} for {}", file_name, path);
-        // create file
-        let mut file = std::fs::File::create(&path).unwrap();
-        // if a json file, write empty json
-        if file_name.ends_with(".json") {
-            println!("writing empty json");
-            file.write_all(b"{}").unwrap();
-        }
-
+    let base = local_data_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let dir = base.join("codad5.google.task");
+    if !dir.exists() {
+        let _ = std::fs::create_dir_all(&dir);
     }
-    path
+    let path = dir.join(file_name);
+    let path_str = path.to_str().unwrap().to_string();
+    println!("path: {} \n file name: {} \n", path_str, file_name);
+    // check if file exists
+    if !path.exists() {
+        println!("File does not exist, creating file {} for {}", file_name, path_str);
+        if let Ok(mut file) = std::fs::File::create(&path) {
+            if file_name.ends_with(".json") {
+                println!("writing empty json");
+                let _ = file.write_all(b"{}");
+            }
+        }
+    }
+    path_str
 }
 
 pub fn resolve_access_token_file() -> String {

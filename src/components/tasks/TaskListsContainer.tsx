@@ -144,9 +144,10 @@ export default function TaskListsContainer() {
       sx={{
         position: "relative",
         flex: 1,
+        height: "100%",
         overflow: "hidden",
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "stretch",
       }}
     >
       {/* Left scroll button */}
@@ -154,13 +155,15 @@ export default function TaskListsContainer() {
         onClick={() => scroll("left")}
         sx={{
           position: "absolute",
-          left: 8,
+          left: 10,
           top: "50%",
           transform: "translateY(-50%)",
           zIndex: 10,
           bgcolor: "background.paper",
-          boxShadow: 2,
-          opacity: 0.8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+          border: 1,
+          borderColor: "divider",
+          opacity: 0.85,
           "&:hover": {
             opacity: 1,
             bgcolor: "background.paper",
@@ -186,15 +189,14 @@ export default function TaskListsContainer() {
             ref={containerRef}
             sx={{
               display: "flex",
-              gap: 2,
+              gap: 2.5,
               overflowX: "auto",
               overflowY: "hidden",
               flexWrap: "nowrap",
               py: 2,
-              pl: 6,
-              pr: 6,
+              px: 6,
               height: "100%",
-              alignItems: "flex-start",
+              alignItems: "stretch",
               scrollSnapType: "x mandatory",
               scrollBehavior: "smooth",
               scrollbarWidth: "none",
@@ -238,13 +240,15 @@ export default function TaskListsContainer() {
         onClick={() => scroll("right")}
         sx={{
           position: "absolute",
-          right: 8,
+          right: 10,
           top: "50%",
           transform: "translateY(-50%)",
           zIndex: 10,
           bgcolor: "background.paper",
-          boxShadow: 2,
-          opacity: 0.8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+          border: 1,
+          borderColor: "divider",
+          opacity: 0.85,
           "&:hover": {
             opacity: 1,
             bgcolor: "background.paper",

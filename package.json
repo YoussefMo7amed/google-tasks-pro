@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "launch:dev": "tauri dev"
+    "launch:dev": "tauri dev",
+    "build:app": "tauri build"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.1",

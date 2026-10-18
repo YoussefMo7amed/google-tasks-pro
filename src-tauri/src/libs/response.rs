@@ -1,5 +1,5 @@
 use specta::Type;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use super::auth::AccessToken;
 // save token response 
 #[derive(Serialize, Type)]

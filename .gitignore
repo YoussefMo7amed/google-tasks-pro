@@ -38,6 +38,7 @@ dist-ssr
 *.crt
 *.p12
 *.pfx
+client_secret*.json
 
 # Tauri
 src-tauri/target

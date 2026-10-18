@@ -39,24 +39,15 @@ export default function SortableTaskCard({
       ref={setNodeRef}
       style={style}
       sx={{
+        height: "100%",
         scrollSnapAlign: "start",
-        cursor: isDragging ? "grabbing" : "grab",
-        touchAction: "none",
       }}
     >
-      {/* Drag handle is the whole card, but we use a wrapper to not interfere with clicks */}
-      <Box
-        {...attributes}
-        {...listeners}
-        sx={{ 
-          cursor: isDragging ? "grabbing" : "grab",
-        }}
-      >
-        <TaskListCard
-          taskList={taskList}
-          isActive={isActive}
-        />
-      </Box>
+      <TaskListCard
+        taskList={taskList}
+        isActive={isActive}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
     </Box>
   );
 }

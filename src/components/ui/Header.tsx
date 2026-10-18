@@ -10,19 +10,23 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Typography,
+  Button,
 } from "@mui/material";
-import { Logout } from "@mui/icons-material";
+import { Logout, AutoAwesome } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
   attemptLogoutState,
   loggedInSelector,
   userProfileSelector,
 } from "../../config/states";
+import { aiCopilotOpenAtom } from "../../store";
 
 export default function Header() {
   const loggedIn = useRecoilValue(loggedInSelector);
   const profile = useRecoilValue(userProfileSelector);
   const setAttemptLogout = useSetRecoilState(attemptLogoutState);
+  const setAiCopilotOpen = useSetRecoilState(aiCopilotOpenAtom);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -54,12 +58,54 @@ export default function Header() {
     >
       <Toolbar
         sx={{
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
           minHeight: "48px !important",
           py: 0.5,
+          px: 2.5,
         }}
       >
+        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>
+          Tasks
+        </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<AutoAwesome sx={{ color: "primary.main", fontSize: "1.1rem" }} />}
+            onClick={() => setAiCopilotOpen(true)}
+            sx={{
+              borderRadius: "18px",
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.8rem",
+              borderColor: "divider",
+              color: "text.primary",
+              py: 0.4,
+              px: 1.5,
+              "&:hover": {
+                borderColor: "primary.main",
+                bgcolor: "action.hover",
+              },
+            }}
+          >
+            AI Copilot
+            <Box
+              component="span"
+              sx={{
+                ml: 1,
+                px: 0.75,
+                py: 0.1,
+                bgcolor: "action.selected",
+                borderRadius: 1,
+                fontSize: "0.7rem",
+                color: "text.secondary",
+                fontWeight: 700,
+              }}
+            >
+              ⌘K
+            </Box>
+          </Button>
+
           <IconButton onClick={handleMenuOpen} size="small">
             <Avatar
               sx={{ width: 28, height: 28 }}

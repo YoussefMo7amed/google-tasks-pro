@@ -50,6 +50,11 @@ import {
 import { AppTask } from "../../types/app";
 import { useRecoilValue } from "recoil";
 import { taskListsAtom } from "../../store";
+import {
+  extractQuadrant,
+  cleanTitleFromQuadrant,
+} from "../../services/history.service";
+import { OpenInNew } from "@mui/icons-material";
 
 interface TaskListItemProps {
   task: AppTask;
@@ -62,6 +67,7 @@ interface TaskListItemProps {
   onIndent?: (task: AppTask) => void;
   onUnindent?: (task: AppTask) => void;
   parentTaskTitle?: string;
+  onOpenDetail?: (task: AppTask) => void;
 }
 
 // Helper to format due date
@@ -100,6 +106,7 @@ export default function TaskListItem({
   onIndent,
   onUnindent,
   parentTaskTitle,
+  onOpenDetail,
 }: TaskListItemProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [moveAnchorEl, setMoveAnchorEl] = useState<null | HTMLElement>(null);
@@ -118,6 +125,9 @@ export default function TaskListItem({
   const taskLists = useRecoilValue(taskListsAtom);
   const dueDateInfo = formatDueDate(task.due);
   const isSubtask = !!task.parent;
+
+  const itemQuadrant = extractQuadrant(task.title);
+  const displayTitle = itemQuadrant ? cleanTitleFromQuadrant(task.title) : task.title;
 
   // Reset edit state when task changes
   useEffect(() => {
@@ -175,7 +185,9 @@ export default function TaskListItem({
   };
 
   const handleTextClick = () => {
-    if (task.status !== "completed") {
+    if (onOpenDetail) {
+      onOpenDetail(task);
+    } else if (task.status !== "completed") {
       setIsEditing(true);
     }
   };
@@ -309,11 +321,13 @@ export default function TaskListItem({
                   inputRef={editInputRef}
                   variant="standard"
                   InputProps={{ disableUnderline: true }}
+                  inputProps={{ dir: "auto" }}
                   sx={{
                     "& .MuiInputBase-input": {
                       py: 0.5,
                       fontSize: "0.95rem",
                       fontWeight: 500,
+                      unicodeBidi: "plaintext",
                     },
                   }}
                 />
@@ -327,14 +341,16 @@ export default function TaskListItem({
                   onChange={(e) => setEditNotes(e.target.value)}
                   variant="standard"
                   multiline
-                  maxRows={3}
+                  maxRows={4}
                   InputProps={{ disableUnderline: true }}
+                  inputProps={{ dir: "auto" }}
                   sx={{
                     mt: 0.5,
                     "& .MuiInputBase-input": {
                       py: 0.5,
                       fontSize: "0.85rem",
                       color: "text.secondary",
+                      unicodeBidi: "plaintext",
                     },
                   }}
                 />
@@ -431,45 +447,85 @@ export default function TaskListItem({
               </Box>
             ) : (
               <>
-                <Typography
-                  variant="body2"
+                <Box
                   onClick={handleTextClick}
                   sx={{
-                    cursor: task.status !== "completed" ? "pointer" : "default",
-                    textDecoration: task.status === "completed" ? "line-through" : "none",
-                    opacity: task.status === "completed" ? 0.6 : 1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    transition: "all 0.2s ease",
-                    "&:hover": task.status !== "completed" ? {
-                      bgcolor: "action.hover",
-                      borderRadius: 0.5,
-                      whiteSpace: "normal",
-                      wordBreak: "break-word",
-                      overflow: "visible",
-                    } : {},
+                    display: "flex",
+                    alignItems: "baseline",
+                    flexWrap: "wrap",
+                    gap: 0.5,
+                    cursor: "pointer",
                   }}
                 >
-                  {task.title}
-                </Typography>
+                  {itemQuadrant && (
+                    <Chip
+                      label={itemQuadrant}
+                      size="small"
+                      color={
+                        itemQuadrant === "Q1"
+                          ? "error"
+                          : itemQuadrant === "Q2"
+                          ? "primary"
+                          : itemQuadrant === "Q3"
+                          ? "warning"
+                          : "default"
+                      }
+                      sx={{
+                        height: 18,
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        mr: 0.5,
+                        borderRadius: "4px",
+                        "& .MuiChip-label": { px: 0.6 },
+                      }}
+                    />
+                  )}
+                  <Typography
+                    variant="body2"
+                    dir="auto"
+                    sx={{
+                      cursor: "pointer",
+                      textDecoration: task.status === "completed" ? "line-through" : "none",
+                      opacity: task.status === "completed" ? 0.6 : 1,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      lineHeight: 1.4,
+                      fontSize: "0.9rem",
+                      fontWeight: 500,
+                      unicodeBidi: "plaintext",
+                      textAlign: "start",
+                      wordBreak: "break-word",
+                      transition: "color 0.15s ease",
+                      "&:hover": task.status !== "completed" ? {
+                        color: "primary.main",
+                      } : {},
+                    }}
+                  >
+                    {displayTitle}
+                  </Typography>
+                </Box>
                 {task.notes && task.status !== "completed" && (
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     onClick={handleTextClick}
+                    dir="auto"
                     sx={{
-                      display: "block",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
                       cursor: "pointer",
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
-                        overflow: "visible",
-                      },
+                      fontSize: "0.8rem",
+                      lineHeight: 1.35,
+                      mt: 0.35,
+                      unicodeBidi: "plaintext",
+                      textAlign: "start",
+                      wordBreak: "break-word",
                     }}
                   >
                     {task.notes}
@@ -530,6 +586,19 @@ export default function TaskListItem({
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           transformOrigin={{ vertical: "top", horizontal: "right" }}
         >
+          {onOpenDetail && (
+            <MenuItem
+              onClick={() => {
+                handleCloseMenu();
+                onOpenDetail(task);
+              }}
+            >
+              <MenuItemIcon>
+                <OpenInNew fontSize="small" />
+              </MenuItemIcon>
+              <ListItemText>Open details</ListItemText>
+            </MenuItem>
+          )}
           {!isSubtask && onAddSubtask && (
             <MenuItem onClick={handleAddSubtask}>
               <MenuItemIcon><AddTask fontSize="small" /></MenuItemIcon>
@@ -611,10 +680,12 @@ export default function TaskListItem({
             inputRef={subtaskInputRef}
             variant="standard"
             InputProps={{ disableUnderline: true }}
+            inputProps={{ dir: "auto" }}
             sx={{
               "& .MuiInputBase-input": {
                 py: 0.5,
                 fontSize: "0.875rem",
+                unicodeBidi: "plaintext",
               },
             }}
           />

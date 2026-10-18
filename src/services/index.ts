@@ -1,2 +1,7 @@
 export { TaskListService } from "./task-list.service";
 export { TaskService } from "./task.service";
+export { offlineCacheService } from "./offline-cache.service";
+export { syncQueueService } from "./sync-queue.service";
+export { historyService } from "./history.service";
+export { aiService } from "./ai/ai.service";
+export * from "./ai/types";

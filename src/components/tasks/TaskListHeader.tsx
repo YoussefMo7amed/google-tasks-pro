@@ -38,13 +38,15 @@ interface TaskListHeaderProps {
   listId: string;
   currentSort?: string;
   onSortChange?: (sortBy: string) => void;
+  dragHandleProps?: Record<string, any>;
 }
 
 export default function TaskListHeader({ 
   title, 
   listId, 
   currentSort = "my_order",
-  onSortChange 
+  onSortChange,
+  dragHandleProps,
 }: TaskListHeaderProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [sortAnchorEl, setSortAnchorEl] = useState<null | HTMLElement>(null);
@@ -105,6 +107,7 @@ export default function TaskListHeader({
   return (
     <>
       <Box
+        {...dragHandleProps}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -113,17 +116,26 @@ export default function TaskListHeader({
           py: 1.5,
           borderBottom: 1,
           borderColor: "divider",
+          cursor: dragHandleProps ? "grab" : "default",
+          userSelect: "none",
+          "&:active": {
+            cursor: dragHandleProps ? "grabbing" : "default",
+          },
         }}
       >
         <Typography
           variant="subtitle1"
           component="h2"
+          dir="auto"
           sx={{
-            fontWeight: 500,
+            fontWeight: 600,
+            fontSize: "1rem",
             flex: 1,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            unicodeBidi: "plaintext",
+            textAlign: "start",
           }}
         >
           {title}

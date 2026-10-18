@@ -117,10 +117,12 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         InputProps={{
           disableUnderline: true,
         }}
+        inputProps={{ dir: "auto" }}
         sx={{
           "& .MuiInputBase-input": {
             py: 0.5,
             fontSize: "0.95rem",
+            unicodeBidi: "plaintext",
           },
         }}
       />
@@ -144,11 +146,13 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
             </Box>
           ),
         }}
+        inputProps={{ dir: "auto" }}
         sx={{
           mt: 1,
           "& .MuiInputBase-input": {
             py: 0.5,
             fontSize: "0.85rem",
+            unicodeBidi: "plaintext",
           },
         }}
       />

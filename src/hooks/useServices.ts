@@ -8,6 +8,7 @@
 import { useMemo } from "react";
 import { useRecoilValue } from "recoil";
 import { accessTokenAtom } from "../store";
+import { accessTokenSelector } from "../config/states";
 import { createApiClient, GoogleTasksClient } from "../api";
 import { TaskListRepository, TaskRepository, StarredRepository } from "../repositories";
 import { TaskListService, TaskService } from "../services";
@@ -27,7 +28,9 @@ const starredRepo = new StarredRepository();
  * Services are recreated when access token changes.
  */
 export function useServices(): Services {
-  const accessToken = useRecoilValue(accessTokenAtom);
+  const atomToken = useRecoilValue(accessTokenAtom);
+  const selectorToken = useRecoilValue(accessTokenSelector);
+  const accessToken = atomToken || selectorToken;
 
   const services = useMemo(() => {
     if (!accessToken) {

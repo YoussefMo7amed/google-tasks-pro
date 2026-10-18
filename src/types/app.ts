@@ -65,7 +65,7 @@ export interface UpdateTaskInput {
 /**
  * Possible views in the sidebar
  */
-export type SidebarView = "all" | "starred" | "list";
+export type SidebarView = "all" | "starred" | "list" | "eisenhower" | "analytics";
 
 /**
  * Current view state

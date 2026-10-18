@@ -1,8 +1,7 @@
-use super::filehelper::{ACCESS_TOKEN_FILE, AUTH_CODE_FILE, ENV_FILE};
+use super::filehelper::{ACCESS_TOKEN_FILE, AUTH_CODE_FILE};
 use super::response::{SaveAccessTokenResponse, SaveTokenResponse};
 
-
-use std::{env, io::Write};
+use std::env;
 
 use cocoon::Cocoon;
 use borsh::{BorshDeserialize, to_vec};
@@ -21,10 +20,14 @@ pub struct AccessToken {
 }
 
 
+fn get_db_password() -> String {
+    env::var("DB_PASSWORD").unwrap_or_else(|_| "default_google_tasks_desktop_secret_key".to_string())
+}
+
 impl AccessToken {
     pub fn save(&self) -> SaveAccessTokenResponse {
         let encoded = to_vec(self).unwrap();
-        let password: String = env::var("DB_PASSWORD").unwrap();
+        let password: String = get_db_password();
         let mut cocoon = Cocoon::new(password.as_bytes());
         println!("About to open db file");
         let mut file = std::fs::OpenOptions::new()
@@ -41,7 +44,7 @@ impl AccessToken {
 
     pub fn load() -> AccessToken {
         let mut file = std::fs::File::open(&*ACCESS_TOKEN_FILE).unwrap();
-        let binding = env::var("DB_PASSWORD").unwrap();
+        let binding = get_db_password();
         let cacoon = Cocoon::new(binding.as_bytes());
         return match cacoon.parse(&mut file) {
             Ok(data) => AccessToken::try_from_slice(&data).unwrap(),
@@ -66,7 +69,7 @@ pub struct Auth;
 impl Auth {
     pub fn save_auth_code(code: String) -> SaveTokenResponse {
         let encoded = to_vec(&code).unwrap();
-        let password: String = env::var("DB_PASSWORD").unwrap();
+        let password: String = get_db_password();
         let mut cocoon = Cocoon::new(password.as_bytes());
         println!("About to open db file");
         let mut file = std::fs::OpenOptions::new()
@@ -84,7 +87,7 @@ impl Auth {
 
     pub fn load_auth_code() -> String {
         let mut file = std::fs::File::open(&*AUTH_CODE_FILE).unwrap();
-        let binding = env::var("DB_PASSWORD").unwrap();
+        let binding = get_db_password();
         let cacoon = Cocoon::new(binding.as_bytes());
         return match cacoon.parse(&mut file) {
             Ok(data) => String::try_from_slice(&data).unwrap(),

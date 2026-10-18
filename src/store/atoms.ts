@@ -86,3 +86,13 @@ export const starredTaskIdsAtom = atom<Set<string>>({
   key: "starredTaskIds",
   default: new Set(),
 });
+
+export const aiCopilotOpenAtom = atom<boolean>({
+  key: "aiCopilotOpen",
+  default: false,
+});
+
+export const settingsOpenAtom = atom<boolean>({
+  key: "settingsOpen",
+  default: false,
+});

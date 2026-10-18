@@ -78,6 +78,7 @@ export default function AddCategoryDialog({
             onChange={(e) => setCategoryName(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
+            inputProps={{ dir: "auto" }}
           />
         </Box>
       </DialogContent>

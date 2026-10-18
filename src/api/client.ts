@@ -43,6 +43,7 @@ export class GoogleTasksClient {
     
     this.client = axios.create({
       baseURL: GOOGLE_TASKS_API.BASE_URL,
+      timeout: 15000,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${config.accessToken}`,
