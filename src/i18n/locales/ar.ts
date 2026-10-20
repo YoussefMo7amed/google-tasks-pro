@@ -167,7 +167,7 @@ export const ar: TranslationSchema = {
     timeFormatBoth: "كلاهما (24 ساعة + ص/م)",
     notificationsNotice: "سيتم إرسال الإشعارات في الساعة {time} في تاريخ استحقاق المهمة.",
     about: "حول التطبيق",
-    aboutDesc: "Google Tasks Desktop • تطبيق مفتوح المصدر لسطح المكتب مع مساعد ذكي ومزامنة دون اتصال",
+    aboutDesc: "Google Tasks Pro • تطبيق مفتوح المصدر لسطح المكتب مع مساعد ذكي ومزامنة دون اتصال",
     viewOnGithub: "عرض على GitHub",
     contributors: "المساهمون",
     activeAgentsAndBackup: "الوكيل الرئيسي والاحتياطي",

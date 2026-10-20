@@ -100,7 +100,7 @@ export default function SplashScreen({ message = "Loading", onCancel }: SplashSc
           WebkitTextFillColor: "transparent",
         }}
       >
-        Google Tasks
+        Google Tasks Pro
       </Typography>
 
       {/* Loading Message */}

@@ -167,7 +167,7 @@ export const en: TranslationSchema = {
     timeFormatBoth: "Both (24h + 12h)",
     notificationsNotice: "Notifications will be sent at {time} on the task's due date.",
     about: "About",
-    aboutDesc: "Google Tasks Desktop • Open-source desktop client with AI Copilot & Offline Sync",
+    aboutDesc: "Google Tasks Pro • Open-source desktop client with AI Copilot & Offline Sync",
     viewOnGithub: "View on GitHub",
     contributors: "Contributors",
     activeAgentsAndBackup: "Active Agents & Backup",

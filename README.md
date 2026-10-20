@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🚀 Google Tasks Desktop
+# 🚀 Google Tasks Pro
 
 **A powerful, modern, offline-first desktop client for Google Tasks with AI Copilot, Eisenhower Matrix, Calendar, Recycle Bin, and bilingual Arabic/English support.**
 
 Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material UI (MUI v7)** • **Recoil**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/codad5/google-task-desktop/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/YoussefMo7amed/google-tasks-pro/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-1.4-orange.svg)](https://tauri.app)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20العربية-purple.svg)](src/i18n/)
@@ -90,8 +90,8 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/<your-username>/google-task-desktop.git
-cd google-task-desktop
+git clone https://github.com/YoussefMo7amed/google-tasks-pro.git
+cd google-tasks-pro
 
 # 2. Install dependencies
 npm install
