@@ -7,7 +7,7 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "Google Task",
+    "productName": "Google Tasks Pro",
     "version": "../package.json"
   },
   "tauri": {
