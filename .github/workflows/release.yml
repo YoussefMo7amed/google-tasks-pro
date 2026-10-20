@@ -83,6 +83,13 @@ jobs:
             * **Full Arabic & English Internationalization:** Native RTL mirroring and static themes.
             * **Offline-First Synchronization:** Local snapshots and automatic sync queue.
 
+            ### 🍏 macOS Installation Note:
+            If macOS shows *"Google Tasks Pro is damaged and can't be opened"*, run this one-time command in your Terminal:
+            ```bash
+            xattr -cr "/Applications/Google Tasks Pro.app"
+            ```
+            Or navigate to **System Settings ➔ Privacy & Security ➔ Open Anyway**.
+
             Download the installer for your operating system below!
           releaseDraft: false
           prerelease: false

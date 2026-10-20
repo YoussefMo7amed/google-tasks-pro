@@ -145,7 +145,25 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 
 ## 📥 Getting Started
 
-### Prerequisites
+### 🚀 Download & Install (Pre-built Desktop Apps)
+
+Get the latest official installer for your operating system from the **[Releases](https://github.com/YoussefMo7amed/google-tasks-pro/releases)** page:
+* 🍏 **macOS Apple Silicon (M1/M2/M3/M4):** `Google.Tasks.Pro_2.0.0_aarch64.dmg`
+* 🍎 **macOS Intel (x86_64):** `Google.Tasks.Pro_2.0.0_x64.dmg`
+* 🪟 **Windows (x64):** `Google.Tasks.Pro_2.0.0_x64-setup.exe` or `.msi`
+* 🐧 **Linux (x64):** `google-tasks-pro_2.0.0_amd64.deb` or `.AppImage`
+
+> [!TIP]
+> **macOS Gatekeeper Note:** Since this is an open-source project without a \$99/yr Apple Developer certificate, macOS Gatekeeper may show: *"Google Tasks Pro is damaged and can't be opened"*.
+> Simply run this command in your Terminal after moving the app into `/Applications`:
+> ```bash
+> xattr -cr "/Applications/Google Tasks Pro.app"
+> ```
+> Or go to **System Settings ➔ Privacy & Security ➔ Open Anyway**.
+
+### Build From Source
+
+#### Prerequisites
 * [Node.js](https://nodejs.org/) (v18 or later)
 * [Rust](https://www.rust-lang.org/tools/install) (latest stable)
 * npm / yarn / pnpm
