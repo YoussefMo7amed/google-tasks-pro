@@ -137,10 +137,24 @@ To connect with your personal Google account:
 
 ---
 
-## 📄 License & Attribution
+## 👥 Authors & Credits
+
+### 🚀 Maintainer & Lead Developer (v2.0+)
+* **[Youssef Mohamed](https://github.com/YoussefMo7amed)**
+  * **Full Arabic Internationalization & Native RTL:** Complete dual-language engine (`ar` & `en`), zero memory-leak theme singletons, and layout mirroring.
+  * **Smart Recycle Bin (Trash):** Accidental delete protection, configurable auto-clean retention timer (1d, 3d, 7d, 30d, custom, never), and 1-click Google Cloud restore.
+  * **Robust Undo / Redo System:** Full stack history (`Cmd+Z`, `Cmd+Shift+Z` / `Ctrl+Y`) with localized notifications for task creation, deletion, completion, starring, and updates.
+  * **Multi-Provider AI Copilot:** Native integration with Google Gemini, OpenAI, Ollama, and LM Studio featuring multi-key management and Primary/Backup auto-fallback.
+  * **5 Advanced Productivity Views:** Horizontal Kanban Board, Unified List, Calendar Agenda View, Eisenhower Matrix (4-quadrant), and Analytics & Streaks.
+  * **Global Keyboard Shortcuts & Cheatsheet:** Interactive shortcuts modal (`?` / `؟`), sidebar tab switching (`Ctrl+Tab`), fast view switching (`1`-`4`), quick task (`N`), and list (`L`).
+  * **Offline-First Resilience:** Instant local snapshot startup and offline mutation queue with auto-drain on reconnect.
+
+### 💡 Original Author (v1.0)
+* **[codad5 (Chukwuemeka Okoye)](https://github.com/codad5/google-task-desktop)**
+  * Original concept and foundational Tauri desktop client and Google Tasks API integration.
+
+---
+
+## 📄 License
 
 This project is licensed under the **[GNU General Public License v3 (GPLv3)](./LICENSE)**.
-
-### Attribution
-* Originally created by [codad5 (Chukwuemeka Okoye)](https://github.com/codad5/google-task-desktop).
-* Extensively rewritten, redesigned, and enhanced with modern i18n/RTL, AI Copilot, Recycle Bin, Undo/Redo, and advanced productivity views.
