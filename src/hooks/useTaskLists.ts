@@ -17,6 +17,7 @@ import {
 import { scheduleAllTaskNotifications } from "../services/notification.service";
 import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
+import { historyService } from "../services/history.service";
 import { useServices } from "./useServices";
 import { AppTaskList } from "../types/app";
 
@@ -42,6 +43,7 @@ export function useTaskLists() {
     const cached = offlineCacheService.loadSnapshot();
     if (cached && taskListsRef.current.length === 0) {
       setTaskLists(cached);
+      historyService.syncFromTaskLists(cached);
       setLoading(false);
     }
 
@@ -97,6 +99,7 @@ export function useTaskLists() {
       // 3. Fetch fresh data from Google Tasks API
       const lists = await service.getAll(forceRefresh);
       setTaskLists(lists);
+      historyService.syncFromTaskLists(lists);
       lastFetchTimeRef.current = Date.now();
       setIsOnline(true);
       setError(null);

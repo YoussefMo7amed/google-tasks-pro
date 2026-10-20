@@ -5,7 +5,7 @@
  * Calculates daily streaks, completion counts, and Eisenhower quadrant distributions.
  */
 
-import { AppTask } from "../types/app";
+import { AppTask, AppTaskList } from "../types/app";
 
 export type QuadrantType = "Q1" | "Q2" | "Q3" | "Q4";
 
@@ -76,9 +76,27 @@ export function applyQuadrantToTitle(title: string, quadrant: QuadrantType | nul
  */
 class HistoryService {
   private history: CompletedHistoryItem[] = [];
+  private listeners: Set<() => void> = new Set();
 
   constructor() {
     this.load();
+  }
+
+  public subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private notify(): void {
+    this.listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (err) {
+        console.error("Error in historyService listener:", err);
+      }
+    });
   }
 
   private load(): void {
@@ -125,6 +143,7 @@ class HistoryService {
       this.history = this.history.slice(0, 2000);
     }
     this.save();
+    this.notify();
   }
 
   /**
@@ -133,6 +152,53 @@ class HistoryService {
   public recordUncompletion(taskId: string): void {
     this.history = this.history.filter((h) => h.id !== taskId);
     this.save();
+    this.notify();
+  }
+
+  /**
+   * Sync existing completed tasks from task lists into history
+   */
+  public syncFromTaskLists(taskLists: AppTaskList[]): void {
+    if (!taskLists || taskLists.length === 0) return;
+
+    let changed = false;
+    const existingIds = new Set(this.history.map((h) => h.id));
+
+    for (const list of taskLists) {
+      if (!list.tasks) continue;
+      for (const task of list.tasks) {
+        if (task.status === "completed" && !existingIds.has(task.id)) {
+          const completedDate = task.completed
+            ? new Date(task.completed)
+            : task.updated
+            ? new Date(task.updated)
+            : new Date();
+
+          this.history.push({
+            id: task.id,
+            title: task.title,
+            listId: task.listId || list.id,
+            listName: list.title,
+            completedAt: completedDate.toISOString(),
+            dateKey: getLocalDateKey(completedDate),
+            quadrant: extractQuadrant(task.title),
+          });
+          existingIds.add(task.id);
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      this.history.sort(
+        (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+      );
+      if (this.history.length > 2000) {
+        this.history = this.history.slice(0, 2000);
+      }
+      this.save();
+      this.notify();
+    }
   }
 
   /**

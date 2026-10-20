@@ -8,7 +8,7 @@
  * - Detailed completion timeline log with exact timestamps
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -31,9 +31,16 @@ import {
   CompletedHistoryItem,
 } from "../../services/history.service";
 import { useTranslation } from "../../i18n";
+import { useRecoilValue } from "recoil";
+import { taskListsAtom } from "../../store";
 
-export default function AnalyticsView() {
+interface AnalyticsViewProps {
+  isVisible?: boolean;
+}
+
+export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) {
   const { t, language } = useTranslation();
+  const taskLists = useRecoilValue(taskListsAtom);
 
   const [stats, setStats] = useState<StreakStats>({
     currentStreak: 0,
@@ -53,13 +60,31 @@ export default function AnalyticsView() {
 
   const [historyItems, setHistoryItems] = useState<CompletedHistoryItem[]>([]);
 
-  useEffect(() => {
-    // Refresh stats from history service
+  const refreshStats = useCallback(() => {
     setStats(historyService.getStreakStats());
     setDailyActivity(historyService.getDailyActivity(14));
     setQuadrantBreakdown(historyService.getQuadrantBreakdown());
     setHistoryItems(historyService.getHistory());
   }, []);
+
+  useEffect(() => {
+    refreshStats();
+    const unsubscribe = historyService.subscribe(refreshStats);
+    return unsubscribe;
+  }, [refreshStats]);
+
+  useEffect(() => {
+    if (isVisible) {
+      refreshStats();
+    }
+  }, [isVisible, refreshStats]);
+
+  // Sync historical tasks from current task lists
+  useEffect(() => {
+    if (taskLists && taskLists.length > 0) {
+      historyService.syncFromTaskLists(taskLists);
+    }
+  }, [taskLists]);
 
   const maxDailyCount = Math.max(1, ...dailyActivity.map((d) => d.count));
   const totalCategorized =

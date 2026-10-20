@@ -188,7 +188,7 @@ export default function TaskPage() {
       )}
       {mountedViews.has("analytics") && (
         <Box sx={{ flex: 1, display: currentViewKey === "analytics" ? "flex" : "none", width: "100%", height: "100%" }}>
-          <AnalyticsView />
+          <AnalyticsView isVisible={currentViewKey === "analytics"} />
         </Box>
       )}
       {mountedViews.has("trash") && (

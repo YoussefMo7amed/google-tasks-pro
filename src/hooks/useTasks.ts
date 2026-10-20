@@ -240,6 +240,17 @@ export function useTasks() {
     const newStatus: GoogleTaskStatus = currentTask.status === "completed" ? "needsAction" : "completed";
     updateTaskInState(listId, taskId, task => ({ ...task, status: newStatus }));
 
+    // Optimistically update history service immediately
+    const listTitle = taskLists.find(l => l.id === listId)?.title;
+    if (newStatus === "completed") {
+      historyService.recordCompletion(
+        { ...currentTask, status: newStatus },
+        listTitle
+      );
+    } else {
+      historyService.recordUncompletion(taskId);
+    }
+
     if (!isUndoRedoAction) {
       const taskTitle = currentTask.title;
       const isCompletedNow = newStatus === "completed";
@@ -260,14 +271,6 @@ export function useTasks() {
 
     const isOffline = !navigator.onLine || taskId.startsWith("temp_");
     if (isOffline) {
-      if (newStatus === "completed") {
-        historyService.recordCompletion(
-          currentTask,
-          taskLists.find((l) => l.id === listId)?.title
-        );
-      } else {
-        historyService.recordUncompletion(taskId);
-      }
       syncQueueService.enqueue("TOGGLE_COMPLETE", listId, {}, taskId);
       setTaskLists(prev => {
         offlineCacheService.saveSnapshot(prev);
@@ -285,15 +288,8 @@ export function useTasks() {
       
       // Handle notifications based on completion status
       if (newStatus === "completed") {
-        // Task completed → cancel notification & record in history
-        historyService.recordCompletion(
-          currentTask,
-          taskLists.find((l) => l.id === listId)?.title
-        );
         await cancelTaskNotification(taskId);
       } else {
-        // Task uncompleted → remove from history & reschedule if has due date
-        historyService.recordUncompletion(taskId);
         if (currentTask.due) {
           await scheduleTaskNotification({ ...currentTask, status: newStatus });
         }
