@@ -74,17 +74,22 @@ impl NotificationScheduler {
                 .body(&notification.body)
                 .show();
 
-                // On macOS, osascript guarantees banner and chime sound even in `tauri dev`
+                // On macOS, osascript displays notification and afplay guarantees the system sound plays
                 #[cfg(target_os = "macos")]
                 {
                     let script = format!(
-                        "display notification \"{}\" with title \"{}\" sound name \"default\"",
+                        "display notification \"{}\" with title \"{}\" sound name \"Glass\"",
                         notification.body.replace('\\', "\\\\").replace('"', "\\\""),
                         notification.title.replace('\\', "\\\\").replace('"', "\\\"")
                     );
                     let _ = std::process::Command::new("osascript")
                         .arg("-e")
                         .arg(script)
+                        .spawn();
+
+                    // Play macOS system chime sound directly so it's always audible
+                    let _ = std::process::Command::new("afplay")
+                        .arg("/System/Library/Sounds/Glass.aiff")
                         .spawn();
                 }
 
