@@ -9,6 +9,7 @@
  */
 
 import { invoke } from '@tauri-apps/api/tauri';
+import { isPermissionGranted, requestPermission } from '@tauri-apps/api/notification';
 import { AppTask } from '../types/app';
 import { getNotificationHour } from './settings.service';
 
@@ -16,6 +17,23 @@ import { getNotificationHour } from './settings.service';
  * Track scheduled task IDs to prevent duplicates
  */
 const scheduledTaskIds = new Set<string>();
+
+/**
+ * Ensure OS notification permission is granted
+ */
+export async function ensureNotificationPermission(): Promise<boolean> {
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const permission = await requestPermission();
+      granted = permission === 'granted';
+    }
+    return granted;
+  } catch (err) {
+    console.warn("Could not verify notification permission:", err);
+    return false;
+  }
+}
 
 /**
  * Schedule a notification for a task
@@ -27,6 +45,9 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
     return false;
   }
 
+  // Ensure OS notification permission is requested
+  await ensureNotificationPermission();
+
   // Cancel existing first (handles updates)
   if (scheduledTaskIds.has(task.id)) {
     await cancelTaskNotification(task.id);
@@ -35,9 +56,21 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
   // Get user's preferred notification hour
   const notifyHour = await getNotificationHour();
 
-  const dueDate = new Date(task.due);
+  // Extract calendar date (YYYY-MM-DD) cleanly to avoid UTC timezone day-shifting
+  const dueStr = typeof task.due === "string" ? task.due : (task.due as Date).toISOString();
+  const dateMatch = dueStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const notifyAt = new Date();
+  if (dateMatch) {
+    const y = parseInt(dateMatch[1], 10);
+    const m = parseInt(dateMatch[2], 10);
+    const d = parseInt(dateMatch[3], 10);
+    notifyAt.setFullYear(y, m - 1, d);
+  } else {
+    const parsed = new Date(task.due);
+    notifyAt.setFullYear(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
+
   // Set notification for configured hour or exact time on the due date
-  const notifyAt = new Date(dueDate);
   if (task.exactTime) {
     const [h, m] = task.exactTime.split(':').map(Number);
     if (!isNaN(h) && !isNaN(m)) {
@@ -51,7 +84,7 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
 
   // Don't schedule if already past notification time
   if (notifyAt <= new Date()) {
-    console.debug(`Skipping notification for ${task.id}: already past due`);
+    console.debug(`Skipping notification for ${task.id}: already past due (${notifyAt.toISOString()})`);
     return false;
   }
 

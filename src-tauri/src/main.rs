@@ -103,7 +103,7 @@ fn main() {
             let app_handle = app.handle();
             std::thread::spawn(move || {
                 loop {
-                    std::thread::sleep(std::time::Duration::from_secs(30));
+                    std::thread::sleep(std::time::Duration::from_secs(5));
                     let scheduler = app_handle.state::<NotificationScheduler>();
                     scheduler.check_and_notify(&app_handle);
                 }

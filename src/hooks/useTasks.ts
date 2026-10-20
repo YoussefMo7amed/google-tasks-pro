@@ -179,6 +179,11 @@ export function useTasks() {
         });
       }
 
+      // Schedule notification for offline task if has due date
+      if (offlineTask.due) {
+        scheduleTaskNotification(offlineTask);
+      }
+
       setToast({ title: "Task added (saved offline 💾)", type: "info" });
       return offlineTask;
     };
@@ -826,6 +831,26 @@ export function useTasks() {
         offlineCacheService.saveSnapshot(prev);
         return prev;
       });
+
+      // Reschedule notification for updated offline task
+      const finalDue = due !== undefined ? (due ? due.toISOString() : undefined) : currentTask?.due;
+      const finalExactTime = exactTime !== undefined ? exactTime : currentTask?.exactTime;
+      if (finalDue && currentTask && currentTask.status !== "completed") {
+        const updatedOfflineTask: AppTask = {
+          ...currentTask,
+          id: taskId,
+          listId,
+          title,
+          notes: notes !== undefined ? notes : currentTask?.notes,
+          due: finalDue,
+          exactTime: finalExactTime,
+          recurrence: recurrence !== undefined ? recurrence : currentTask?.recurrence,
+        };
+        scheduleTaskNotification(updatedOfflineTask);
+      } else if (!finalDue && currentTask) {
+        cancelTaskNotification(taskId);
+      }
+
       setToast({ title: "Task updated (offline 💾)", type: "info" });
       return true;
     };
@@ -843,16 +868,21 @@ export function useTasks() {
         return prev;
       });
 
-      // Reschedule notification if due date changed
-      if (due !== undefined && currentTask && currentTask.status !== 'completed') {
-        // Cancel existing and schedule with new time
+      // Reschedule notification if task has due date
+      const finalDue = due !== undefined ? (due ? due.toISOString() : undefined) : currentTask?.due;
+      const finalExactTime = exactTime !== undefined ? exactTime : currentTask?.exactTime;
+      if (finalDue && currentTask && currentTask.status !== 'completed') {
         const updatedTask: AppTask = { 
           ...currentTask, 
           title, 
-          notes: notes ?? currentTask.notes,
-          due: due.toISOString() 
+          notes: notes !== undefined ? notes : currentTask.notes,
+          due: finalDue,
+          exactTime: finalExactTime,
+          recurrence: recurrence !== undefined ? recurrence : currentTask.recurrence,
         };
         await scheduleTaskNotification(updatedTask);
+      } else if (!finalDue && currentTask) {
+        await cancelTaskNotification(taskId);
       }
       
       return true;
