@@ -283,18 +283,26 @@ export default function TaskListsContainer() {
         alignItems: "stretch",
       }}
     >
-      {/* Banner when viewing cached tasks during session expiration */}
+      {/* Banner when viewing cached tasks during session expiration or offline */}
       {error && (
         <Box sx={{ position: "absolute", top: 8, left: 60, right: 60, zIndex: 12 }}>
           <Alert
-            severity="warning"
+            severity={error.toLowerCase().includes("session") || error.includes("401") ? "warning" : "info"}
             action={
-              <Button color="inherit" size="small" onClick={() => handleLogin(true)}>
-                تسجيل الدخول
-              </Button>
+              error.toLowerCase().includes("session") || error.includes("401") ? (
+                <Button color="inherit" size="small" onClick={() => handleLogin(true)}>
+                  تسجيل الدخول
+                </Button>
+              ) : (
+                <Button color="inherit" size="small" onClick={() => fetchTaskLists(true)}>
+                  إعادة المحاولة
+                </Button>
+              )
             }
           >
-            انتهت صلاحية جلسة Google Tasks. أنت تشاهد المهام المحفوظة محلياً — يرجى إعادة تسجيل الدخول لمزامنة التغييرات.
+            {error.toLowerCase().includes("session") || error.includes("401")
+              ? "أنت تشاهد المهام المحفوظة محلياً — يمكنك مواصلة إضافة وتعديل المهام وستحفظ محلياً وتزامن فور إعادة تسجيل الدخول."
+              : "أنت تشاهد المهام المحفوظة محلياً (وضع غير متصل). يمكنك مواصلة العمل بحرية وستتم المزامنة تلقائياً عند عودة الاتصال."}
           </Alert>
         </Box>
       )}

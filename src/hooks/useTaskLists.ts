@@ -145,17 +145,44 @@ export function useTaskLists() {
    * Create a new task list
    */
   const createTaskList = useCallback(async (title: string): Promise<AppTaskList | null> => {
-    if (!service) return null;
+    const createLocallyOffline = () => {
+      const tempId = `temp_list_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const offlineList: AppTaskList = {
+        kind: "tasks#taskList",
+        id: tempId,
+        etag: "",
+        selfLink: "",
+        title,
+        updated: new Date().toISOString(),
+        tasks: [],
+        incompleteCount: 0,
+        isVisible: true,
+      };
+      setTaskLists(prev => {
+        const next = [...prev, offlineList];
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
+      setToast({ title: "List created (saved offline 💾)", type: "info" });
+      return offlineList;
+    };
+
+    if (!navigator.onLine || !service) {
+      return createLocallyOffline();
+    }
 
     try {
       const newList = await service.create(title);
-      setTaskLists(prev => [...prev, newList]);
+      setTaskLists(prev => {
+        const next = [...prev, newList];
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
       setToast({ title: "List created", type: "success" });
       return newList;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create list";
-      setToast({ title: "Error", body: message, type: "error" });
-      return null;
+      console.warn("Failed to create list online, saving offline:", err);
+      return createLocallyOffline();
     }
   }, [service, setTaskLists, setToast]);
 

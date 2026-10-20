@@ -124,13 +124,8 @@ export function useTasks() {
 
       return newTask;
     } catch (err) {
-      const isNetErr = !navigator.onLine || (err instanceof Error && err.message.toLowerCase().includes("network"));
-      if (isNetErr) {
-        return createLocallyOffline();
-      }
-      const message = err instanceof Error ? err.message : "Failed to create task";
-      setToast({ title: "Error", body: message, type: "error" });
-      return null;
+      console.warn("Failed to create task online, falling back to offline creation:", err);
+      return createLocallyOffline();
     }
   }, [service, setTaskLists, setToast]);
 
@@ -199,16 +194,17 @@ export function useTasks() {
       });
       return true;
     } catch (err) {
-      const isNetErr = !navigator.onLine || (err instanceof Error && err.message.toLowerCase().includes("network"));
-      if (isNetErr) {
-        syncQueueService.enqueue("TOGGLE_COMPLETE", listId, {}, taskId);
-        return true;
-      }
-      // Revert optimistic update
-      updateTaskInState(listId, taskId, task => ({ ...task, status: currentTask.status }));
-      const message = err instanceof Error ? err.message : "Failed to update task";
-      setToast({ title: "Error", body: message, type: "error" });
-      return false;
+      console.warn("Failed to toggle task online, preserving change offline:", err);
+      syncQueueService.enqueue("TOGGLE_COMPLETE", listId, {}, taskId);
+      setTaskLists(prev => {
+        offlineCacheService.saveSnapshot(prev);
+        return prev;
+      });
+      setToast({ 
+        title: newStatus === "completed" ? "Task completed (saved offline 💾)" : "Task unchecked", 
+        type: newStatus === "completed" ? "success" : "info" 
+      });
+      return true;
     }
   }, [service, taskLists, updateTaskInState, setTaskLists, setToast]);
 
@@ -308,13 +304,8 @@ export function useTasks() {
       setToast({ title: "Task deleted", type: "warning" });
       return true;
     } catch (err) {
-      const isNetErr = !navigator.onLine || (err instanceof Error && err.message.toLowerCase().includes("network"));
-      if (isNetErr) {
-        return performLocalDelete();
-      }
-      const message = err instanceof Error ? err.message : "Failed to delete task";
-      setToast({ title: "Error", body: message, type: "error" });
-      return false;
+      console.warn("Failed to delete task online, falling back to local delete:", err);
+      return performLocalDelete();
     }
   }, [service, setTaskLists, setStarredIds, setToast]);
 
@@ -395,13 +386,8 @@ export function useTasks() {
       setToast({ title: "Task moved", type: "success" });
       return true;
     } catch (err) {
-      const isNetErr = !navigator.onLine || (err instanceof Error && err.message.toLowerCase().includes("network"));
-      if (isNetErr) {
-        return performLocalMove();
-      }
-      const message = err instanceof Error ? err.message : "Failed to move task";
-      setToast({ title: "Error", body: message, type: "error" });
-      return false;
+      console.warn("Failed to move task online, falling back to local move:", err);
+      return performLocalMove();
     }
   }, [service, setTaskLists, setToast]);
 
@@ -530,13 +516,8 @@ export function useTasks() {
       setToast({ title: "Subtask created", type: "success" });
       return newTask;
     } catch (err) {
-      const isNetErr = !navigator.onLine || (err instanceof Error && err.message.toLowerCase().includes("network"));
-      if (isNetErr) {
-        return createSubtaskOffline();
-      }
-      const message = err instanceof Error ? err.message : "Failed to create subtask";
-      setToast({ title: "Error", body: message, type: "error" });
-      return null;
+      console.warn("Failed to create subtask online, falling back to offline creation:", err);
+      return createSubtaskOffline();
     }
   }, [service, setTaskLists, setToast]);
 
@@ -662,13 +643,8 @@ export function useTasks() {
       
       return true;
     } catch (err) {
-      const isNetErr = !navigator.onLine || (err instanceof Error && err.message.toLowerCase().includes("network"));
-      if (isNetErr) {
-        return updateLocallyOffline();
-      }
-      const message = err instanceof Error ? err.message : "Failed to update task";
-      setToast({ title: "Error", body: message, type: "error" });
-      return false;
+      console.warn("Failed to update task online, falling back to local update:", err);
+      return updateLocallyOffline();
     }
   }, [service, taskLists, updateTaskInState, setTaskLists, setToast]);
 
