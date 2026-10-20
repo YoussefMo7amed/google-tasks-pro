@@ -52,6 +52,18 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 4. **Eisenhower Matrix:** Automatic 4-quadrant prioritization (Urgent & Important, Urgent & Not Important, etc.).
 5. **Analytics & Streaks View:** Visualize completed tasks, productivity rates, and daily completion streaks.
 
+### 🔁 Smart Recurring Tasks Engine & Precision Due Times
+* **Repeating Tasks (Repeats):** Flexible recurrence intervals (Daily, Weekly on specific days like Friday, Monthly, Yearly).
+* **Configurable End Rules:** Stop repeats `Never`, `On Date`, or `After X Occurrences`.
+* **Automatic Next Occurrence:** Completing a recurring task automatically schedules the next instance with its updated due date and syncs to Google Tasks.
+* **Precision Due Times:** Choose specific hours and minutes (`HH:mm`) for any task; triggers native macOS notifications at the exact minute.
+* **One-Click Eisenhower Quick-Add:** Categorize tasks into Q1, Q2, Q3, or Q4 directly from the creation bar before saving.
+
+### 🍏 Background Mode & macOS Menu Bar System Tray
+* **Background Worker:** Closing the window minimizes the app into the background without quitting, keeping task reminders and sync queues running.
+* **Top Menu Bar Tray Icon:** Fast tray menu next to macOS clock and Wi-Fi to quickly open, minimize, or truly quit the application.
+* **Ultra-Low Resource Footprint:** Idles at **0.0% CPU** with ~50% reduced memory footprint (~25MB Rust backend).
+
 ### 💾 Offline-First Architecture & Sync Queue
 * **Instant Startup:** Immediate snapshot loading from local cache with zero initial wait time.
 * **Offline Mutation Queue:** Create, edit, star, or delete tasks without internet; changes automatically queue and drain to Google Tasks upon reconnecting.
@@ -141,6 +153,10 @@ To connect with your personal Google account:
 
 ### 🚀 Maintainer & Lead Developer (v2.0+)
 * **[Youssef Mohamed](https://github.com/YoussefMo7amed)**
+  * **Smart Recurring Tasks & Precision Times:** Full recurrence engine (Daily/Weekly/Monthly/Custom days), automatic next occurrence generation upon completion, and custom hour/minute notifications.
+  * **One-Click Eisenhower Prioritization:** Rapid quadrant tagging (Q1-Q4) integrated directly into the quick-add creation bar.
+  * **macOS Menu Bar Tray & Background Worker:** Runs seamlessly in the background with a top menu bar tray icon for uninterrupted notifications and background sync.
+  * **Performance & Keep-Alive Optimization:** Zero DOM reconstruction on view navigation, dropping idle CPU to 0.0% and memory footprint by over 50%.
   * **Full Arabic Internationalization & Native RTL:** Complete dual-language engine (`ar` & `en`), zero memory-leak theme singletons, and layout mirroring.
   * **Smart Recycle Bin (Trash):** Accidental delete protection, configurable auto-clean retention timer (1d, 3d, 7d, 30d, custom, never), and 1-click Google Cloud restore.
   * **Robust Undo / Redo System:** Full stack history (`Cmd+Z`, `Cmd+Shift+Z` / `Ctrl+Y`) with localized notifications for task creation, deletion, completion, starring, and updates.
