@@ -14,8 +14,10 @@ import {
 } from "@mui/icons-material";
 import { useRecoilState } from "recoil";
 import { taskViewModeAtom, TaskViewMode, viewStateAtom } from "../../store/atoms";
+import { useTranslation } from "../../i18n";
 
 export default function ViewSwitcher() {
+  const { t, isRtl } = useTranslation();
   const [viewMode, setViewMode] = useRecoilState(taskViewModeAtom);
   const [viewState, setViewState] = useRecoilState(viewStateAtom);
 
@@ -81,38 +83,38 @@ export default function ViewSwitcher() {
           },
         }}
       >
-        <Tooltip title="لوحة الأعمدة (Board View)">
-          <ToggleButton value="board" aria-label="لوحة الأعمدة">
-            <ViewKanban sx={{ fontSize: 18, mr: 0.75 }} />
-            <Typography variant="caption" sx={{ fontFamily: "Cairo, sans-serif", fontWeight: "inherit" }}>
-              الأعمدة
+        <Tooltip title={t("navigation.boardView")}>
+          <ToggleButton value="board" aria-label={t("navigation.boardView")}>
+            <ViewKanban sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+              {t("navigation.boardView")}
             </Typography>
           </ToggleButton>
         </Tooltip>
 
-        <Tooltip title="القائمة الموحدة (List View)">
-          <ToggleButton value="list" aria-label="قائمة موحدة">
-            <ViewList sx={{ fontSize: 18, mr: 0.75 }} />
-            <Typography variant="caption" sx={{ fontFamily: "Cairo, sans-serif", fontWeight: "inherit" }}>
-              القائمة
+        <Tooltip title={t("navigation.listView")}>
+          <ToggleButton value="list" aria-label={t("navigation.listView")}>
+            <ViewList sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+              {t("navigation.listView")}
             </Typography>
           </ToggleButton>
         </Tooltip>
 
-        <Tooltip title="التقويم والمواعيد (Calendar View)">
-          <ToggleButton value="calendar" aria-label="التقويم والمواعيد">
-            <CalendarMonth sx={{ fontSize: 18, mr: 0.75 }} />
-            <Typography variant="caption" sx={{ fontFamily: "Cairo, sans-serif", fontWeight: "inherit" }}>
-              التقويم
+        <Tooltip title={t("navigation.calendarView")}>
+          <ToggleButton value="calendar" aria-label={t("navigation.calendarView")}>
+            <CalendarMonth sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+              {t("navigation.calendarView")}
             </Typography>
           </ToggleButton>
         </Tooltip>
 
-        <Tooltip title="مصفوفة أيزنهاور (Eisenhower Matrix)">
-          <ToggleButton value="eisenhower" aria-label="مصفوفة أيزنهاور">
-            <GridView sx={{ fontSize: 18, mr: 0.75 }} />
-            <Typography variant="caption" sx={{ fontFamily: "Cairo, sans-serif", fontWeight: "inherit" }}>
-              أيزنهاور
+        <Tooltip title={t("navigation.eisenhowerView")}>
+          <ToggleButton value="eisenhower" aria-label={t("navigation.eisenhowerView")}>
+            <GridView sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+              {t("navigation.eisenhowerView")}
             </Typography>
           </ToggleButton>
         </Tooltip>

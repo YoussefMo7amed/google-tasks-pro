@@ -40,6 +40,7 @@ import { useTasks } from "../../hooks";
 import { AppTask, AppTaskList } from "../../types/app";
 import { extractQuadrant, cleanTitleFromQuadrant } from "../../services/history.service";
 import TaskDetailModal from "./TaskDetailModal";
+import { useTranslation } from "../../i18n";
 
 const QUADRANT_COLORS: Record<string, { bg: string; color: string; label: string }> = {
   Q1: { bg: "#fee2e2", color: "#dc2626", label: "Q1 عاجل ومهم" },
@@ -52,6 +53,7 @@ type GroupByOption = "list" | "quadrant" | "dueDate";
 type StatusFilter = "all" | "pending" | "completed";
 
 export default function UnifiedListView() {
+  const { t } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const {
     toggleTaskComplete,
@@ -242,7 +244,7 @@ export default function UnifiedListView() {
       >
         {/* Search Input */}
         <TextField
-          placeholder="بحث في جميع المهام..."
+          placeholder={`${t("common.search")}...`}
           size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -250,7 +252,6 @@ export default function UnifiedListView() {
             width: 280,
             "& .MuiOutlinedInput-root": {
               borderRadius: 2,
-              fontFamily: "Cairo, sans-serif",
             },
           }}
           InputProps={{
@@ -271,32 +272,32 @@ export default function UnifiedListView() {
 
         {/* Group By selector */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 600 }}>
-            تجميع حسب:
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+            {t("tasks.sortBy")}:
           </Typography>
           <Chip
             size="small"
-            label="القائمة"
+            label={t("navigation.lists")}
             clickable
             color={groupBy === "list" ? "primary" : "default"}
             onClick={() => setGroupBy("list")}
-            sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.8rem", fontWeight: 600 }}
+            sx={{ fontSize: "0.8rem", fontWeight: 600 }}
           />
           <Chip
             size="small"
-            label="أيزنهاور"
+            label={t("navigation.eisenhowerView")}
             clickable
             color={groupBy === "quadrant" ? "primary" : "default"}
             onClick={() => setGroupBy("quadrant")}
-            sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.8rem", fontWeight: 600 }}
+            sx={{ fontSize: "0.8rem", fontWeight: 600 }}
           />
           <Chip
             size="small"
-            label="موعد الاستحقاق"
+            label={t("tasks.dueDate")}
             clickable
             color={groupBy === "dueDate" ? "primary" : "default"}
             onClick={() => setGroupBy("dueDate")}
-            sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.8rem", fontWeight: 600 }}
+            sx={{ fontSize: "0.8rem", fontWeight: 600 }}
           />
         </Box>
 

@@ -28,6 +28,7 @@ import SortableTaskItem from "./SortableTaskItem";
 import TaskListItem from "./TaskListItem";
 import AddTaskInput from "./AddTaskInput";
 import TaskDetailModal from "./TaskDetailModal";
+import { useTranslation } from "../../i18n";
 
 interface TaskListCardProps {
   taskList: AppTaskList;
@@ -42,6 +43,7 @@ export default function TaskListCard({
   isDragOverlay = false,
   dragHandleProps,
 }: TaskListCardProps) {
+  const { t } = useTranslation();
   const [showCompleted, setShowCompleted] = useState(false);
   const [sortBy, setSortBy] = useState<string>("my_order");
   const [detailTask, setDetailTask] = useState<AppTask | null>(null);
@@ -274,7 +276,7 @@ export default function TaskListCard({
             }}
           >
             <Typography variant="body2" color={isOver ? "primary.main" : "text.secondary"}>
-              {isOver ? "أفلت المهمة هنا لنقلها إلى هذه القائمة" : "No tasks"}
+              {isOver ? t("tasks.moveToList") : t("tasks.noTasks")}
             </Typography>
           </Box>
         )}
@@ -310,7 +312,7 @@ export default function TaskListCard({
               sx={{ py: 1, borderTop: 1, borderColor: "divider" }}
             >
               <ListItemText
-                primary={`Completed (${completedTasks.length})`}
+                primary={`${t("tasks.completed")} (${completedTasks.length})`}
                 primaryTypographyProps={{
                   variant: "body2",
                   color: "text.secondary",

@@ -47,19 +47,21 @@ import {
   SwapHoriz,
   Check,
   Star,
+  Translate,
 } from '@mui/icons-material';
+import { useTranslation } from '../../i18n';
 import {
   loadSettings,
   saveSettings,
   getNotificationHourOptions,
   formatHour,
   AppSettings,
+  TimeFormatPreference,
 } from '../../services/settings.service';
 import {
   AISettings,
   AIProviderType,
   ProviderConfig,
-  PROVIDER_LABELS,
   DEFAULT_MODELS,
   DEFAULT_BASE_URLS,
   ALL_PROVIDERS,
@@ -73,13 +75,24 @@ interface SettingsDialogProps {
   onSettingsChange?: (settings: AppSettings) => void;
 }
 
+const getProviderLabels = (language: string): Record<AIProviderType, string> => ({
+  gemini: language === "ar" ? "Google Gemini (موصى به)" : "Google Gemini (Recommended)",
+  openai_compatible: "OpenAI / OpenRouter / Groq",
+  claude: "Anthropic Claude",
+  ollama: language === "ar" ? "Ollama (محلي مفتوح المصدر)" : "Ollama (Local Open-Source)",
+  lm_studio: language === "ar" ? "LM Studio (محلي مفتوح المصدر)" : "LM Studio (Local Open-Source)",
+});
+
 export default function SettingsDialog({ 
   open, 
   onClose,
   onSettingsChange,
 }: SettingsDialogProps) {
+  const { t, language, setLanguage, supportedLanguages } = useTranslation();
+  const providerLabels = getProviderLabels(language);
   const [activeTab, setActiveTab] = useState<number>(0);
   const [notificationHour, setNotificationHour] = useState<number>(9);
+  const [timeFormat, setTimeFormat] = useState<TimeFormatPreference>('both');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -97,6 +110,7 @@ export default function SettingsDialog({
       loadSettings()
         .then(settings => {
           setNotificationHour(settings.notificationHour);
+          setTimeFormat(settings.timeFormat || 'both');
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -294,7 +308,7 @@ export default function SettingsDialog({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updated = await saveSettings({ notificationHour });
+      const updated = await saveSettings({ notificationHour, timeFormat });
       AISettingsService.save(aiSettings);
       onSettingsChange?.(updated);
       onClose();
@@ -305,7 +319,7 @@ export default function SettingsDialog({
     }
   };
 
-  const hourOptions = getNotificationHourOptions();
+  const hourOptions = getNotificationHourOptions(language, timeFormat);
   const isCurrentLocal = selectedProviderTab === 'ollama' || selectedProviderTab === 'lm_studio';
 
   return (
@@ -316,7 +330,7 @@ export default function SettingsDialog({
       fullWidth
     >
       <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="h6" fontWeight={700}>Settings & Integrations | الإعدادات</Typography>
+        <Typography variant="h6" fontWeight={700}>{t("settings.title")}</Typography>
         <IconButton
           aria-label="close"
           onClick={onClose}
@@ -332,29 +346,71 @@ export default function SettingsDialog({
         onChange={(_, val) => setActiveTab(val)}
         sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
       >
-        <Tab icon={<Notifications sx={{ fontSize: 18 }} />} iconPosition="start" label="General | عام" />
-        <Tab icon={<SmartToy sx={{ fontSize: 18 }} />} iconPosition="start" label="AI Assistant | الذكاء الاصطناعي" />
+        <Tab icon={<Notifications sx={{ fontSize: 18 }} />} iconPosition="start" label={t("settings.generalTab")} />
+        <Tab icon={<SmartToy sx={{ fontSize: 18 }} />} iconPosition="start" label={t("settings.aiTab")} />
       </Tabs>
       
       <DialogContent sx={{ pt: 3, minHeight: 460 }}>
         {loading ? (
-          <Typography color="text.secondary">Loading settings...</Typography>
+          <Typography color="text.secondary">{t("common.loading")}</Typography>
         ) : activeTab === 0 ? (
           <Box>
+            {/* Language Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Translate color="primary" />
+              <Typography variant="subtitle1" fontWeight={600}>
+                {t("settings.language")}
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t("settings.languageDescription")}
+            </Typography>
+            <FormControl fullWidth size="small" sx={{ mb: 3 }}>
+              <InputLabel id="language-select-label">{t("settings.language")}</InputLabel>
+              <Select
+                labelId="language-select-label"
+                value={language}
+                label={t("settings.language")}
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                {supportedLanguages.map((lang) => (
+                  <MenuItem key={lang.code} value={lang.code}>
+                    {lang.nativeName} ({lang.name})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Divider sx={{ my: 3 }} />
+
             {/* Notifications Section */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <Notifications color="primary" />
               <Typography variant="subtitle1" fontWeight={600}>
-                Daily Notifications | الإشعارات اليومية
+                {t("settings.dailyNotifications")}
               </Typography>
             </Box>
             
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+              <InputLabel id="time-format-label">{t("settings.timeFormat")}</InputLabel>
+              <Select
+                labelId="time-format-label"
+                value={timeFormat}
+                label={t("settings.timeFormat")}
+                onChange={(e) => setTimeFormat(e.target.value as TimeFormatPreference)}
+              >
+                <MenuItem value="both">{t("settings.timeFormatBoth")}</MenuItem>
+                <MenuItem value="12h">{t("settings.timeFormat12h")}</MenuItem>
+                <MenuItem value="24h">{t("settings.timeFormat24h")}</MenuItem>
+              </Select>
+            </FormControl>
+
             <FormControl fullWidth size="small">
-              <InputLabel id="notification-hour-label">Remind me at</InputLabel>
+              <InputLabel id="notification-hour-label">{t("settings.remindMeAt")}</InputLabel>
               <Select
                 labelId="notification-hour-label"
                 value={notificationHour}
-                label="Remind me at"
+                label={t("settings.remindMeAt")}
                 onChange={(e) => setNotificationHour(e.target.value as number)}
               >
                 {hourOptions.map(option => (
@@ -370,7 +426,7 @@ export default function SettingsDialog({
               color="text.secondary" 
               sx={{ display: 'block', mt: 1 }}
             >
-              Notifications will be sent at {formatHour(notificationHour)} on the task's due date.
+              {t("settings.notificationsNotice", { time: formatHour(notificationHour, language, timeFormat) })}
             </Typography>
 
             <Divider sx={{ my: 3 }} />
@@ -379,11 +435,11 @@ export default function SettingsDialog({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
               <InfoOutlined color="primary" fontSize="small" />
               <Typography variant="subtitle2" fontWeight={600}>
-                About
+                {t("settings.about")}
               </Typography>
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              Google Tasks Desktop • Open-source desktop client with AI Copilot & Offline Sync
+              {t("settings.aboutDesc")}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
               <Link
@@ -393,7 +449,7 @@ export default function SettingsDialog({
                 underline="hover"
                 color="primary"
               >
-                View on GitHub
+                {t("settings.viewOnGithub")}
               </Link>
             </Typography>
 
@@ -401,7 +457,7 @@ export default function SettingsDialog({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <PeopleOutline color="primary" fontSize="small" />
               <Typography variant="subtitle2" fontWeight={600}>
-                Contributors
+                {t("settings.contributors")}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -444,11 +500,11 @@ export default function SettingsDialog({
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <SmartToy color="primary" sx={{ fontSize: 20 }} />
                   <Typography variant="subtitle1" fontWeight={700}>
-                    Active Agents & Backup | الوكيل الرئيسي والاحتياطي
+                    {t("settings.activeAgentsAndBackup")}
                   </Typography>
                 </Box>
                 <Typography variant="caption" color="text.secondary">
-                  جميع المفاتيح محفوظة لكل النماذج ويمكنك التبديل بينهم بزر واحد
+                  {t("settings.activeAgentsSubtitle")}
                 </Typography>
               </Box>
 
@@ -456,7 +512,7 @@ export default function SettingsDialog({
                 {/* Primary Agent Selector */}
                 <Box sx={{ flex: 1, minWidth: 220 }}>
                   <Typography variant="caption" fontWeight={600} color="primary.main" sx={{ display: 'block', mb: 0.5 }}>
-                    ★ الوكيل الرئيسي (Primary Agent)
+                    {t("settings.primaryAgent")}
                   </Typography>
                   <FormControl fullWidth size="small">
                     <Select
@@ -468,7 +524,7 @@ export default function SettingsDialog({
                         const isLocal = key === 'ollama' || key === 'lm_studio';
                         return (
                           <MenuItem key={key} value={key}>
-                            {PROVIDER_LABELS[key]} {hasKeys || isLocal ? '✓' : ''}
+                            {providerLabels[key]} {hasKeys || isLocal ? '✓' : ''}
                           </MenuItem>
                         );
                       })}
@@ -478,7 +534,7 @@ export default function SettingsDialog({
 
                 {/* Swap Button */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
-                  <Tooltip title="تبديل الوكيل الرئيسي والاحتياطي (Swap Roles)">
+                  <Tooltip title={t("settings.swapRolesTooltip")}>
                     <span>
                       <IconButton
                         onClick={handleSwapRoles}
@@ -500,7 +556,7 @@ export default function SettingsDialog({
                 <Box sx={{ flex: 1, minWidth: 220 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="caption" fontWeight={600} color="secondary.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <ShieldOutlined sx={{ fontSize: 15 }} /> الوكيل الاحتياطي (Backup)
+                      <ShieldOutlined sx={{ fontSize: 15 }} /> {t("settings.backupAgent")}
                     </Typography>
                     <FormControlLabel
                       control={
@@ -515,7 +571,7 @@ export default function SettingsDialog({
                       }
                       label={
                         <Typography variant="caption" color="text.secondary">
-                          {aiSettings.backupEnabled ? 'مفعّل' : 'معطّل'}
+                          {aiSettings.backupEnabled ? t("settings.enabled") : t("settings.disabled")}
                         </Typography>
                       }
                       sx={{ m: 0 }}
@@ -531,7 +587,7 @@ export default function SettingsDialog({
                         const isLocal = key === 'ollama' || key === 'lm_studio';
                         return (
                           <MenuItem key={key} value={key}>
-                            {PROVIDER_LABELS[key]} {hasKeys || isLocal ? '✓' : ''}
+                            {providerLabels[key]} {hasKeys || isLocal ? '✓' : ''}
                           </MenuItem>
                         );
                       })}
@@ -546,10 +602,10 @@ export default function SettingsDialog({
             {/* Provider Configuration Tabs */}
             <Box>
               <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                إعدادات النماذج والمفاتيح المحفوظة (Models & Keys Vault)
+                {t("settings.modelsAndKeysVault")}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                اختر أي مزود أدناه لحفظ مفاتيحه ونموذجه. تظل جميع الإعدادات محفوظة دائماً ولا يتم مسح أي مفتاح.
+                {t("settings.modelsAndKeysVaultDesc")}
               </Typography>
 
               <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -577,10 +633,10 @@ export default function SettingsDialog({
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
                             <span>{prov === 'gemini' ? 'Gemini' : prov === 'openai_compatible' ? 'OpenAI / Groq' : prov === 'claude' ? 'Claude' : prov === 'ollama' ? 'Ollama' : 'LM Studio'}</span>
                             {isPrimary && (
-                              <Chip size="small" label="رئيسي" color="primary" sx={{ height: 18, fontSize: '0.65rem' }} />
+                              <Chip size="small" label={t("settings.primaryBadge")} color="primary" sx={{ height: 18, fontSize: '0.65rem' }} />
                             )}
                             {isBackup && (
-                              <Chip size="small" label="احتياطي" color="secondary" sx={{ height: 18, fontSize: '0.65rem' }} />
+                              <Chip size="small" label={t("settings.backupBadge")} color="secondary" sx={{ height: 18, fontSize: '0.65rem' }} />
                             )}
                             {!isPrimary && !isBackup && (hasKey || isLocal) && (
                               <Check sx={{ fontSize: 14, color: 'success.main' }} />
@@ -597,7 +653,7 @@ export default function SettingsDialog({
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                   <Typography variant="subtitle2" fontWeight={700}>
-                    {PROVIDER_LABELS[selectedProviderTab]}
+                    {providerLabels[selectedProviderTab]}
                   </Typography>
 
                   <Box sx={{ display: 'flex', gap: 1 }}>
@@ -610,7 +666,7 @@ export default function SettingsDialog({
                         onClick={() => handleSetPrimary(selectedProviderTab)}
                         sx={{ textTransform: 'none', fontSize: '0.75rem' }}
                       >
-                        تعيين كوكيل رئيسي
+                        {t("settings.setAsPrimary")}
                       </Button>
                     )}
                     {aiSettings.backupProvider !== selectedProviderTab && (
@@ -625,19 +681,19 @@ export default function SettingsDialog({
                         }}
                         sx={{ textTransform: 'none', fontSize: '0.75rem' }}
                       >
-                        تعيين كوكيل احتياطي
+                        {t("settings.setAsBackup")}
                       </Button>
                     )}
                   </Box>
                 </Box>
 
                 <TextField
-                  label="Model Name / اسم النموذج"
+                  label={t("settings.modelName")}
                   size="small"
                   fullWidth
                   value={currentProviderConfig.model || ""}
                   onChange={(e) => updateProviderConfig(selectedProviderTab, { model: e.target.value })}
-                  helperText={`Suggested default: ${DEFAULT_MODELS[selectedProviderTab]}`}
+                  helperText={t("settings.suggestedDefault", { defaultModel: DEFAULT_MODELS[selectedProviderTab] })}
                 />
 
                 {/* Multiple API Keys Manager for this specific provider */}
@@ -645,10 +701,10 @@ export default function SettingsDialog({
                   <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover', border: 1, borderColor: 'divider' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                       <Typography variant="caption" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Key sx={{ fontSize: 16 }} /> المفاتيح المحفوظة لهذا النموذج ({currentApiKeys.length})
+                        <Key sx={{ fontSize: 16 }} /> {t("settings.savedKeys", { count: currentApiKeys.length })}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        التبديل التلقائي عند استنفاد الحصة أو الوصول للحد (429)
+                        {t("settings.autoFallbackNotice")}
                       </Typography>
                     </Box>
 
@@ -659,26 +715,26 @@ export default function SettingsDialog({
                           <Chip
                             key={idx}
                             size="small"
-                            label={`${idx === 0 ? "★ نشط: " : ""}${maskKey(keyStr)}`}
+                            label={`${idx === 0 ? t("settings.activeKeyPrefix") : ""}${maskKey(keyStr)}`}
                             color={idx === 0 ? "primary" : "default"}
                             variant={idx === 0 ? "filled" : "outlined"}
                             onClick={() => handleSetActiveKey(idx)}
                             onDelete={() => handleDeleteKey(idx)}
-                            title={idx === 0 ? "المفتاح الأساسي النشط لهذا المزود" : "اضغط لجعله المفتاح النشط الأول"}
+                            title={idx === 0 ? t("settings.primaryKeyTooltip") : t("settings.makeKeyActiveTooltip")}
                             sx={{ fontFamily: "monospace", fontSize: "0.75rem", cursor: "pointer" }}
                           />
                         ))}
                       </Box>
                     ) : (
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-                        لا يوجد مفاتيح محفوظة بعد. أدخل مفتاحك أدناه واضغط "إضافة مفتاح".
+                        {t("settings.noSavedKeysNotice")}
                       </Typography>
                     )}
 
                     {/* Add Key Field */}
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <TextField
-                        placeholder={`Enter ${selectedProviderTab} API key...`}
+                        placeholder={t("settings.enterApiKeyPlaceholder", { provider: selectedProviderTab })}
                         size="small"
                         fullWidth
                         type={showApiKey ? "text" : "password"}
@@ -711,19 +767,19 @@ export default function SettingsDialog({
                         disabled={!newKeyInput.trim()}
                         sx={{ minWidth: 95, textTransform: "none" }}
                       >
-                        إضافة مفتاح
+                        {t("settings.addKey")}
                       </Button>
                     </Box>
                   </Box>
                 )}
 
                 <TextField
-                  label="Base URL / رابط نقطة النهاية"
+                  label={t("settings.baseUrl")}
                   size="small"
                   fullWidth
                   value={currentProviderConfig.baseUrl || ""}
                   onChange={(e) => updateProviderConfig(selectedProviderTab, { baseUrl: e.target.value })}
-                  helperText={`Default: ${DEFAULT_BASE_URLS[selectedProviderTab]}`}
+                  helperText={t("settings.defaultUrlHelper", { defaultUrl: DEFAULT_BASE_URLS[selectedProviderTab] })}
                 />
 
                 {testResult && (
@@ -741,7 +797,7 @@ export default function SettingsDialog({
                     startIcon={testingConnection ? <CircularProgress size={16} /> : <CheckCircleOutline />}
                     sx={{ textTransform: 'none' }}
                   >
-                    {testingConnection ? 'فحص الاتصال...' : `فحص اتصال ${selectedProviderTab}`}
+                    {testingConnection ? t("settings.testingConnection") : t("settings.testConnectionFor", { provider: selectedProviderTab })}
                   </Button>
                 </Box>
               </Box>
@@ -752,14 +808,14 @@ export default function SettingsDialog({
       
       <DialogActions sx={{ p: 2 }}>
         <Button onClick={onClose} disabled={saving}>
-          إلغاء (Cancel)
+          {t("common.cancel")}
         </Button>
         <Button 
           variant="contained" 
           onClick={handleSave}
           disabled={loading || saving}
         >
-          {saving ? 'جاري الحفظ...' : 'حفظ التغييرات (Save Changes)'}
+          {saving ? t("common.loading") : t("settings.saveChanges")}
         </Button>
       </DialogActions>
     </Dialog>

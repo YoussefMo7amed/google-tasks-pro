@@ -19,13 +19,15 @@ export interface AIChatSession {
 const STORAGE_KEY = "google_tasks_ai_chat_sessions_v1";
 const ACTIVE_SESSION_ID_KEY = "google_tasks_ai_active_session_id";
 
-const INITIAL_WELCOME_MESSAGE: AICopilotMessage = {
+export const getInitialWelcomeMessage = (language = "ar"): AICopilotMessage => ({
   id: "welcome",
   role: "assistant",
   content:
-    "مرحباً! أنا مساعدك الذكي للمهام (AI Copilot). يمكنني مساعدتك في تخطيط أهدافك، تفكيكها إلى مهام فرعية، وترتيبها تلقائياً وفق مصفوفة أيزنهاور. كيف يمكنني مساعدتك اليوم؟",
+    language === "ar"
+      ? "مرحباً! أنا مساعدك الذكي للمهام (AI Copilot). يمكنني مساعدتك في تخطيط أهدافك، تفكيكها إلى مهام فرعية، وترتيبها تلقائياً وفق مصفوفة أيزنهاور. كيف يمكنني مساعدتك اليوم؟"
+      : "Hello! I am your AI Task Copilot. I can help you plan your goals, break them down into actionable subtasks, and organize them into the Eisenhower Matrix. How can I help you today?",
   timestamp: Date.now(),
-};
+});
 
 export class AIChatHistoryService {
   /**
@@ -82,13 +84,15 @@ export class AIChatHistoryService {
   /**
    * Create a new session
    */
-  public static createSession(title = "محادثة جديدة"): AIChatSession {
+  public static createSession(title?: string, language = "ar"): AIChatSession {
+    const defaultTitle = language === "ar" ? "محادثة جديدة" : "New Chat";
+    const sessionTitle = title || defaultTitle;
     const session: AIChatSession = {
       id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      title,
+      title: sessionTitle,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      messages: [{ ...INITIAL_WELCOME_MESSAGE, id: `welcome_${Date.now()}`, timestamp: Date.now() }],
+      messages: [{ ...getInitialWelcomeMessage(language), id: `welcome_${Date.now()}`, timestamp: Date.now() }],
     };
 
     const sessions = this.loadSessions();
@@ -111,7 +115,12 @@ export class AIChatHistoryService {
       session.updatedAt = Date.now();
 
       // If title is default, extract from first user message
-      if (session.title === "محادثة جديدة" || session.title.startsWith("محادثة جديدة")) {
+      if (
+        session.title === "محادثة جديدة" ||
+        session.title.startsWith("محادثة جديدة") ||
+        session.title === "New Chat" ||
+        session.title.startsWith("New Chat")
+      ) {
         const firstUserMsg = messages.find((m) => m.role === "user");
         if (firstUserMsg) {
           session.title =

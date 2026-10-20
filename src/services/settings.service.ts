@@ -9,13 +9,18 @@ import { Store } from 'tauri-plugin-store-api';
 const SETTINGS_STORE = '.settings.dat';
 const SETTINGS_KEY = 'appSettings';
 
+export type TimeFormatPreference = '12h' | '24h' | 'both';
+
 export interface AppSettings {
   /** Hour of day to send due date notifications (0-23) */
   notificationHour: number;
+  /** Preferred time format style (12h, 24h, or both) */
+  timeFormat?: TimeFormatPreference;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   notificationHour: 9, // 9 AM
+  timeFormat: 'both',
 };
 
 let store: Store | null = null;
@@ -90,42 +95,45 @@ export async function setNotificationHour(hour: number): Promise<void> {
 }
 
 /**
- * Format hour for display (e.g., 9 -> "9:00 AM", 14 -> "2:00 PM")
+ * Format hour for display (e.g., 9 -> "9:00 AM", 14 -> "2:00 PM", localized Arabic "9:00 ص", or 24h "09:00")
  */
-export function formatHour(hour: number): string {
-  const period = hour >= 12 ? 'PM' : 'AM';
+export function formatHour(
+  hour: number,
+  language: string = 'en',
+  formatStyle: TimeFormatPreference = 'both'
+): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const time24 = `${pad(hour)}:00`;
+  const isAr = language === 'ar';
+  
+  // Localized AM/PM
+  const period = hour >= 12 ? (isAr ? 'م' : 'PM') : (isAr ? 'ص' : 'AM');
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:00 ${period}`;
+  const time12 = `${displayHour}:00 ${period}`;
+
+  if (formatStyle === '24h') {
+    return time24;
+  }
+  if (formatStyle === '12h') {
+    return time12;
+  }
+  // 'both' combined style: "09:00 (9:00 ص)" or "09:00 (9:00 AM)"
+  return `${time24} (${time12})`;
 }
 
 /**
  * Get available notification hours for dropdown
  */
-export function getNotificationHourOptions(): { value: number; label: string }[] {
-  return [
-    { value: 0, label: '12:00 AM' },
-    { value: 1, label: '1:00 AM' },
-    { value: 2, label: '2:00 AM' },
-    { value: 3, label: '3:00 AM' },
-    { value: 4, label: '4:00 AM' },
-    { value: 5, label: '5:00 AM' },
-    { value: 6, label: '6:00 AM' },
-    { value: 7, label: '7:00 AM' },
-    { value: 8, label: '8:00 AM' },
-    { value: 9, label: '9:00 AM' },
-    { value: 10, label: '10:00 AM' },
-    { value: 11, label: '11:00 AM' },
-    { value: 12, label: '12:00 PM' },
-    { value: 13, label: '1:00 PM' },
-    { value: 14, label: '2:00 PM' },
-    { value: 15, label: '3:00 PM' },
-    { value: 16, label: '4:00 PM' },
-    { value: 17, label: '5:00 PM' },
-    { value: 18, label: '6:00 PM' },
-    { value: 19, label: '7:00 PM' },
-    { value: 20, label: '8:00 PM' },
-    { value: 21, label: '9:00 PM' },
-    { value: 22, label: '10:00 PM' },
-    { value: 23, label: '11:00 PM' },
-  ];
+export function getNotificationHourOptions(
+  language: string = 'en',
+  formatStyle: TimeFormatPreference = 'both'
+): { value: number; label: string }[] {
+  const options = [];
+  for (let h = 0; h < 24; h++) {
+    options.push({
+      value: h,
+      label: formatHour(h, language, formatStyle),
+    });
+  }
+  return options;
 }

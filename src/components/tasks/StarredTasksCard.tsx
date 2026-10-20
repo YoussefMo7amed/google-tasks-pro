@@ -17,8 +17,10 @@ import { taskListsAtom, starredTaskIdsAtom } from "../../store";
 import { useTasks } from "../../hooks";
 import { AppTask } from "../../types/app";
 import TaskListItem from "./TaskListItem";
+import { useTranslation } from "../../i18n";
 
 export default function StarredTasksCard() {
+  const { t } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
   const { toggleTaskComplete, toggleTaskStar, deleteTask, moveTaskToList } = useTasks();
@@ -84,10 +86,10 @@ export default function StarredTasksCard() {
       >
         <Star fontSize="small" />
         <Typography variant="subtitle1" fontWeight={500}>
-          Starred
+          {t("navigation.starred")}
         </Typography>
         <Typography variant="caption" sx={{ ml: "auto" }}>
-          {starredTasks.length} task{starredTasks.length !== 1 ? "s" : ""}
+          {starredTasks.length} {t("common.tasks")}
         </Typography>
       </Box>
 
@@ -113,10 +115,10 @@ export default function StarredTasksCard() {
           <Box sx={{ py: 4, textAlign: "center" }}>
             <Star sx={{ fontSize: 48, color: "text.disabled", mb: 1 }} />
             <Typography variant="body2" color="text.secondary">
-              No starred tasks
+              {t("tasks.noStarredTasks")}
             </Typography>
             <Typography variant="caption" color="text.disabled">
-              Click the star icon on any task to add it here
+              {t("tasks.noStarredTasksHint")}
             </Typography>
           </Box>
         ) : (
@@ -133,9 +135,9 @@ export default function StarredTasksCard() {
               <Typography
                 variant="caption"
                 color="text.disabled"
-                sx={{ pl: 6, display: "block", mt: -0.5, mb: 0.5 }}
+                sx={{ px: 6, display: "block", mt: -0.5, mb: 0.5, textAlign: "start" }}
               >
-                in {task.listName}
+                {t("tasks.inList")} {task.listName}
               </Typography>
             </Box>
           ))

@@ -103,3 +103,12 @@ export const settingsOpenAtom = atom<boolean>({
   key: "settingsOpen",
   default: false,
 });
+
+// =============================================================================
+// Language / i18n State
+// =============================================================================
+
+export const appLanguageAtom = atom<string>({
+  key: "appLanguage",
+  default: typeof window !== "undefined" ? (localStorage.getItem("google_tasks_app_language") || "en") : "en",
+});

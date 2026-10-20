@@ -15,6 +15,7 @@ import {
   Box,
 } from "@mui/material";
 import { useTaskLists } from "../../hooks";
+import { useTranslation } from "../../i18n";
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function AddCategoryDialog({
   open,
   onClose,
 }: AddCategoryDialogProps) {
+  const { t } = useTranslation();
   const [categoryName, setCategoryName] = useState("");
   const [loading, setLoading] = useState(false);
   const { createTaskList } = useTaskLists();
@@ -65,13 +67,13 @@ export default function AddCategoryDialog({
         sx: { borderRadius: 2 },
       }}
     >
-      <DialogTitle>Create New List</DialogTitle>
+      <DialogTitle>{t("tasks.createListTitle")}</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 1 }}>
           <TextField
             autoFocus
             margin="dense"
-            label="List Name"
+            label={t("tasks.listName")}
             fullWidth
             variant="outlined"
             value={categoryName}
@@ -84,14 +86,14 @@ export default function AddCategoryDialog({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={handleClose} disabled={loading}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           onClick={handleAdd}
           variant="contained"
           disabled={!categoryName.trim() || loading}
         >
-          Create
+          {t("common.create")}
         </Button>
       </DialogActions>
     </Dialog>

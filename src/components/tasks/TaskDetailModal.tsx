@@ -52,6 +52,7 @@ import {
   extractQuadrant,
   applyQuadrantToTitle,
 } from "../../services/history.service";
+import { useTranslation } from "../../i18n";
 
 interface TaskDetailModalProps {
   task: AppTask | null;
@@ -76,6 +77,7 @@ export default function TaskDetailModal({
   onMove,
   onAddSubtask,
 }: TaskDetailModalProps) {
+  const { t } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
 
   const [title, setTitle] = useState("");
@@ -190,7 +192,7 @@ export default function TaskDetailModal({
             color={isCompleted ? "primary.main" : "text.secondary"}
             sx={{ fontWeight: 500 }}
           >
-            {isCompleted ? "Completed" : "Mark as completed"}
+            {isCompleted ? t("tasks.completed") : t("tasks.markAsCompleted")}
           </Typography>
         </Box>
 
@@ -229,7 +231,7 @@ export default function TaskDetailModal({
           maxRows={4}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Task title"
+          placeholder={t("tasks.taskTitlePlaceholder")}
           variant="standard"
           InputProps={{ disableUnderline: true }}
           inputProps={{ dir: "auto" }}
@@ -257,11 +259,11 @@ export default function TaskDetailModal({
               letterSpacing: 0.5,
             }}
           >
-            Eisenhower Matrix / مصفوفة أيزنهاور
+            {t("eisenhower.title")}
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             <Chip
-              label="🔴 Q1: Do (هام وعاجل)"
+              label={`🔴 ${t("eisenhower.q1Title")}`}
               size="small"
               onClick={() => handleQuadrantToggle("Q1")}
               color={quadrant === "Q1" ? "error" : "default"}
@@ -269,7 +271,7 @@ export default function TaskDetailModal({
               sx={{ fontWeight: quadrant === "Q1" ? 600 : 400, borderRadius: "8px" }}
             />
             <Chip
-              label="🔵 Q2: Schedule (هام وغير عاجل)"
+              label={`🔵 ${t("eisenhower.q2Title")}`}
               size="small"
               onClick={() => handleQuadrantToggle("Q2")}
               color={quadrant === "Q2" ? "primary" : "default"}
@@ -277,7 +279,7 @@ export default function TaskDetailModal({
               sx={{ fontWeight: quadrant === "Q2" ? 600 : 400, borderRadius: "8px" }}
             />
             <Chip
-              label="🟡 Q3: Delegate (عاجل وغير هام)"
+              label={`🟡 ${t("eisenhower.q3Title")}`}
               size="small"
               onClick={() => handleQuadrantToggle("Q3")}
               color={quadrant === "Q3" ? "warning" : "default"}
@@ -285,7 +287,7 @@ export default function TaskDetailModal({
               sx={{ fontWeight: quadrant === "Q3" ? 600 : 400, borderRadius: "8px" }}
             />
             <Chip
-              label="⚪ Q4: Eliminate (غير هام وغير عاجل)"
+              label={`⚪ ${t("eisenhower.q4Title")}`}
               size="small"
               onClick={() => handleQuadrantToggle("Q4")}
               variant={quadrant === "Q4" ? "filled" : "outlined"}
@@ -303,24 +305,24 @@ export default function TaskDetailModal({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <CalendarToday sx={{ fontSize: 18, color: "text.secondary" }} />
             <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
-              Due Date
+              {t("tasks.dueDate")}
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
             <Chip
-              label="Today"
+              label={t("tasks.today")}
               size="small"
               onClick={() => handleSetQuickDate(0)}
               variant="outlined"
             />
             <Chip
-              label="Tomorrow"
+              label={t("tasks.tomorrow")}
               size="small"
               onClick={() => handleSetQuickDate(1)}
               variant="outlined"
             />
             <Chip
-              label="Next Week"
+              label={t("tasks.nextWeek")}
               size="small"
               onClick={() => handleSetQuickDate(7)}
               variant="outlined"
@@ -352,7 +354,7 @@ export default function TaskDetailModal({
                 onClick={() => setDueDate(null)}
                 sx={{ textTransform: "none", color: "text.secondary" }}
               >
-                Clear
+                {t("common.clear")}
               </Button>
             )}
           </Box>
@@ -363,7 +365,7 @@ export default function TaskDetailModal({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <DriveFileMove sx={{ fontSize: 18, color: "text.secondary" }} />
             <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
-              List
+              {t("tasks.list")}
             </Typography>
           </Box>
           <FormControl fullWidth size="small">
@@ -390,7 +392,7 @@ export default function TaskDetailModal({
             variant="body2"
             sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5 }}
           >
-            Notes & Details
+            {t("tasks.notesAndDetails")}
           </Typography>
           <TextField
             fullWidth
@@ -399,7 +401,7 @@ export default function TaskDetailModal({
             maxRows={8}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add detailed notes, links, or instructions..."
+            placeholder={t("tasks.notesPlaceholder")}
             variant="outlined"
             inputProps={{ dir: "auto" }}
             sx={{
@@ -423,7 +425,7 @@ export default function TaskDetailModal({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <PlaylistAddCheck sx={{ fontSize: 20, color: "text.secondary" }} />
             <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary" }}>
-              Subtasks {subtasks.length > 0 && `(${subtasks.length})`}
+              {t("tasks.subtasks")} {subtasks.length > 0 && `(${subtasks.length})`}
             </Typography>
           </Box>
 
@@ -477,7 +479,7 @@ export default function TaskDetailModal({
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Add a new subtask..."
+                placeholder={t("tasks.addNewSubtaskPlaceholder")}
                 value={newSubtaskTitle}
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
                 onKeyDown={(e) => {
@@ -506,7 +508,7 @@ export default function TaskDetailModal({
                 disabled={!newSubtaskTitle.trim()}
                 sx={{ borderRadius: "8px", textTransform: "none", whiteSpace: "nowrap" }}
               >
-                Add
+                {t("common.add")}
               </Button>
             </Box>
           )}
@@ -517,7 +519,7 @@ export default function TaskDetailModal({
 
       <DialogActions sx={{ px: 2, py: 1.5 }}>
         <Button onClick={onClose} sx={{ textTransform: "none" }}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           variant="contained"
@@ -525,7 +527,7 @@ export default function TaskDetailModal({
           disabled={isSaving || !title.trim()}
           sx={{ textTransform: "none", px: 3, borderRadius: "8px" }}
         >
-          {isSaving ? "Saving..." : "Save changes"}
+          {isSaving ? t("tasks.saving") : t("tasks.saveChanges")}
         </Button>
       </DialogActions>
     </Dialog>

@@ -19,9 +19,11 @@ import {
 } from "../../config/states";
 import { task } from "../../types/taskapi";
 import { isRegistered, register } from "@tauri-apps/api/globalShortcut";
+import { useTranslation } from "../../i18n";
 
 // No props interface needed - this is a standalone FAB component
 export default function AddTaskFab() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
@@ -144,24 +146,25 @@ export default function AddTaskFab() {
           sx: { borderRadius: 2 },
         }}
       >
-        <DialogTitle>Add New Task</DialogTitle>
+        <DialogTitle>{t("tasks.addNewTaskTitle")}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 1 }}>
             <TextField
               autoFocus
               margin="dense"
-              label="Task Title"
+              label={t("tasks.taskTitleLabel")}
               fullWidth
               variant="outlined"
               value={taskTitle}
               onChange={(e) => setTaskTitle(e.target.value)}
               onKeyPress={handleKeyPress}
               inputRef={titleInputRef}
+              inputProps={{ dir: "auto" }}
               sx={{ mb: 2 }}
             />
             <TextField
               margin="dense"
-              label="Description (Optional)"
+              label={t("tasks.taskDescOptional")}
               fullWidth
               variant="outlined"
               multiline
@@ -169,19 +172,20 @@ export default function AddTaskFab() {
               value={taskDescription}
               onChange={(e) => setTaskDescription(e.target.value)}
               onKeyPress={handleKeyPress}
+              inputProps={{ dir: "auto" }}
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={handleClose} color="inherit">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleAddTask}
             variant="contained"
             disabled={!taskTitle.trim()}
           >
-            Add Task
+            {t("tasks.addTask")}
           </Button>
         </DialogActions>
       </Dialog>

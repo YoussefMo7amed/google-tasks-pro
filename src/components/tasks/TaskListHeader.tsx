@@ -32,6 +32,7 @@ import {
   Check,
 } from "@mui/icons-material";
 import { useTaskLists, useTasks } from "../../hooks";
+import { useTranslation } from "../../i18n";
 
 interface TaskListHeaderProps {
   title: string;
@@ -48,6 +49,7 @@ export default function TaskListHeader({
   onSortChange,
   dragHandleProps,
 }: TaskListHeaderProps) {
+  const { t, isRtl } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [sortAnchorEl, setSortAnchorEl] = useState<null | HTMLElement>(null);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -97,11 +99,11 @@ export default function TaskListHeader({
   };
 
   const sortOptions = [
-    { value: "my_order", label: "My order" },
-    { value: "date", label: "Date" },
-    { value: "deadline", label: "Deadline" },
-    { value: "starred", label: "Starred recently" },
-    { value: "title", label: "Title" },
+    { value: "my_order", label: t("tasks.sortMyOrder") },
+    { value: "date", label: t("tasks.sortDate") },
+    { value: "deadline", label: t("tasks.sortDeadline") },
+    { value: "starred", label: t("tasks.sortRecently") },
+    { value: "title", label: t("tasks.sortTitle") },
   ];
 
   return (
@@ -164,9 +166,9 @@ export default function TaskListHeader({
             <ListItemIcon>
               <SwapVert fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Sort by</ListItemText>
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-              ▶
+            <ListItemText>{t("tasks.sortBy")}</ListItemText>
+            <Typography variant="body2" color="text.secondary" sx={{ ml: isRtl ? 0 : 2, mr: isRtl ? 2 : 0 }}>
+              {isRtl ? "◀" : "▶"}
             </Typography>
           </MenuItem>
 
@@ -176,21 +178,21 @@ export default function TaskListHeader({
             <ListItemIcon>
               <Edit fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Rename list</ListItemText>
+            <ListItemText>{t("tasks.renameList")}</ListItemText>
           </MenuItem>
 
           <MenuItem onClick={handleDelete}>
             <ListItemIcon>
               <Delete fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Delete list</ListItemText>
+            <ListItemText>{t("tasks.deleteList")}</ListItemText>
           </MenuItem>
 
           <MenuItem onClick={() => handleClose()}>
             <ListItemIcon>
               <VerticalAlignTop fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Move list to first position</ListItemText>
+            <ListItemText>{t("tasks.moveListToFirst")}</ListItemText>
           </MenuItem>
 
           <Divider sx={{ my: 0.5 }} />
@@ -199,14 +201,14 @@ export default function TaskListHeader({
             <ListItemIcon>
               <DeleteSweep fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Delete all completed tasks</ListItemText>
+            <ListItemText>{t("tasks.deleteAllCompleted")}</ListItemText>
           </MenuItem>
 
           <MenuItem sx={{ color: "text.secondary" }}>
             <ListItemIcon>
               <CleaningServices fontSize="small" sx={{ color: "text.secondary" }} />
             </ListItemIcon>
-            <ListItemText>Clean up old tasks</ListItemText>
+            <ListItemText>{t("tasks.cleanupOld")}</ListItemText>
           </MenuItem>
         </Menu>
 
@@ -238,7 +240,7 @@ export default function TaskListHeader({
 
       {/* Rename Dialog */}
       <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)}>
-        <DialogTitle>Rename list</DialogTitle>
+        <DialogTitle>{t("tasks.renameList")}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -247,11 +249,12 @@ export default function TaskListHeader({
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleRename()}
+            inputProps={{ dir: "auto" }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleRename} variant="contained">Rename</Button>
+          <Button onClick={() => setRenameDialogOpen(false)}>{t("common.cancel")}</Button>
+          <Button onClick={handleRename} variant="contained">{t("common.rename")}</Button>
         </DialogActions>
       </Dialog>
     </>

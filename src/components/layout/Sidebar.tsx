@@ -45,12 +45,14 @@ import { useTaskLists } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
 import SettingsDialog from "../ui/SettingsDialog";
+import { useTranslation } from "../../i18n";
 
 interface SidebarProps {
   onViewChange?: (view: SidebarView, listId?: string) => void;
 }
 
 export default function Sidebar({ onViewChange }: SidebarProps) {
+  const { t, isRtl } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [listsExpanded, setListsExpanded] = useState(true);
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -140,7 +142,8 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
           width: sidebarWidth,
           minWidth: sidebarWidth,
           height: "100%",
-          borderRight: 1,
+          borderRight: isRtl ? 0 : 1,
+          borderLeft: isRtl ? 1 : 0,
           borderColor: "divider",
           display: "flex",
           flexDirection: "column",
@@ -153,13 +156,13 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
         <Box
           sx={{
             display: "flex",
-            justifyContent: isCollapsed ? "center" : "flex-end",
+            justifyContent: isCollapsed ? "center" : isRtl ? "flex-start" : "flex-end",
             p: 1,
           }}
         >
-          <Tooltip title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <Tooltip title={isCollapsed ? t("navigation.expandSidebar") : t("navigation.collapseSidebar")}>
             <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)}>
-              {isCollapsed ? <ChevronRight fontSize="small" /> : <ChevronLeft fontSize="small" />}
+              {isCollapsed ? (isRtl ? <ChevronLeft fontSize="small" /> : <ChevronRight fontSize="small" />) : (isRtl ? <ChevronRight fontSize="small" /> : <ChevronLeft fontSize="small" />)}
             </IconButton>
           </Tooltip>
         </Box>
@@ -169,7 +172,6 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
           <Box sx={{ px: 2, pb: 2 }}>
             <Button
               variant="contained"
-              startIcon={<Add />}
               onClick={() => setShowAddCategory(true)}
               sx={{
                 borderRadius: "28px",
@@ -183,13 +185,17 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                 border: 1,
                 borderColor: "divider",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
                 "&:hover": {
                   bgcolor: "action.hover",
                   borderColor: "primary.main",
                 },
               }}
             >
-              Create
+              <Add fontSize="small" />
+              <span>{t("common.create")}</span>
             </Button>
           </Box>
         )}
@@ -211,13 +217,13 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
           {isCollapsed ? (
             /* Collapsed Mode Icons */
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, py: 1 }}>
-              <Tooltip title="Create new list" placement="right">
+              <Tooltip title={t("navigation.createList")} placement={isRtl ? "left" : "right"}>
                 <IconButton onClick={() => setShowAddCategory(true)}>
                   <Add />
                 </IconButton>
               </Tooltip>
               <Divider sx={{ width: "80%", my: 0.5 }} />
-              <Tooltip title="All tasks" placement="right">
+              <Tooltip title={t("navigation.allTasks")} placement={isRtl ? "left" : "right"}>
                 <IconButton 
                   onClick={handleViewAll}
                   color={viewState.view === "all" ? "primary" : "default"}
@@ -225,7 +231,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   <TaskAlt />
                 </IconButton>
               </Tooltip>
-              <Tooltip title={`Starred (${starredCount})`} placement="right">
+              <Tooltip title={`${t("navigation.starred")} (${starredCount})`} placement={isRtl ? "left" : "right"}>
                 <IconButton 
                   onClick={handleViewStarred}
                   color={viewState.view === "starred" ? "warning" : "default"}
@@ -233,7 +239,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   {viewState.view === "starred" ? <Star /> : <StarBorder />}
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Eisenhower Matrix" placement="right">
+              <Tooltip title={t("navigation.eisenhower")} placement={isRtl ? "left" : "right"}>
                 <IconButton 
                   onClick={handleViewEisenhower}
                   color={viewState.view === "eisenhower" ? "primary" : "default"}
@@ -241,7 +247,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   <GridView />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Analytics & Streaks" placement="right">
+              <Tooltip title={t("navigation.analytics")} placement={isRtl ? "left" : "right"}>
                 <IconButton 
                   onClick={handleViewAnalytics}
                   color={viewState.view === "analytics" ? "warning" : "default"}
@@ -249,7 +255,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   <LocalFireDepartment />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="AI Copilot (⌘K)" placement="right">
+              <Tooltip title={`${t("navigation.aiCopilot")} (⌘K)`} placement={isRtl ? "left" : "right"}>
                 <IconButton 
                   onClick={() => setShowAiCopilot(true)}
                   color="primary"
@@ -268,20 +274,23 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   selected={viewState.view === "all"}
                   onClick={handleViewAll}
                   sx={{
-                    borderRadius: "0 24px 24px 0",
-                    mr: 2,
+                    borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                    ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),
                     "&.Mui-selected": {
                       bgcolor: "primary.dark",
                       "&:hover": { bgcolor: "primary.dark" },
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
+                  <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
                     <TaskAlt fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="All tasks"
-                    primaryTypographyProps={{ variant: "body2" }}
+                    primary={t("navigation.allTasks")}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      textAlign: isRtl ? "right" : "left",
+                    }}
                   />
                 </ListItemButton>
 
@@ -290,15 +299,15 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   selected={viewState.view === "starred"}
                   onClick={handleViewStarred}
                   sx={{
-                    borderRadius: "0 24px 24px 0",
-                    mr: 2,
+                    borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                    ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),
                     "&.Mui-selected": {
                       bgcolor: "warning.dark",
                       "&:hover": { bgcolor: "warning.dark" },
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
+                  <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
                     {viewState.view === "starred" ? (
                       <Star fontSize="small" color="warning" />
                     ) : (
@@ -306,11 +315,21 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                     )}
                   </ListItemIcon>
                   <ListItemText
-                    primary="Starred"
-                    primaryTypographyProps={{ variant: "body2" }}
+                    primary={t("navigation.starred")}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      textAlign: isRtl ? "right" : "left",
+                    }}
                   />
                   {starredCount > 0 && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
+                        fontWeight: 600,
+                      }}
+                    >
                       {starredCount}
                     </Typography>
                   )}
@@ -321,30 +340,26 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   selected={viewState.view === "eisenhower"}
                   onClick={handleViewEisenhower}
                   sx={{
-                    borderRadius: "0 24px 24px 0",
-                    mr: 2,
+                    borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                    ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),
                     "&.Mui-selected": {
                       bgcolor: "rgba(138, 180, 248, 0.16)",
                       "&:hover": { bgcolor: "rgba(138, 180, 248, 0.2)" },
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
+                  <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
                     <GridView
                       fontSize="small"
                       color={viewState.view === "eisenhower" ? "primary" : "inherit"}
                     />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Eisenhower Matrix"
-                    secondary="مصفوفة أيزنهاور"
+                    primary={t("navigation.eisenhower")}
                     primaryTypographyProps={{
                       variant: "body2",
                       fontWeight: viewState.view === "eisenhower" ? 600 : 400,
-                    }}
-                    secondaryTypographyProps={{
-                      variant: "caption",
-                      color: "text.secondary",
+                      textAlign: isRtl ? "right" : "left",
                     }}
                   />
                 </ListItemButton>
@@ -354,15 +369,15 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   selected={viewState.view === "analytics"}
                   onClick={handleViewAnalytics}
                   sx={{
-                    borderRadius: "0 24px 24px 0",
-                    mr: 2,
+                    borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                    ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),
                     "&.Mui-selected": {
                       bgcolor: "rgba(251, 140, 0, 0.16)",
                       "&:hover": { bgcolor: "rgba(251, 140, 0, 0.2)" },
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
                     <LocalFireDepartment
                       fontSize="small"
                       sx={{
@@ -374,15 +389,11 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                     />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Analytics & Streaks"
-                    secondary="الإحصائيات والإنجاز"
+                    primary={t("navigation.analytics")}
                     primaryTypographyProps={{
                       variant: "body2",
                       fontWeight: viewState.view === "analytics" ? 600 : 400,
-                    }}
-                    secondaryTypographyProps={{
-                      variant: "caption",
-                      color: "text.secondary",
+                      textAlign: isRtl ? "right" : "left",
                     }}
                   />
                 </ListItemButton>
@@ -391,28 +402,24 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                 <ListItemButton
                   onClick={() => setShowAiCopilot(true)}
                   sx={{
-                    borderRadius: "0 24px 24px 0",
-                    mr: 2,
+                    borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                    ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),
                     "&:hover": { bgcolor: "action.hover" },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
                     <AutoAwesome
                       fontSize="small"
                       sx={{ color: "primary.main" }}
                     />
                   </ListItemIcon>
                   <ListItemText
-                    primary="AI Copilot"
-                    secondary="المساعد الذكي للمهام"
+                    primary={t("navigation.aiCopilot")}
                     primaryTypographyProps={{
                       variant: "body2",
                       fontWeight: 600,
                       color: "primary.main",
-                    }}
-                    secondaryTypographyProps={{
-                      variant: "caption",
-                      color: "text.secondary",
+                      textAlign: isRtl ? "right" : "left",
                     }}
                   />
                   <Chip
@@ -424,6 +431,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                       fontWeight: 700,
                       bgcolor: "action.selected",
                       color: "text.secondary",
+                      ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
                     }}
                   />
                 </ListItemButton>
@@ -434,15 +442,16 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               {/* Lists Section Header */}
               <ListItemButton
                 onClick={() => setListsExpanded(!listsExpanded)}
-                sx={{ height: "40px", flexGrow: 0 }}
+                sx={{ height: "40px", flexGrow: 0, px: 2 }}
               >
                 <ListItemText
-                  primary="Lists"
+                  primary={t("navigation.lists")}
                   primaryTypographyProps={{
                     variant: "caption",
                     color: "text.secondary",
                     fontWeight: 600,
                     letterSpacing: 0.5,
+                    textAlign: isRtl ? "right" : "left",
                   }}
                 />
                 {listsExpanded ? (
@@ -461,8 +470,8 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                       selected={viewState.activeListId === list.id}
                       onClick={() => handleListClick(list.id, index)}
                       sx={{
-                        borderRadius: "0 24px 24px 0",
-                        mr: 1.5,
+                        borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                        ...(isRtl ? { ml: 1.5, mr: 0 } : { mr: 1.5, ml: 0 }),
                         py: 0.75,
                         px: 1.5,
                         opacity: list.isVisible ? 1 : 0.5,
@@ -472,15 +481,15 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                         },
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 28 }}>
+                      <ListItemIcon sx={{ minWidth: 26, ...(isRtl ? { ml: 0.5 } : { mr: 0.5 }) }}>
                         <Checkbox
                           size="small"
                           checked={list.isVisible}
                           onClick={(e) => handleToggleVisibility(e, list.id)}
-                          sx={{ p: 0.5 }}
+                          sx={{ p: 0.25 }}
                         />
                       </ListItemIcon>
-                      <ListItemIcon sx={{ minWidth: 30 }}>
+                      <ListItemIcon sx={{ minWidth: 28, ...(isRtl ? { ml: 0.5 } : { mr: 0.5 }) }}>
                         <FormatListBulleted fontSize="small" color="primary" />
                       </ListItemIcon>
                       <ListItemText
@@ -493,7 +502,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                             textDecoration: list.isVisible ? "none" : "line-through",
                             fontWeight: viewState.activeListId === list.id ? 600 : 400,
                             unicodeBidi: "plaintext",
-                            textAlign: "start",
+                            textAlign: isRtl ? "right" : "left",
                           },
                         }}
                       />
@@ -502,7 +511,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                           variant="caption"
                           dir="ltr"
                           sx={{
-                            ml: 1,
+                            ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
                             fontSize: "0.75rem",
                             color: "text.secondary",
                             bgcolor: "rgba(255, 255, 255, 0.08)",
@@ -522,19 +531,20 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   <ListItemButton
                     onClick={() => setShowAddCategory(true)}
                     sx={{
-                      borderRadius: "0 24px 24px 0",
-                      mr: 2,
+                      borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                      ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),
                       py: 0.75,
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 40 }}>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
                       <Add fontSize="small" />
                     </ListItemIcon>
                     <ListItemText
-                      primary="Create new list"
+                      primary={t("navigation.createList")}
                       primaryTypographyProps={{
                         variant: "body2",
                         color: "text.secondary",
+                        textAlign: isRtl ? "right" : "left",
                       }}
                     />
                   </ListItemButton>
@@ -596,10 +606,10 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               <Tooltip
                 title={
                   !isOnline
-                    ? `Offline Mode (${pendingCount} pending changes)`
+                    ? `${t("sync.offlineMode")} (${t("sync.pendingChanges", { count: pendingCount })})`
                     : pendingCount > 0
-                    ? `Syncing (${pendingCount} pending) - Click to sync`
-                    : "Online - All changes synced"
+                    ? `${t("sync.syncing")} (${t("sync.pendingChanges", { count: pendingCount })}) - ${t("sync.clickToSync")}`
+                    : `${t("sync.online")} - ${t("sync.allChangesSynced")}`
                 }
                 placement="right"
               >
@@ -644,19 +654,19 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                         color: !isOnline ? "warning.main" : "text.primary",
                       }}
                     >
-                      {!isOnline ? "Offline Mode" : isSyncing ? "Syncing..." : "Online"}
+                      {!isOnline ? t("sync.offlineMode") : isSyncing ? t("sync.syncing") : t("sync.online")}
                     </Typography>
                     <Typography variant="caption" sx={{ fontSize: "0.68rem", color: "text.secondary" }}>
                       {!isOnline
-                        ? `${pendingCount} queued change${pendingCount !== 1 ? "s" : ""}`
+                        ? t("sync.queuedChanges", { count: pendingCount })
                         : pendingCount > 0
-                        ? `${pendingCount} pending`
-                        : "Synced with Google"}
+                        ? t("sync.pendingChanges", { count: pendingCount })
+                        : t("sync.syncedWithGoogle")}
                     </Typography>
                   </Box>
                 </Box>
                 {isOnline && pendingCount > 0 && (
-                  <Chip label="Sync" size="small" color="primary" sx={{ height: 20, fontSize: "0.65rem" }} />
+                  <Chip label={t("common.sync")} size="small" color="primary" sx={{ height: 20, fontSize: "0.65rem" }} />
                 )}
               </>
             )}
@@ -671,13 +681,16 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               justifyContent: isCollapsed ? 'center' : 'flex-start',
             }}
           >
-            <ListItemIcon sx={{ minWidth: isCollapsed ? 0 : 40 }}>
+            <ListItemIcon sx={{ minWidth: isCollapsed ? 0 : 36 }}>
               <Settings fontSize="small" />
             </ListItemIcon>
             {!isCollapsed && (
               <ListItemText
-                primary="Settings"
-                primaryTypographyProps={{ variant: "body2" }}
+                primary={t("settings.title")}
+                primaryTypographyProps={{
+                  variant: "body2",
+                  textAlign: isRtl ? "right" : "left",
+                }}
               />
             )}
           </ListItemButton>

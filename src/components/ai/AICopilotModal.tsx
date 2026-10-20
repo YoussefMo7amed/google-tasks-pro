@@ -48,6 +48,7 @@ import {
   AICopilotAction,
   TaskContextSnapshot,
 } from "../../services";
+import { useTranslation } from "../../i18n";
 import { AISettingsService } from "../../services/ai/ai-settings.service";
 import {
   AIChatHistoryService,
@@ -62,41 +63,52 @@ interface AICopilotModalProps {
   onOpenSettings: () => void;
 }
 
-const QUICK_PROMPTS = [
+const getQuickPrompts = (language: string) => [
   {
     icon: "🎯",
-    label: "صنّف مهامي في مصفوفة أيزنهاور",
-    prompt: "حلل جميع مهامي الحالية غير المصنفة وصنف كل واحدة منها في مصفوفة أيزنهاور (Q1 هام وعاجل، Q2 هام وغير عاجل، Q3 عاجل وغير هام، Q4 غير هام وغير عاجل) وضع لكل مهمة تصنيف SET_QUADRANT مع توضيح سبب التصنيف لتطبيقها فوراً في شاشة المصفوفة.",
+    label: language === "ar" ? "صنّف مهامي في مصفوفة أيزنهاور" : "Classify tasks in Eisenhower Matrix",
+    prompt: language === "ar"
+      ? "حلل جميع مهامي الحالية غير المصنفة وصنف كل واحدة منها في مصفوفة أيزنهاور (Q1 هام وعاجل، Q2 هام وغير عاجل، Q3 عاجل وغير هام، Q4 غير هام وغير عاجل) وضع لكل مهمة تصنيف SET_QUADRANT مع توضيح سبب التصنيف لتطبيقها فوراً في شاشة المصفوفة."
+      : "Analyze all my unclassified tasks and classify each into the Eisenhower Matrix (Q1 Urgent & Important, Q2 Important Not Urgent, Q3 Urgent Not Important, Q4 Not Urgent Not Important), setting SET_QUADRANT with the rationale so I can apply them to the matrix.",
   },
   {
     icon: "🧹",
-    label: "تنظيف وحذف المهام المكررة",
-    prompt: "افحص جميع قوائم المهام الحالية، واكتشف المهام المكررة أو المتطابقة واقترح حذف النسخ الزائدة منها لتنظيف القوائم.",
+    label: language === "ar" ? "تنظيف وحذف المهام المكررة" : "Clean & delete duplicate tasks",
+    prompt: language === "ar"
+      ? "افحص جميع قوائم المهام الحالية، واكتشف المهام المكررة أو المتطابقة واقترح حذف النسخ الزائدة منها لتنظيف القوائم."
+      : "Inspect all task lists, find duplicate or identical tasks, and suggest deleting redundant copies to clean up lists.",
   },
   {
     icon: "🪄",
-    label: "فكك هدفي إلى مهام",
-    prompt: "أريد تفكيك هدفي التالي إلى مهام ومهام فرعية قابلة للتنفيذ مباشرة مع تواريخ مقترحة: ",
+    label: language === "ar" ? "فكك هدفي إلى مهام" : "Break down my goal into tasks",
+    prompt: language === "ar"
+      ? "أريد تفكيك هدفي التالي إلى مهام ومهام فرعية قابلة للتنفيذ مباشرة مع تواريخ مقترحة: "
+      : "I want to break down my goal into actionable tasks and subtasks with suggested due dates: ",
   },
   {
     icon: "⚡",
-    label: "تعديل وتنظيم المهام",
-    prompt: "راجع مهامي الحالية، واقترح تعديلات لتحسين العناوين الغامضة، إضافة مواعيد استحقاق، ودمج المهام المتشابهة.",
+    label: language === "ar" ? "تعديل وتنظيم المهام" : "Refine and organize tasks",
+    prompt: language === "ar"
+      ? "راجع مهامي الحالية، واقترح تعديلات لتحسين العناوين الغامضة، إضافة مواعيد استحقاق، ودمج المهام المتشابهة."
+      : "Review my current tasks and suggest improvements for vague titles, add missing due dates, and merge similar tasks.",
   },
 ];
 
-const QUADRANT_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  Q1: { bg: "#fee2e2", color: "#dc2626", label: "Q1 هام وعاجل" },
-  Q2: { bg: "#fef3c7", color: "#d97706", label: "Q2 مهم / خطط" },
-  Q3: { bg: "#e0e7ff", color: "#4f46e5", label: "Q3 عاجل / فوّض" },
-  Q4: { bg: "#f3f4f6", color: "#4b5563", label: "Q4 غير هام" },
-};
+const getQuadrantColors = (language: string): Record<string, { bg: string; color: string; label: string }> => ({
+  Q1: { bg: "#fee2e2", color: "#dc2626", label: language === "ar" ? "Q1 هام وعاجل" : "Q1 Urgent & Important" },
+  Q2: { bg: "#fef3c7", color: "#d97706", label: language === "ar" ? "Q2 مهم / خطط" : "Q2 Important / Schedule" },
+  Q3: { bg: "#e0e7ff", color: "#4f46e5", label: language === "ar" ? "Q3 عاجل / فوّض" : "Q3 Urgent / Delegate" },
+  Q4: { bg: "#f3f4f6", color: "#4b5563", label: language === "ar" ? "Q4 غير هام" : "Q4 Not Important" },
+});
 
 export default function AICopilotModal({
   open,
   onClose,
   onOpenSettings,
 }: AICopilotModalProps) {
+  const { t, language } = useTranslation();
+  const quickPrompts = getQuickPrompts(language);
+  const quadrantColors = getQuadrantColors(language);
   const taskLists = useRecoilValue(taskListsAtom);
   const viewState = useRecoilValue(viewStateAtom);
   const setToast = useSetRecoilState(toastAtom);
@@ -130,7 +142,7 @@ export default function AICopilotModal({
   const initializeSessions = useCallback(() => {
     let allSessions = AIChatHistoryService.loadSessions();
     if (allSessions.length === 0) {
-      const initial = AIChatHistoryService.createSession();
+      const initial = AIChatHistoryService.createSession(undefined, language);
       allSessions = [initial];
     }
 
@@ -141,7 +153,7 @@ export default function AICopilotModal({
     setSessions(allSessions);
     setActiveSessionId(active.id);
     setMessages(active.messages);
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     if (open) {
@@ -166,7 +178,7 @@ export default function AICopilotModal({
 
   // Create a brand new chat
   const handleNewChat = () => {
-    const newSession = AIChatHistoryService.createSession();
+    const newSession = AIChatHistoryService.createSession(undefined, language);
     const reloaded = AIChatHistoryService.loadSessions();
     setSessions(reloaded);
     setActiveSessionId(newSession.id);
@@ -179,7 +191,7 @@ export default function AICopilotModal({
     e.stopPropagation();
     let remaining = AIChatHistoryService.deleteSession(sessionId);
     if (remaining.length === 0) {
-      const fresh = AIChatHistoryService.createSession();
+      const fresh = AIChatHistoryService.createSession(undefined, language);
       remaining = [fresh];
     }
     setSessions(remaining);
@@ -665,7 +677,7 @@ export default function AICopilotModal({
 
         {/* Header Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <Tooltip title="محادثة جديدة (+ New Chat)">
+          <Tooltip title={t("ai.newChat")}>
             <Button
               size="small"
               variant="outlined"
@@ -674,17 +686,16 @@ export default function AICopilotModal({
               sx={{
                 borderRadius: 2,
                 textTransform: "none",
-                fontFamily: "Cairo, sans-serif",
                 fontSize: "0.82rem",
                 px: 1.5,
                 py: 0.4,
               }}
             >
-              محادثة جديدة
+              {t("ai.newChat")}
             </Button>
           </Tooltip>
 
-          <Tooltip title={showHistory ? "إخفاء سجل المحادثات" : "عرض سجل المحادثات"}>
+          <Tooltip title={showHistory ? (language === "ar" ? "إخفاء سجل المحادثات" : "Hide chat history") : (language === "ar" ? "عرض سجل المحادثات" : "Show chat history")}>
             <IconButton
               size="small"
               color={showHistory ? "primary" : "default"}
@@ -694,7 +705,7 @@ export default function AICopilotModal({
             </IconButton>
           </Tooltip>
 
-          <Tooltip title={isMaximized ? "استعادة الحجم الطبيعي" : "تكبير الشاشة (Maximize)"}>
+          <Tooltip title={isMaximized ? (language === "ar" ? "استعادة الحجم الطبيعي" : "Restore size") : (language === "ar" ? "تكبير الشاشة" : "Maximize")}>
             <IconButton size="small" onClick={() => setIsMaximized((prev) => !prev)}>
               {isMaximized ? (
                 <FullscreenExit fontSize="small" />
@@ -704,7 +715,7 @@ export default function AICopilotModal({
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="إعدادات الذكاء الاصطناعي (Settings)">
+          <Tooltip title={language === "ar" ? "إعدادات الذكاء الاصطناعي" : "AI Settings"}>
             <IconButton size="small" onClick={onOpenSettings}>
               <Tune fontSize="small" />
             </IconButton>
@@ -745,9 +756,8 @@ export default function AICopilotModal({
                 <Typography
                   variant="subtitle2"
                   fontWeight={700}
-                  sx={{ fontFamily: "Cairo, sans-serif" }}
                 >
-                  سجل المحادثات ({sessions.length})
+                  {t("ai.history")} ({sessions.length})
                 </Typography>
                 <IconButton size="small" onClick={handleNewChat}>
                   <Add fontSize="small" />
@@ -757,7 +767,7 @@ export default function AICopilotModal({
               <List sx={{ flex: 1, overflowY: "auto", p: 1, gap: 0.5 }}>
                 {sessions.map((s) => {
                   const isActive = s.id === activeSessionId;
-                  const dateStr = new Date(s.updatedAt).toLocaleDateString("ar-EG", {
+                  const dateStr = new Date(s.updatedAt).toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", {
                     month: "short",
                     day: "numeric",
                   });
@@ -767,7 +777,7 @@ export default function AICopilotModal({
                       key={s.id}
                       disablePadding
                       secondaryAction={
-                        <Tooltip title="حذف المحادثة">
+                        <Tooltip title={language === "ar" ? "حذف المحادثة" : "Delete conversation"}>
                           <IconButton
                             edge="end"
                             size="small"
@@ -847,7 +857,7 @@ export default function AICopilotModal({
               flexShrink: 0,
             }}
           >
-            {QUICK_PROMPTS.map((q, idx) => (
+            {quickPrompts.map((q, idx) => (
               <Chip
                 key={idx}
                 label={`${q.icon} ${q.label}`}
@@ -1009,14 +1019,16 @@ export default function AICopilotModal({
                               fontWeight={700}
                               sx={{ fontFamily: "Cairo, sans-serif" }}
                             >
-                              العمليات المقترحة ({totalActions})
+                              {language === "ar" ? `العمليات المقترحة (${totalActions})` : `Suggested Actions (${totalActions})`}
                             </Typography>
                             <Typography
                               variant="caption"
                               color="text.secondary"
                               sx={{ fontFamily: "Cairo, sans-serif" }}
                             >
-                              تم تحديد {selectedCount} من أصل {pendingIndices.length} متبقية
+                              {language === "ar"
+                                ? `تم تحديد ${selectedCount} من أصل ${pendingIndices.length} متبقية`
+                                : `${selectedCount} of ${pendingIndices.length} selected`}
                             </Typography>
                           </Box>
                         </Box>
@@ -1032,7 +1044,7 @@ export default function AICopilotModal({
                             onClick={() => handleApplySelected(msg.id, actions)}
                             sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.8rem", px: 1.5 }}
                           >
-                            تطبيق المحدد ({selectedCount})
+                            {language === "ar" ? `تطبيق المحدد (${selectedCount})` : `Apply Selected (${selectedCount})`}
                           </Button>
 
                           {/* Reject All Button */}
@@ -1045,7 +1057,7 @@ export default function AICopilotModal({
                             onClick={() => handleDismissAll(msg.id, actions)}
                             sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.8rem", px: 1.5 }}
                           >
-                            رفض الكل
+                            {language === "ar" ? "رفض الكل" : "Dismiss All"}
                           </Button>
                         </Box>
                       </Box>
@@ -1106,7 +1118,7 @@ export default function AICopilotModal({
                                 {act.type === "CREATE_TASK" && (
                                   <Chip
                                     size="small"
-                                    label="إضافة مهمة"
+                                    label={t("tasks.addTask")}
                                     color="success"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
                                   />
@@ -1114,7 +1126,7 @@ export default function AICopilotModal({
                                 {act.type === "CREATE_SUBTASK" && (
                                   <Chip
                                     size="small"
-                                    label="مهمة فرعية"
+                                    label={t("tasks.subtasks")}
                                     color="success"
                                     variant="outlined"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
@@ -1123,7 +1135,7 @@ export default function AICopilotModal({
                                 {act.type === "UPDATE_TASK" && (
                                   <Chip
                                     size="small"
-                                    label="تعديل مهمة"
+                                    label={t("common.edit")}
                                     color="info"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
                                   />
@@ -1131,7 +1143,7 @@ export default function AICopilotModal({
                                 {act.type === "DELETE_TASK" && (
                                   <Chip
                                     size="small"
-                                    label="حذف مهمة"
+                                    label={t("common.delete")}
                                     color="error"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
                                   />
@@ -1139,7 +1151,7 @@ export default function AICopilotModal({
                                 {act.type === "SET_QUADRANT" && (
                                   <Chip
                                     size="small"
-                                    label="تصنيف أولوية"
+                                    label={language === "ar" ? "تصنيف أولوية" : "Priority"}
                                     color="secondary"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
                                   />
@@ -1147,7 +1159,7 @@ export default function AICopilotModal({
                                 {act.type === "CREATE_LIST" && (
                                   <Chip
                                     size="small"
-                                    label="قائمة جديدة"
+                                    label={language === "ar" ? "قائمة جديدة" : "New List"}
                                     color="primary"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
                                   />
@@ -1155,7 +1167,7 @@ export default function AICopilotModal({
                                 {act.type === "RENAME_LIST" && (
                                   <Chip
                                     size="small"
-                                    label="تعديل قائمة"
+                                    label={language === "ar" ? "تعديل قائمة" : "Rename List"}
                                     color="info"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
                                   />
@@ -1163,7 +1175,7 @@ export default function AICopilotModal({
                                 {act.type === "DELETE_LIST" && (
                                   <Chip
                                     size="small"
-                                    label="حذف قائمة"
+                                    label={language === "ar" ? "حذف قائمة" : "Delete List"}
                                     color="error"
                                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 700 }}
                                   />
@@ -1189,8 +1201,8 @@ export default function AICopilotModal({
                                             height: 20,
                                             fontSize: "0.7rem",
                                             fontWeight: 700,
-                                            bgcolor: QUADRANT_COLORS[act.quadrant]?.bg,
-                                            color: QUADRANT_COLORS[act.quadrant]?.color,
+                                            bgcolor: quadrantColors[act.quadrant]?.bg,
+                                            color: quadrantColors[act.quadrant]?.color,
                                           }}
                                         />
                                       )}
@@ -1214,7 +1226,7 @@ export default function AICopilotModal({
                                     >
                                       ↳ ▫️ {act.title}{" "}
                                       <Typography variant="caption" color="text.secondary">
-                                        (تحت: {act.parentTaskTitle})
+                                        ({language === "ar" ? "تحت" : "under"}: {act.parentTaskTitle})
                                       </Typography>
                                     </Typography>
                                   )}
@@ -1285,7 +1297,7 @@ export default function AICopilotModal({
                                       sx={{ fontFamily: "Cairo, sans-serif" }}
                                       noWrap
                                     >
-                                      📁 {act.currentTitle || "قائمة"} ➔ <b>{act.newTitle}</b>
+                                      📁 {act.currentTitle || (language === "ar" ? "قائمة" : "List")} ➔ <b>{act.newTitle}</b>
                                     </Typography>
                                   )}
 
@@ -1300,7 +1312,7 @@ export default function AICopilotModal({
                                       }}
                                       noWrap
                                     >
-                                      🗑️ قائمة: {act.listTitle}
+                                      🗑️ {language === "ar" ? "قائمة" : "List"}: {act.listTitle}
                                     </Typography>
                                   )}
                                 </Box>
@@ -1313,7 +1325,7 @@ export default function AICopilotModal({
                                     size="small"
                                     color="success"
                                     icon={<Check sx={{ fontSize: "14px !important" }} />}
-                                    label="تم التطبيق"
+                                    label={language === "ar" ? "تم التطبيق" : "Applied"}
                                     sx={{ height: 24, fontSize: "0.75rem", fontFamily: "Cairo, sans-serif" }}
                                   />
                                 )}
@@ -1322,7 +1334,7 @@ export default function AICopilotModal({
                                   <Chip
                                     size="small"
                                     variant="outlined"
-                                    label="مستبعد"
+                                    label={language === "ar" ? "مستبعد" : "Dismissed"}
                                     sx={{ height: 24, fontSize: "0.75rem", fontFamily: "Cairo, sans-serif" }}
                                   />
                                 )}
@@ -1342,10 +1354,12 @@ export default function AICopilotModal({
                                         textTransform: "none",
                                       }}
                                     >
-                                      {act.type.includes("DELETE") ? "تأكيد الحذف" : "قبول وتطبيق"}
+                                      {act.type.includes("DELETE")
+                                        ? (language === "ar" ? "تأكيد الحذف" : "Confirm Delete")
+                                        : (language === "ar" ? "قبول وتطبيق" : "Accept & Apply")}
                                     </Button>
 
-                                    <Tooltip title="رفض هذا التعديل">
+                                    <Tooltip title={language === "ar" ? "رفض هذا التعديل" : "Dismiss this change"}>
                                       <IconButton
                                         size="small"
                                         color="default"
@@ -1376,7 +1390,9 @@ export default function AICopilotModal({
                   color="text.secondary"
                   sx={{ fontFamily: "Cairo, sans-serif" }}
                 >
-                  جاري معالجة طلبك وفحص المهام بالذكاء الاصطناعي...
+                  {language === "ar"
+                    ? "جاري معالجة طلبك وفحص المهام بالذكاء الاصطناعي..."
+                    : "Processing your request with AI..."}
                 </Typography>
               </Box>
             )}
@@ -1388,7 +1404,7 @@ export default function AICopilotModal({
           {/* Input Bar */}
           <DialogActions sx={{ p: 2, gap: 1, bgcolor: "background.paper" }}>
             <TextField
-              placeholder="اكتب طلبك هنا (مثلاً: احذف المهام المكررة، أو عدل اسم المهمة X، أو رتب أيزنهاور)..."
+              placeholder={t("ai.inputPlaceholder")}
               fullWidth
               size="small"
               multiline
@@ -1404,7 +1420,6 @@ export default function AICopilotModal({
               disabled={loading}
               inputProps={{
                 dir: "auto",
-                style: { fontFamily: "Cairo, sans-serif" },
               }}
             />
             <Button

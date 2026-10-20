@@ -39,8 +39,10 @@ import TaskListCard from "./TaskListCard";
 import SortableTaskCard from "./SortableTaskCard";
 import StarredTasksCard from "./StarredTasksCard";
 import TaskListItem from "./TaskListItem";
+import { useTranslation } from "../../i18n";
 
 export default function TaskListsContainer() {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const { taskLists, loading, error, fetchTaskLists, reorderTaskLists } = useTaskLists();
   const { moveTaskToList, reorderTasksLocally } = useTasks();
@@ -291,18 +293,18 @@ export default function TaskListsContainer() {
             action={
               error.toLowerCase().includes("session") || error.includes("401") ? (
                 <Button color="inherit" size="small" onClick={() => handleLogin(true)}>
-                  تسجيل الدخول
+                  {t("auth.signIn")}
                 </Button>
               ) : (
                 <Button color="inherit" size="small" onClick={() => fetchTaskLists(true)}>
-                  إعادة المحاولة
+                  {t("common.retry")}
                 </Button>
               )
             }
           >
             {error.toLowerCase().includes("session") || error.includes("401")
-              ? "أنت تشاهد المهام المحفوظة محلياً — يمكنك مواصلة إضافة وتعديل المهام وستحفظ محلياً وتزامن فور إعادة تسجيل الدخول."
-              : "أنت تشاهد المهام المحفوظة محلياً (وضع غير متصل). يمكنك مواصلة العمل بحرية وستتم المزامنة تلقائياً عند عودة الاتصال."}
+              ? t("auth.cachedModeSessionBanner")
+              : t("auth.cachedModeOfflineBanner")}
           </Alert>
         </Box>
       )}

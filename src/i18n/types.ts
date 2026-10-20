@@ -1,0 +1,241 @@
+/**
+ * i18n Types and Interfaces
+ * 
+ * Strict type definitions for translation keys, languages, and dictionary schema.
+ */
+
+export type LanguageCode = "en" | "ar" | string;
+export type LanguageDirection = "ltr" | "rtl";
+
+export interface LanguageDefinition {
+  code: string;
+  name: string;        // English name e.g. "Arabic", "English"
+  nativeName: string;  // Native name e.g. "العربية", "English"
+  direction: LanguageDirection;
+  messages: TranslationSchema;
+}
+
+export interface TranslationSchema {
+  common: {
+    save: string;
+    cancel: string;
+    delete: string;
+    edit: string;
+    close: string;
+    create: string;
+    retry: string;
+    offline: string;
+    online: string;
+    loading: string;
+    error: string;
+    success: string;
+    warning: string;
+    search: string;
+    all: string;
+    copy: string;
+    copied: string;
+    rename: string;
+    sync: string;
+    tasks: string;
+    details: string;
+    clear: string;
+    add: string;
+  };
+  navigation: {
+    allTasks: string;
+    starred: string;
+    eisenhower: string;
+    analytics: string;
+    aiCopilot: string;
+    lists: string;
+    createList: string;
+    boardView: string;
+    listView: string;
+    calendarView: string;
+    eisenhowerView: string;
+    expandSidebar: string;
+    collapseSidebar: string;
+    tasks: string;
+  };
+  sync: {
+    offlineMode: string;
+    syncing: string;
+    online: string;
+    allChangesSynced: string;
+    syncedWithGoogle: string;
+    queuedChanges: string;
+    pendingChanges: string;
+    clickToSync: string;
+  };
+  tasks: {
+    addTask: string;
+    addNewTaskTitle: string;
+    taskTitleLabel: string;
+    taskDescOptional: string;
+    taskTitlePlaceholder: string;
+    taskDetailsPlaceholder: string;
+    dueDate: string;
+    today: string;
+    tomorrow: string;
+    nextWeek: string;
+    noTasks: string;
+    noPendingTasks: string;
+    completed: string;
+    markAsCompleted: string;
+    clearCompleted: string;
+    deleteTask: string;
+    taskCompletedToast: string;
+    taskUncheckedToast: string;
+    taskDeletedToast: string;
+    taskAddedOfflineToast: string;
+    taskSavedLocallyNotice: string;
+    subtasks: string;
+    addSubtask: string;
+    addSubtaskPlaceholder: string;
+    addNewSubtaskPlaceholder: string;
+    openDetails: string;
+    indent: string;
+    unindent: string;
+    subtaskOf: string;
+    moveToList: string;
+    noOtherLists: string;
+    starredTasks: string;
+    noStarredTasks: string;
+    noStarredTasksHint: string;
+    inList: string;
+    sortBy: string;
+    sortMyOrder: string;
+    sortDate: string;
+    sortTitle: string;
+    sortStarred: string;
+    sortRecently: string;
+    sortDeadline: string;
+    createListTitle: string;
+    listName: string;
+    renameList: string;
+    deleteList: string;
+    moveListToFirst: string;
+    deleteAllCompleted: string;
+    cleanupOld: string;
+    notesAndDetails: string;
+    notesPlaceholder: string;
+    list: string;
+    saveChanges: string;
+    saving: string;
+  };
+  eisenhower: {
+    title: string;
+    subtitle: string;
+    q1Title: string;
+    q1Subtitle: string;
+    q2Title: string;
+    q2Subtitle: string;
+    q3Title: string;
+    q3Subtitle: string;
+    q4Title: string;
+    q4Subtitle: string;
+    unassignedTitle: string;
+    unassignedHelper: string;
+    addTaskToQuadrant: string;
+    moveToQ1: string;
+    moveToQ2: string;
+    moveToQ3: string;
+    moveToQ4: string;
+    backToMatrix: string;
+    quickJump: string;
+    maximizeQuadrant: string;
+    minimizeQuadrant: string;
+  };
+  ai: {
+    copilotTitle: string;
+    copilotSubtitle: string;
+    newChat: string;
+    history: string;
+    settings: string;
+    inputPlaceholder: string;
+    primaryAgent: string;
+    backupAgent: string;
+    answeredByBackup: string;
+    quickPrompts: {
+      classifyEisenhower: string;
+      cleanDuplicates: string;
+      breakdownGoal: string;
+      refineTasks: string;
+    };
+    connectionSuccess: string;
+    connectionFailed: string;
+    testConnection: string;
+  };
+  settings: {
+    title: string;
+    saveChanges: string;
+    generalTab: string;
+    aiTab: string;
+    language: string;
+    languageDescription: string;
+    dailyNotifications: string;
+    remindMeAt: string;
+    timeFormat: string;
+    timeFormat12h: string;
+    timeFormat24h: string;
+    timeFormatBoth: string;
+    notificationsNotice: string;
+    about: string;
+    aboutDesc: string;
+    viewOnGithub: string;
+    contributors: string;
+    activeAgentsAndBackup: string;
+    activeAgentsSubtitle: string;
+    primaryAgent: string;
+    backupAgent: string;
+    swapRolesTooltip: string;
+    enabled: string;
+    disabled: string;
+    modelsAndKeysVault: string;
+    modelsAndKeysVaultDesc: string;
+    primaryBadge: string;
+    backupBadge: string;
+    setAsPrimary: string;
+    setAsBackup: string;
+    modelName: string;
+    suggestedDefault: string;
+    savedKeys: string;
+    autoFallbackNotice: string;
+    activeKeyPrefix: string;
+    primaryKeyTooltip: string;
+    makeKeyActiveTooltip: string;
+    noSavedKeysNotice: string;
+    addKey: string;
+    enterApiKeyPlaceholder: string;
+    baseUrl: string;
+    defaultUrlHelper: string;
+    testingConnection: string;
+    testConnectionFor: string;
+    trayTitle: string;
+    closeToTray: string;
+    minimizeToTray: string;
+  };
+  auth: {
+    signIn: string;
+    signOut: string;
+    sessionExpiredTitle: string;
+    sessionExpiredDescription: string;
+    signInWithGoogle: string;
+    cachedModeOfflineBanner: string;
+    cachedModeSessionBanner: string;
+  };
+  calendar: {
+    today: string;
+    month: string;
+    week: string;
+    day: string;
+    noTasksOnDate: string;
+    tasksCount: string;
+  };
+  analytics: {
+    title: string;
+    streaks: string;
+    completedTasks: string;
+    productivityRate: string;
+  };
+}

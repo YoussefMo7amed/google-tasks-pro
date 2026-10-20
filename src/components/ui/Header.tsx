@@ -12,8 +12,9 @@ import {
   Divider,
   Typography,
   Button,
+  Tooltip,
 } from "@mui/material";
-import { Logout, AutoAwesome } from "@mui/icons-material";
+import { Logout, AutoAwesome, Translate, Check } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
   attemptLogoutState,
@@ -22,13 +23,16 @@ import {
 } from "../../config/states";
 import { aiCopilotOpenAtom } from "../../store";
 import ViewSwitcher from "./ViewSwitcher";
+import { useTranslation } from "../../i18n";
 
 export default function Header() {
   const loggedIn = useRecoilValue(loggedInSelector);
   const profile = useRecoilValue(userProfileSelector);
   const setAttemptLogout = useSetRecoilState(attemptLogoutState);
   const setAiCopilotOpen = useSetRecoilState(aiCopilotOpenAtom);
+  const { t, language, setLanguage, supportedLanguages } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [langMenuAnchor, setLangMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -66,16 +70,75 @@ export default function Header() {
         }}
       >
         <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>
-          Tasks
+          {t("navigation.tasks")}
         </Typography>
 
         <ViewSwitcher />
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {/* Language Switcher */}
+          <Tooltip title={language === "en" ? "تبديل إلى العربية" : "Switch to English"}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Translate sx={{ fontSize: "1.1rem" }} />}
+              onClick={(e) => setLangMenuAnchor(e.currentTarget)}
+              sx={{
+                borderRadius: "18px",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.8rem",
+                borderColor: "divider",
+                color: "text.primary",
+                py: 0.4,
+                px: 1.25,
+                minWidth: "auto",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  bgcolor: "action.hover",
+                },
+              }}
+            >
+              {language === "en" ? "EN" : "عربي"}
+            </Button>
+          </Tooltip>
+
+          <Menu
+            anchorEl={langMenuAnchor}
+            open={Boolean(langMenuAnchor)}
+            onClose={() => setLangMenuAnchor(null)}
+            PaperProps={{
+              elevation: 3,
+              sx: {
+                borderRadius: 2,
+                minWidth: 150,
+                mt: 1,
+                border: 1,
+                borderColor: "divider",
+              },
+            }}
+          >
+            {supportedLanguages.map((lang) => (
+              <MenuItem
+                key={lang.code}
+                selected={language === lang.code}
+                onClick={() => {
+                  setLanguage(lang.code);
+                  setLangMenuAnchor(null);
+                }}
+                sx={{ display: "flex", justifyContent: "space-between", gap: 1.5 }}
+              >
+                <Typography variant="body2" fontWeight={language === lang.code ? 600 : 400}>
+                  {lang.nativeName} ({lang.name})
+                </Typography>
+                {language === lang.code && <Check fontSize="small" color="primary" />}
+              </MenuItem>
+            ))}
+          </Menu>
+
           <Button
             size="small"
             variant="outlined"
-            startIcon={<AutoAwesome sx={{ color: "primary.main", fontSize: "1.1rem" }} />}
             onClick={() => setAiCopilotOpen(true)}
             sx={{
               borderRadius: "18px",
@@ -86,17 +149,20 @@ export default function Header() {
               color: "text.primary",
               py: 0.4,
               px: 1.5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.75,
               "&:hover": {
                 borderColor: "primary.main",
                 bgcolor: "action.hover",
               },
             }}
           >
-            AI Copilot
+            <AutoAwesome sx={{ color: "primary.main", fontSize: "1.1rem" }} />
+            <span>{t("navigation.aiCopilot")}</span>
             <Box
               component="span"
               sx={{
-                ml: 1,
                 px: 0.75,
                 py: 0.1,
                 bgcolor: "action.selected",
@@ -154,7 +220,7 @@ export default function Header() {
               <ListItemIcon>
                 <Logout fontSize="small" />
               </ListItemIcon>
-              <ListItemText primary="Sign out" />
+              <ListItemText primary={t("auth.signOut")} />
             </MenuItem>
           </Menu>
         </Box>

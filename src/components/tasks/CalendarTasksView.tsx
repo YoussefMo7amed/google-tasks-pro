@@ -46,6 +46,7 @@ import { useTasks, useTaskLists } from "../../hooks";
 import { AppTask, AppTaskList } from "../../types/app";
 import { extractQuadrant, cleanTitleFromQuadrant } from "../../services/history.service";
 import TaskDetailModal from "./TaskDetailModal";
+import { useTranslation } from "../../i18n";
 
 const QUADRANT_COLORS: Record<string, { bg: string; color: string; label: string }> = {
   Q1: { bg: "#fee2e2", color: "#dc2626", label: "Q1" },
@@ -79,6 +80,21 @@ const MONTH_NAMES_AR = [
   "ديسمبر",
 ];
 
+const MONTH_NAMES_EN = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 function formatDateKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -93,6 +109,7 @@ function parseDueDate(dueStr?: string | null): string | null {
 }
 
 export default function CalendarTasksView() {
+  const { t, language } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const {
     toggleTaskComplete,
@@ -285,7 +302,7 @@ export default function CalendarTasksView() {
       >
         {/* Month Navigation & Title */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconButton size="small" onClick={handlePrevMonth} sx={{ border: 1, borderColor: "divider" }} title="الشهر السابق">
+          <IconButton size="small" onClick={handlePrevMonth} sx={{ border: 1, borderColor: "divider" }} title={language === "ar" ? "الشهر السابق" : "Previous month"}>
             <ChevronLeft />
           </IconButton>
           
@@ -293,15 +310,14 @@ export default function CalendarTasksView() {
             variant="h6"
             sx={{
               fontWeight: 700,
-              fontFamily: "Cairo, sans-serif",
               minWidth: 150,
               textAlign: "center",
             }}
           >
-            {MONTH_NAMES_AR[currentMonth]} {currentYear}
+            {language === "ar" ? MONTH_NAMES_AR[currentMonth] : MONTH_NAMES_EN[currentMonth]} {currentYear}
           </Typography>
 
-          <IconButton size="small" onClick={handleNextMonth} sx={{ border: 1, borderColor: "divider" }} title="الشهر القادم">
+          <IconButton size="small" onClick={handleNextMonth} sx={{ border: 1, borderColor: "divider" }} title={language === "ar" ? "الشهر التالي" : "Next month"}>
             <ChevronRight />
           </IconButton>
 
@@ -312,24 +328,23 @@ export default function CalendarTasksView() {
             onClick={handleGoToday}
             sx={{
               ml: 1,
-              fontFamily: "Cairo, sans-serif",
               borderRadius: "10px",
               textTransform: "none",
               fontWeight: 600,
               fontSize: "0.8rem",
             }}
           >
-            اليوم
+            {t("calendar.today")}
           </Button>
         </Box>
 
         {/* Metrics Badges */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           {overdueTasks.length > 0 && (
-            <Tooltip title="مهام فات موعد استحقاقها">
+            <Tooltip title={language === "ar" ? "مهام فات موعد استحقاقها" : "Overdue tasks"}>
               <Chip
                 icon={<WarningAmber sx={{ fontSize: 16, color: "#dc2626 !important" }} />}
-                label={`${overdueTasks.length} متأخرة`}
+                label={`${overdueTasks.length} ${language === "ar" ? "متأخرة" : "Overdue"}`}
                 size="small"
                 sx={{
                   bgcolor: "#fee2e2",
@@ -343,7 +358,7 @@ export default function CalendarTasksView() {
 
           <Chip
             icon={<EventNote sx={{ fontSize: 16, color: "#2563eb !important" }} />}
-            label={`${todayTasks.length} مهام اليوم`}
+            label={`${todayTasks.length} ${language === "ar" ? "مهام اليوم" : "Today"}`}
             size="small"
             sx={{
               bgcolor: "#dbeafe",
@@ -355,7 +370,7 @@ export default function CalendarTasksView() {
 
           <Chip
             icon={<CheckCircleOutline sx={{ fontSize: 16 }} />}
-            label={`${allTasksWithList.length} مهام معروضة`}
+            label={`${allTasksWithList.length} ${language === "ar" ? "مهام معروضة" : "Showing"}`}
             size="small"
             variant="outlined"
             sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 600 }}
@@ -366,17 +381,17 @@ export default function CalendarTasksView() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel id="calendar-list-select-label" sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.85rem" }}>
-              القائمة
+              {t("tasks.list")}
             </InputLabel>
             <Select
               labelId="calendar-list-select-label"
               value={selectedListId}
-              label="القائمة"
+              label={t("tasks.list")}
               onChange={(e) => setSelectedListId(e.target.value)}
               sx={{ borderRadius: "10px", fontSize: "0.85rem", fontFamily: "Cairo, sans-serif" }}
             >
               <MenuItem value="all" sx={{ fontFamily: "Cairo, sans-serif" }}>
-                جميع القوائم
+                {language === "ar" ? "جميع القوائم" : "All lists"}
               </MenuItem>
               {allLists.map((list) => (
                 <MenuItem key={list.id} value={list.id} sx={{ fontFamily: "Cairo, sans-serif" }}>
@@ -399,7 +414,9 @@ export default function CalendarTasksView() {
               fontWeight: 600,
             }}
           >
-            {showCompleted ? "المكتملة: ظاهرة" : "المكتملة: مخفية"}
+            {showCompleted
+              ? (language === "ar" ? "المكتملة: ظاهرة" : "Completed: Shown")
+              : (language === "ar" ? "المكتملة: مخفية" : "Completed: Hidden")}
           </Button>
         </Box>
       </Box>
@@ -430,8 +447,8 @@ export default function CalendarTasksView() {
               overflow: "hidden",
             }}
           >
-            <Typography variant="caption" sx={{ fontWeight: 700, fontFamily: "Cairo, sans-serif", color: "text.primary" }}>
-              {wd.ar}
+            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary" }}>
+              {language === "ar" ? wd.ar : wd.en}
             </Typography>
           </Paper>
         ))}
@@ -638,13 +655,13 @@ export default function CalendarTasksView() {
         PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}
       >
         <DialogTitle sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 700, pb: 1 }}>
-          إضافة مهمة بتاريخ {quickAddDate}
+          {language === "ar" ? `إضافة مهمة بتاريخ ${quickAddDate}` : `Add task for ${quickAddDate}`}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
           <TextField
             autoFocus
             fullWidth
-            label="عنوان المهمة"
+            label={t("tasks.taskTitleLabel")}
             value={quickAddTitle}
             onChange={(e) => setQuickAddTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -655,16 +672,17 @@ export default function CalendarTasksView() {
             size="small"
             InputProps={{ sx: { fontFamily: "Cairo, sans-serif" } }}
             InputLabelProps={{ sx: { fontFamily: "Cairo, sans-serif" } }}
+            inputProps={{ dir: "auto" }}
           />
 
           <FormControl fullWidth size="small">
             <InputLabel id="quick-add-list-label" sx={{ fontFamily: "Cairo, sans-serif" }}>
-              القائمة
+              {t("tasks.list")}
             </InputLabel>
             <Select
               labelId="quick-add-list-label"
               value={quickAddListId}
-              label="القائمة"
+              label={t("tasks.list")}
               onChange={(e) => setQuickAddListId(e.target.value)}
               sx={{ fontFamily: "Cairo, sans-serif" }}
             >
@@ -678,7 +696,7 @@ export default function CalendarTasksView() {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setQuickAddDate(null)} sx={{ fontFamily: "Cairo, sans-serif" }}>
-            إلغاء
+            {t("common.cancel")}
           </Button>
           <Button
             variant="contained"
@@ -686,7 +704,7 @@ export default function CalendarTasksView() {
             disabled={!quickAddTitle.trim()}
             sx={{ fontFamily: "Cairo, sans-serif", borderRadius: "8px" }}
           >
-            إضافة المهمة
+            {t("tasks.addTask")}
           </Button>
         </DialogActions>
       </Dialog>

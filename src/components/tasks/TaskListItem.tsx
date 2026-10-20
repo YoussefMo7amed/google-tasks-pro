@@ -55,6 +55,8 @@ import {
   cleanTitleFromQuadrant,
 } from "../../services/history.service";
 import { OpenInNew } from "@mui/icons-material";
+import { useTranslation } from "../../i18n";
+import { formatLocalizedDueDate } from "../../i18n/dateUtils";
 
 interface TaskListItemProps {
   task: AppTask;
@@ -70,31 +72,6 @@ interface TaskListItemProps {
   onOpenDetail?: (task: AppTask) => void;
 }
 
-// Helper to format due date
-const formatDueDate = (date: string | undefined) => {
-  if (!date) return null;
-  
-  const dueDate = new Date(date);
-  if (isNaN(dueDate.getTime())) return null;
-
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const isOverdue = dueDate < today && dueDate.toDateString() !== today.toDateString();
-  
-  let dateLabel = "";
-  if (dueDate.toDateString() === today.toDateString()) {
-    dateLabel = "Today";
-  } else if (dueDate.toDateString() === tomorrow.toDateString()) {
-    dateLabel = "Tomorrow";
-  } else {
-    dateLabel = dueDate.toLocaleDateString([], { month: "short", day: "numeric" });
-  }
-
-  return { label: dateLabel, isOverdue };
-};
-
 export default function TaskListItem({
   task,
   onToggle,
@@ -108,6 +85,7 @@ export default function TaskListItem({
   parentTaskTitle,
   onOpenDetail,
 }: TaskListItemProps) {
+  const { t, language, isRtl } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [moveAnchorEl, setMoveAnchorEl] = useState<null | HTMLElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -123,7 +101,7 @@ export default function TaskListItem({
   const subtaskInputRef = useRef<HTMLInputElement>(null);
   
   const taskLists = useRecoilValue(taskListsAtom);
-  const dueDateInfo = formatDueDate(task.due);
+  const dueDateInfo = formatLocalizedDueDate(task.due, language, t);
   const isSubtask = !!task.parent;
 
   const itemQuadrant = extractQuadrant(task.title);
@@ -365,7 +343,7 @@ export default function TaskListItem({
                 {/* Date/Time controls */}
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, flexWrap: "wrap" }}>
                   <Chip
-                    label="Today"
+                    label={t("tasks.today")}
                     size="small"
                     onClick={handleSetToday}
                     variant={editDue?.toDateString() === todayDate ? "filled" : "outlined"}
@@ -373,7 +351,7 @@ export default function TaskListItem({
                     sx={{ borderRadius: 2 }}
                   />
                   <Chip
-                    label="Tomorrow"
+                    label={t("tasks.tomorrow")}
                     size="small"
                     onClick={handleSetTomorrow}
                     variant={editDue?.toDateString() === tomorrowDate ? "filled" : "outlined"}
@@ -392,7 +370,7 @@ export default function TaskListItem({
                   <IconButton
                     size="small"
                     onClick={handleMoveClick}
-                    sx={{ border: 1, borderColor: "divider", ml: "auto" }}
+                    sx={{ border: 1, borderColor: "divider", ml: isRtl ? 0 : "auto", mr: isRtl ? "auto" : 0 }}
                   >
                     <OpenWith fontSize="small" />
                   </IconButton>
@@ -402,7 +380,7 @@ export default function TaskListItem({
                 {editDue && (
                   <Chip
                     icon={<Event sx={{ fontSize: 14 }} />}
-                    label={editDue.toLocaleDateString([], { month: "short", day: "numeric" })}
+                    label={formatLocalizedDueDate(editDue, language, t)?.label}
                     size="small"
                     onDelete={() => setEditDue(null)}
                     color="primary"
@@ -603,36 +581,38 @@ export default function TaskListItem({
               <MenuItemIcon>
                 <OpenInNew fontSize="small" />
               </MenuItemIcon>
-              <ListItemText>Open details</ListItemText>
+              <ListItemText>{t("tasks.openDetails")}</ListItemText>
             </MenuItem>
           )}
           {!isSubtask && onAddSubtask && (
             <MenuItem onClick={handleAddSubtask}>
               <MenuItemIcon><AddTask fontSize="small" /></MenuItemIcon>
-              <ListItemText>Add subtask</ListItemText>
+              <ListItemText>{t("tasks.addSubtask")}</ListItemText>
             </MenuItem>
           )}
           {!isSubtask && onIndent && (
             <MenuItem onClick={handleIndent}>
               <MenuItemIcon><FormatIndentIncrease fontSize="small" /></MenuItemIcon>
-              <ListItemText>Indent</ListItemText>
+              <ListItemText>{t("tasks.indent")}</ListItemText>
             </MenuItem>
           )}
           {isSubtask && onUnindent && (
             <MenuItem onClick={handleUnindent}>
               <MenuItemIcon><FormatIndentDecrease fontSize="small" /></MenuItemIcon>
-              <ListItemText>Unindent</ListItemText>
+              <ListItemText>{t("tasks.unindent")}</ListItemText>
             </MenuItem>
           )}
           <MenuItem onClick={handleMoveClick}>
             <MenuItemIcon><DriveFileMove fontSize="small" /></MenuItemIcon>
-            <ListItemText>Move to list</ListItemText>
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>▶</Typography>
+            <ListItemText>{t("tasks.moveToList")}</ListItemText>
+            <Typography variant="body2" color="text.secondary" sx={{ ml: isRtl ? 0 : 2, mr: isRtl ? 2 : 0 }}>
+              {isRtl ? "◀" : "▶"}
+            </Typography>
           </MenuItem>
           <Divider />
           <MenuItem onClick={handleDelete}>
             <MenuItemIcon><Delete fontSize="small" /></MenuItemIcon>
-            <ListItemText>Delete</ListItemText>
+            <ListItemText>{t("common.delete")}</ListItemText>
           </MenuItem>
         </Menu>
 
@@ -646,7 +626,7 @@ export default function TaskListItem({
         >
           {otherLists.length === 0 ? (
             <MenuItem disabled>
-              <ListItemText>No other lists</ListItemText>
+              <ListItemText>{t("tasks.noOtherLists")}</ListItemText>
             </MenuItem>
           ) : (
             otherLists.map((list) => (
@@ -668,19 +648,19 @@ export default function TaskListItem({
             display: "flex",
             alignItems: "center",
             gap: 1,
-            pl: 7,
-            pr: 2,
+            pl: isRtl ? 2 : 7,
+            pr: isRtl ? 7 : 2,
             py: 0.75,
             bgcolor: "action.hover",
             borderBottom: 1,
             borderColor: "divider",
           }}
         >
-          <SubdirectoryArrowRight fontSize="small" sx={{ color: "text.disabled" }} />
+          <SubdirectoryArrowRight fontSize="small" sx={{ color: "text.disabled", transform: isRtl ? "scaleX(-1)" : "none" }} />
           <TextField
             fullWidth
             size="small"
-            placeholder="Add subtask..."
+            placeholder={t("tasks.addSubtaskPlaceholder")}
             value={subtaskTitle}
             onChange={(e) => setSubtaskTitle(e.target.value)}
             onKeyDown={handleSubtaskKeyDown}
@@ -702,7 +682,7 @@ export default function TaskListItem({
             disabled={!subtaskTitle.trim()}
             sx={{ minWidth: "auto", textTransform: "none" }}
           >
-            Add
+            {t("common.create")}
           </Button>
           <IconButton 
             size="small" 
@@ -718,7 +698,7 @@ export default function TaskListItem({
   // Wrap with tooltip if it's a subtask
   if (isSubtask && parentTaskTitle) {
     return (
-      <Tooltip title={`Subtask of: ${parentTaskTitle}`} placement="left">
+      <Tooltip title={`${t("tasks.subtaskOf")}: ${parentTaskTitle}`} placement="left">
         <Box>{taskContent}</Box>
       </Tooltip>
     );

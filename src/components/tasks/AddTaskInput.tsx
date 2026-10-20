@@ -12,12 +12,15 @@ import {
   Today,
   CalendarMonth,
 } from "@mui/icons-material";
+import { useTranslation } from "../../i18n";
+import { formatLocalizedDueDate } from "../../i18n/dateUtils";
 
 interface AddTaskInputProps {
   onAdd: (title: string, dueDate?: Date) => void;
 }
 
 export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
+  const { t, language, isRtl } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDetails, setTaskDetails] = useState("");
@@ -65,20 +68,6 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
     setDueDate(tomorrow);
   };
 
-  const formatDueDate = (date: Date) => {
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    }
-    if (date.toDateString() === tomorrow.toDateString()) {
-      return "Tomorrow";
-    }
-    return date.toLocaleDateString([], { month: "short", day: "numeric" });
-  };
-
   if (!isExpanded) {
     return (
       <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider" }}>
@@ -96,7 +85,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
           }}
           size="small"
         >
-          Add a task
+          {t("tasks.addTask")}
         </Button>
       </Box>
     );
@@ -108,7 +97,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
       <TextField
         fullWidth
         size="small"
-        placeholder="Title"
+        placeholder={t("tasks.taskTitlePlaceholder")}
         value={taskTitle}
         onChange={(e) => setTaskTitle(e.target.value)}
         onKeyDown={handleKeyPress}
@@ -131,7 +120,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
       <TextField
         fullWidth
         size="small"
-        placeholder="Details"
+        placeholder={t("tasks.taskDetailsPlaceholder")}
         value={taskDetails}
         onChange={(e) => setTaskDetails(e.target.value)}
         onKeyDown={handleKeyPress}
@@ -160,7 +149,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
       {/* Date/Time Buttons */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5, flexWrap: "wrap" }}>
         <Chip
-          label="Today"
+          label={t("tasks.today")}
           size="small"
           onClick={handleSetToday}
           variant={dueDate?.toDateString() === new Date().toDateString() ? "filled" : "outlined"}
@@ -168,7 +157,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
           sx={{ borderRadius: 2 }}
         />
         <Chip
-          label="Tomorrow"
+          label={t("tasks.tomorrow")}
           size="small"
           onClick={handleSetTomorrow}
           variant={
@@ -197,12 +186,12 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         {dueDate && (
           <Chip
             icon={<Today sx={{ fontSize: 16 }} />}
-            label={formatDueDate(dueDate)}
+            label={formatLocalizedDueDate(dueDate, language, t)?.label}
             size="small"
             onDelete={() => setDueDate(null)}
             color="primary"
             variant="outlined"
-            sx={{ ml: "auto" }}
+            sx={{ ...(isRtl ? { mr: "auto" } : { ml: "auto" }) }}
           />
         )}
       </Box>
@@ -219,7 +208,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
           }}
           sx={{ textTransform: "none" }}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button
           size="small"
@@ -228,7 +217,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
           onClick={handleAdd}
           sx={{ textTransform: "none" }}
         >
-          Save
+          {t("common.save")}
         </Button>
       </Box>
 

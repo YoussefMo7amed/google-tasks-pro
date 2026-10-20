@@ -22,6 +22,7 @@ import {
   Collapse,
   Divider,
   Tooltip,
+  InputAdornment,
 } from "@mui/material";
 import {
   Whatshot,
@@ -47,6 +48,7 @@ import {
 } from "../../services/history.service";
 import TaskListItem from "./TaskListItem";
 import TaskDetailModal from "./TaskDetailModal";
+import { useTranslation } from "../../i18n";
 
 interface QuadrantConfig {
   id: QuadrantType;
@@ -98,6 +100,7 @@ const QUADRANTS: QuadrantConfig[] = [
 ];
 
 export default function EisenhowerMatrixView() {
+  const { t } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const {
     createTask,
@@ -178,14 +181,14 @@ export default function EisenhowerMatrixView() {
       <Box sx={{ mb: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
-            🎯 Eisenhower Matrix | مصفوفة أيزنهاور
+            🎯 {t("eisenhower.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            Focus on what truly matters: Prioritize by Urgency and Importance
+            {t("eisenhower.subtitle")}
           </Typography>
         </Box>
         <Chip
-          label={`${allTasks.length} Active Tasks`}
+          label={`${allTasks.length} ${t("calendar.tasksCount")}`}
           color="primary"
           variant="outlined"
           sx={{ fontWeight: 600 }}
@@ -217,10 +220,10 @@ export default function EisenhowerMatrixView() {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Label sx={{ color: "warning.main", fontSize: 20 }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Unassigned Tasks ({unassignedTasks.length}) — مهام غير مصنفة
+                {t("eisenhower.unassignedTitle")} ({unassignedTasks.length})
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Click a quadrant button below to instantly place a task into the matrix
+                {t("eisenhower.unassignedHelper")}
               </Typography>
             </Box>
             <IconButton size="small">
@@ -333,19 +336,18 @@ export default function EisenhowerMatrixView() {
             onClick={() => setExpandedQuadrant(null)}
             sx={{
               borderRadius: "10px",
-              fontFamily: "Cairo, sans-serif",
               fontWeight: 700,
               textTransform: "none",
               color: "text.primary",
               borderColor: "divider",
             }}
           >
-            العودة للمصفوفة (2x2 Grid)
+            {t("eisenhower.backToMatrix")}
           </Button>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 600 }}>
-              الانتقال السريع:
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              {t("eisenhower.quickJump")}
             </Typography>
             {QUADRANTS.map((quad) => (
               <Chip
@@ -426,13 +428,13 @@ export default function EisenhowerMatrixView() {
                       variant="subtitle2"
                       sx={{ fontWeight: 700, color: q.color, lineHeight: 1.2 }}
                     >
-                      {q.id}: {q.title}
+                      {t(`eisenhower.${q.id.toLowerCase()}Title`)}
                     </Typography>
                     <Typography
                       variant="caption"
                       sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.75rem" }}
                     >
-                      {q.arabicTitle}
+                      {t(`eisenhower.${q.id.toLowerCase()}Subtitle`)}
                     </Typography>
                   </Box>
                 </Box>
@@ -448,7 +450,7 @@ export default function EisenhowerMatrixView() {
                       borderColor: "divider",
                     }}
                   />
-                  <Tooltip title={isMaximized ? "تصغير (العودة للمصفوفة)" : "تكبير المربع وعرض جميع المهام"}>
+                  <Tooltip title={isMaximized ? t("eisenhower.minimizeQuadrant") : t("eisenhower.maximizeQuadrant")}>
                     <IconButton
                       size="small"
                       onClick={(e) => {
@@ -479,7 +481,7 @@ export default function EisenhowerMatrixView() {
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder={`+ Add task to ${q.id}...`}
+                  placeholder={t("eisenhower.addTaskToQuadrant")}
                   value={quickInput[q.id] || ""}
                   onChange={(e) =>
                     setQuickInput((prev) => ({ ...prev, [q.id]: e.target.value }))
@@ -489,6 +491,13 @@ export default function EisenhowerMatrixView() {
                       e.preventDefault();
                       handleQuickAdd(q.id);
                     }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Add fontSize="small" sx={{ color: "text.secondary", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
                   }}
                   inputProps={{ dir: "auto" }}
                   sx={{
