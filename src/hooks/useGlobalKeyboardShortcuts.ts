@@ -181,8 +181,8 @@ export function useGlobalKeyboardShortcuts(options?: GlobalShortcutsOptions) {
       if (e.ctrlKey && (e.key === "Tab" || e.code === "Tab")) {
         e.preventDefault();
 
-        // 0: All, 1: Starred, 2: Eisenhower, 3: Analytics, 4+: User lists
-        const totalItems = 4 + taskLists.length;
+        // 0: All, 1: Starred, 2: Eisenhower, 3: Analytics, 4: Trash, 5+: User lists
+        const totalItems = 5 + taskLists.length;
         if (totalItems <= 1) return;
 
         let currentIndex = 0;
@@ -190,9 +190,10 @@ export function useGlobalKeyboardShortcuts(options?: GlobalShortcutsOptions) {
         else if (viewState.view === "starred") currentIndex = 1;
         else if (viewState.view === "eisenhower") currentIndex = 2;
         else if (viewState.view === "analytics") currentIndex = 3;
+        else if (viewState.view === "trash") currentIndex = 4;
         else if (viewState.view === "list") {
           const listIdx = taskLists.findIndex((l) => l.id === viewState.activeListId);
-          currentIndex = listIdx !== -1 ? 4 + listIdx : 0;
+          currentIndex = listIdx !== -1 ? 5 + listIdx : 0;
         }
 
         const nextIndex = e.shiftKey
@@ -211,10 +212,13 @@ export function useGlobalKeyboardShortcuts(options?: GlobalShortcutsOptions) {
         } else if (nextIndex === 3) {
           setViewState({ view: "analytics", activeListId: undefined, activeListIndex: -4 });
           if (taskViewMode === "eisenhower") setTaskViewMode("board");
+        } else if (nextIndex === 4) {
+          setViewState({ view: "trash", activeListId: undefined, activeListIndex: -5 });
+          if (taskViewMode === "eisenhower") setTaskViewMode("board");
         } else {
-          const list = taskLists[nextIndex - 4];
+          const list = taskLists[nextIndex - 5];
           if (list) {
-            setViewState({ view: "list", activeListId: list.id, activeListIndex: nextIndex - 4 });
+            setViewState({ view: "list", activeListId: list.id, activeListIndex: nextIndex - 5 });
             if (taskViewMode === "eisenhower") setTaskViewMode("board");
           }
         }

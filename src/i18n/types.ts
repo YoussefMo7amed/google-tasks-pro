@@ -56,6 +56,7 @@ export interface TranslationSchema {
     expandSidebar: string;
     collapseSidebar: string;
     tasks: string;
+    trash: string;
   };
   sync: {
     offlineMode: string;
@@ -265,5 +266,38 @@ export interface TranslationSchema {
     nothingToRedo: string;
     undoneNotice: string;
     redoneNotice: string;
+  };
+  trash: {
+    title: string;
+    subtitle: string;
+    emptyTitle: string;
+    emptySubtitle: string;
+    restore: string;
+    deletePermanently: string;
+    emptyTrash: string;
+    confirmEmptyTitle: string;
+    confirmEmptyMessage: string;
+    confirmPermanentDeleteTitle: string;
+    confirmPermanentDeleteMessage: string;
+    autoCleanSettings: string;
+    autoCleanTitle: string;
+    retentionLabel: string;
+    retention1Day: string;
+    retention3Days: string;
+    retention7Days: string;
+    retention30Days: string;
+    retentionNever: string;
+    retentionCustom: string;
+    customDaysInput: string;
+    daysUnit: string;
+    expiresIn: string;
+    neverExpires: string;
+    deletedAt: string;
+    taskRestored: string;
+    taskPermanentlyDeleted: string;
+    trashEmptied: string;
+    movedToTrash: string;
+    originalList: string;
+    activeTasksCount: string;
   };
 }

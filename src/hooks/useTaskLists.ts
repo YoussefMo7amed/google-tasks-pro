@@ -96,8 +96,25 @@ export function useTaskLists() {
       // Save fresh snapshot to cache
       offlineCacheService.saveSnapshot(lists);
 
-      // Update starred IDs in background
-      starred.getAll().then(setStarredIds).catch(console.warn);
+      // Update starred IDs in background and prune any orphaned IDs
+      starred.getAll().then((rawStarred) => {
+        const allTaskIds = new Set(lists.flatMap((list) => list.tasks.map((t) => t.id)));
+        const validStarred = new Set<string>();
+        const orphaned: string[] = [];
+
+        rawStarred.forEach((id) => {
+          if (allTaskIds.has(id)) {
+            validStarred.add(id);
+          } else {
+            orphaned.push(id);
+          }
+        });
+
+        if (orphaned.length > 0) {
+          Promise.all(orphaned.map((id) => starred.unstar(id))).catch(console.warn);
+        }
+        setStarredIds(validStarred);
+      }).catch(console.warn);
 
       // Schedule notifications in background without blocking UI
       const allTasks = lists.flatMap(list => list.tasks);

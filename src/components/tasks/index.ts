@@ -9,3 +9,4 @@ export { default as EisenhowerMatrixView } from "./EisenhowerMatrixView";
 export { default as AnalyticsView } from "./AnalyticsView";
 export { default as UnifiedListView } from "./UnifiedListView";
 export { default as CalendarTasksView } from "./CalendarTasksView";
+export { default as TrashTasksView } from "./TrashTasksView";

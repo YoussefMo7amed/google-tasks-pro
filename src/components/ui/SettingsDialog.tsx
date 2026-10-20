@@ -48,7 +48,9 @@ import {
   Check,
   Star,
   Translate,
+  DeleteOutline,
 } from '@mui/icons-material';
+import { trashService, TrashRetention } from '../../services/trash.service';
 import { useTranslation } from '../../i18n';
 import {
   loadSettings,
@@ -96,6 +98,10 @@ export default function SettingsDialog({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Trash Settings state
+  const [trashRetention, setTrashRetention] = useState<TrashRetention>(() => trashService.getSettings().retention);
+  const [trashCustomDays, setTrashCustomDays] = useState<number>(() => trashService.getSettings().customDays || 7);
+
   // AI Settings state
   const [aiSettings, setAiSettings] = useState<AISettings>(() => AISettingsService.load());
   const [selectedProviderTab, setSelectedProviderTab] = useState<AIProviderType>(() => aiSettings.provider || "gemini");
@@ -120,6 +126,10 @@ export default function SettingsDialog({
       setSelectedProviderTab(loadedAI.provider || "gemini");
       setTestResult(null);
       setNewKeyInput('');
+
+      const currentTrash = trashService.getSettings();
+      setTrashRetention(currentTrash.retention);
+      setTrashCustomDays(currentTrash.customDays || 7);
     }
   }, [open]);
 
@@ -310,6 +320,10 @@ export default function SettingsDialog({
     try {
       const updated = await saveSettings({ notificationHour, timeFormat });
       AISettingsService.save(aiSettings);
+      trashService.updateSettings({
+        retention: trashRetention,
+        customDays: Math.max(1, Number(trashCustomDays) || 1),
+      });
       onSettingsChange?.(updated);
       onClose();
     } catch (error) {
@@ -428,6 +442,49 @@ export default function SettingsDialog({
             >
               {t("settings.notificationsNotice", { time: formatHour(notificationHour, language, timeFormat) })}
             </Typography>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Trash Auto-Clean Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <DeleteOutline color="primary" />
+              <Typography variant="subtitle1" fontWeight={600}>
+                {t("trash.autoCleanTitle")}
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t("trash.retentionLabel")}
+            </Typography>
+
+            <FormControl fullWidth size="small" sx={{ mb: trashRetention === "custom" ? 2 : 1 }}>
+              <InputLabel id="trash-retention-label">{t("trash.autoCleanSettings")}</InputLabel>
+              <Select
+                labelId="trash-retention-label"
+                value={trashRetention}
+                label={t("trash.autoCleanSettings")}
+                onChange={(e) => setTrashRetention(e.target.value as TrashRetention)}
+              >
+                <MenuItem value="1d">{t("trash.retention1Day")}</MenuItem>
+                <MenuItem value="3d">{t("trash.retention3Days")}</MenuItem>
+                <MenuItem value="7d">{t("trash.retention7Days")}</MenuItem>
+                <MenuItem value="30d">{t("trash.retention30Days")}</MenuItem>
+                <MenuItem value="custom">{t("trash.retentionCustom")}</MenuItem>
+                <MenuItem value="never">{t("trash.retentionNever")}</MenuItem>
+              </Select>
+            </FormControl>
+
+            {trashRetention === "custom" && (
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label={t("trash.customDaysInput")}
+                value={trashCustomDays}
+                onChange={(e) => setTrashCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                inputProps={{ min: 1, max: 365 }}
+                sx={{ mb: 1 }}
+              />
+            )}
 
             <Divider sx={{ my: 3 }} />
 

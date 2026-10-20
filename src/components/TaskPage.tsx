@@ -19,6 +19,7 @@ import {
   AnalyticsView,
   UnifiedListView,
   CalendarTasksView,
+  TrashTasksView,
 } from "./tasks";
 
 export default function TaskPage() {
@@ -146,6 +147,8 @@ export default function TaskPage() {
         <AnalyticsView />
       ) : viewState.view === "eisenhower" ? (
         <EisenhowerMatrixView />
+      ) : viewState.view === "trash" ? (
+        <TrashTasksView />
       ) : taskViewMode === "list" ? (
         <UnifiedListView />
       ) : taskViewMode === "calendar" ? (

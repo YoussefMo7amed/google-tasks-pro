@@ -4,3 +4,4 @@ export { useTasks } from "./useTasks";
 export { useToast } from "./useToast";
 export { useUndoRedo } from "./useUndoRedo";
 export { useGlobalKeyboardShortcuts } from "./useGlobalKeyboardShortcuts";
+export { useTrash } from "./useTrash";

@@ -20,7 +20,7 @@ import TaskListItem from "./TaskListItem";
 import { useTranslation } from "../../i18n";
 
 export default function StarredTasksCard() {
-  const { t } = useTranslation();
+  const { t, language, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
   const { toggleTaskComplete, toggleTaskStar, deleteTask, moveTaskToList } = useTasks();
@@ -35,6 +35,17 @@ export default function StarredTasksCard() {
       }
     });
   });
+
+  const getTasksCountLabel = (count: number) => {
+    if (language === "ar") {
+      if (count === 0) return "لا توجد مهام";
+      if (count === 1) return "مهمة واحدة";
+      if (count === 2) return "مهمتان";
+      if (count >= 3 && count <= 10) return `${count} مهام`;
+      return `${count} مهمة`;
+    }
+    return `${count} ${count === 1 ? "task" : "tasks"}`;
+  };
 
   const handleTaskToggle = async (task: AppTask) => {
     await toggleTaskComplete(task.listId, task.id);
@@ -88,8 +99,8 @@ export default function StarredTasksCard() {
         <Typography variant="subtitle1" fontWeight={500}>
           {t("navigation.starred")}
         </Typography>
-        <Typography variant="caption" sx={{ ml: "auto" }}>
-          {starredTasks.length} {t("common.tasks")}
+        <Typography variant="caption" sx={{ ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }) }}>
+          {getTasksCountLabel(starredTasks.length)}
         </Typography>
       </Box>
 

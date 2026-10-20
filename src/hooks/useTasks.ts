@@ -18,9 +18,10 @@ import { historyService } from "../services/history.service";
 import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
 import { undoRedoService } from "../services/undo-redo.service";
+import { trashService } from "../services/trash.service";
 
 export function useTasks() {
-  const { tasks: service } = useServices();
+  const { tasks: service, starred } = useServices();
   const [taskLists, setTaskLists] = useRecoilState(taskListsAtom);
   const [starredIds, setStarredIds] = useRecoilState(starredTaskIdsAtom);
   const setToast = useSetRecoilState(toastAtom);
@@ -55,9 +56,12 @@ export function useTasks() {
    * Helper to restore a previously deleted task (used by Undo)
    */
   const restoreTask = useCallback(async (listId: string, task: AppTask) => {
+    let resolvedListId = listId;
     setTaskLists(prev => {
+      const targetExists = prev.some(l => l.id === listId);
+      resolvedListId = targetExists ? listId : (prev[0]?.id || listId);
       const next = prev.map(list => {
-        if (list.id !== listId) return list;
+        if (list.id !== resolvedListId) return list;
         return {
           ...list,
           tasks: [task, ...list.tasks],
@@ -70,12 +74,13 @@ export function useTasks() {
 
     if (task.isStarred) {
       setStarredIds(prev => new Set(prev).add(task.id));
+      starred.star(task.id).catch(console.warn);
     }
 
     if (!navigator.onLine || !service || task.id.startsWith("temp_")) {
       syncQueueService.enqueue(
         "CREATE_TASK",
-        listId,
+        resolvedListId,
         {
           title: task.title,
           notes: task.notes,
@@ -91,14 +96,14 @@ export function useTasks() {
           title: task.title,
           notes: task.notes,
           due: task.due ? new Date(task.due) : undefined,
-          listId,
+          listId: resolvedListId,
           parentId: task.parent,
         });
       } catch (e) {
         console.warn("Failed to restore task online:", e);
       }
     }
-  }, [service, setTaskLists, setStarredIds]);
+  }, [service, starred, setTaskLists, setStarredIds]);
   restoreTaskRef.current = restoreTask;
 
   /**
@@ -375,8 +380,10 @@ export function useTasks() {
    * Delete a task
    */
   const deleteTask = useCallback(async (listId: string, taskId: string, isUndoRedoAction = false): Promise<boolean> => {
-    const taskToDelete = taskLists.find(l => l.id === listId)?.tasks.find(t => t.id === taskId);
+    const listObj = taskLists.find(l => l.id === listId);
+    const taskToDelete = listObj?.tasks.find(t => t.id === taskId);
     if (!isUndoRedoAction && taskToDelete) {
+      trashService.moveToTrash(taskToDelete, listObj?.title);
       const savedTask = { ...taskToDelete };
       undoRedoService.push({
         id: `delete_${taskId}_${Date.now()}`,
@@ -384,6 +391,7 @@ export function useTasks() {
         description: `Delete "${savedTask.title}"`,
         descriptionAr: `حذف "${savedTask.title}"`,
         undo: async () => {
+          trashService.permanentDelete(savedTask.id);
           await restoreTaskRef.current?.(listId, savedTask);
         },
         redo: async () => {
@@ -413,9 +421,10 @@ export function useTasks() {
         newSet.delete(taskId);
         return newSet;
       });
+      starred.unstar(taskId).catch(console.warn);
 
       syncQueueService.enqueue("DELETE_TASK", listId, {}, taskId);
-      setToast({ title: "Task deleted (offline 💾)", type: "warning" });
+      setToast({ title: "Task moved to trash (offline 💾)", type: "warning" });
       return true;
     };
 
@@ -448,17 +457,18 @@ export function useTasks() {
         newSet.delete(taskId);
         return newSet;
       });
+      starred.unstar(taskId).catch(console.warn);
 
       // Cancel any scheduled notification
       await cancelTaskNotification(taskId);
 
-      setToast({ title: "Task deleted", type: "warning" });
+      setToast({ title: "Task moved to trash", type: "warning" });
       return true;
     } catch (err) {
       console.warn("Failed to delete task online, falling back to local delete:", err);
       return performLocalDelete();
     }
-  }, [service, setTaskLists, setStarredIds, setToast]);
+  }, [service, starred, taskLists, setTaskLists, setStarredIds, setToast]);
   deleteTaskRef.current = deleteTask;
 
   /**

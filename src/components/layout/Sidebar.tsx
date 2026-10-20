@@ -4,7 +4,7 @@
  * Navigation sidebar with starred view, task list management, and collapse functionality.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Button,
@@ -39,10 +39,11 @@ import {
   Sync,
   AutoAwesome,
   KeyboardAltOutlined,
+  DeleteOutline,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom } from "../../store";
-import { useTaskLists } from "../../hooks";
+import { useTaskLists, useTrash } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
 import SettingsDialog from "../ui/SettingsDialog";
@@ -120,6 +121,16 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
     onViewChange?.("analytics");
   };
 
+  const { count: trashCount } = useTrash();
+
+  const handleViewTrash = () => {
+    setViewState({ view: "trash", activeListId: undefined, activeListIndex: -5 });
+    if (taskViewMode === "eisenhower") {
+      setTaskViewMode("board");
+    }
+    onViewChange?.("trash");
+  };
+
   const handleListClick = (listId: string, index: number) => {
     setViewState({ view: "list", activeListId: listId, activeListIndex: index });
     if (taskViewMode === "eisenhower") {
@@ -134,7 +145,17 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
     toggleListVisibility(listId);
   };
 
-  const starredCount = starredIds.size;
+  const starredCount = useMemo(() => {
+    let count = 0;
+    for (const list of taskLists) {
+      for (const task of list.tasks) {
+        if (starredIds.has(task.id)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }, [taskLists, starredIds]);
   const sidebarWidth = isCollapsed ? 64 : 260;
 
   return (
@@ -255,6 +276,14 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   color={viewState.view === "analytics" ? "warning" : "default"}
                 >
                   <LocalFireDepartment />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={`${t("navigation.trash")} (${trashCount})`} placement={isRtl ? "left" : "right"}>
+                <IconButton 
+                  onClick={handleViewTrash}
+                  color={viewState.view === "trash" ? "error" : "default"}
+                >
+                  <DeleteOutline />
                 </IconButton>
               </Tooltip>
               <Tooltip title={`${t("navigation.aiCopilot")} (⌘K)`} placement={isRtl ? "left" : "right"}>
@@ -406,6 +435,47 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                       textAlign: isRtl ? "right" : "left",
                     }}
                   />
+                </ListItemButton>
+
+                {/* Trash / Deleted Tasks */}
+                <ListItemButton
+                  selected={viewState.view === "trash"}
+                  onClick={handleViewTrash}
+                  sx={{
+                    borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
+                    ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),
+                    "&.Mui-selected": {
+                      bgcolor: "rgba(244, 67, 54, 0.16)",
+                      "&:hover": { bgcolor: "rgba(244, 67, 54, 0.2)" },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36, color: "inherit" }}>
+                    <DeleteOutline
+                      fontSize="small"
+                      color={viewState.view === "trash" ? "error" : "inherit"}
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={t("navigation.trash")}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      fontWeight: viewState.view === "trash" ? 600 : 400,
+                      textAlign: isRtl ? "right" : "left",
+                    }}
+                  />
+                  {trashCount > 0 && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
+                        fontWeight: 600,
+                      }}
+                    >
+                      {trashCount}
+                    </Typography>
+                  )}
                 </ListItemButton>
 
                 {/* AI Copilot */}
