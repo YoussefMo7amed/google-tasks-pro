@@ -222,6 +222,11 @@ export const ar: TranslationSchema = {
     trayTitle: "شريط النظام وسلوك النوافذ",
     closeToTray: "تصغير إلى شريط النظام عند إغلاق النافذة",
     minimizeToTray: "تصغير إلى شريط النظام عند الضغط على تصغير",
+    customOAuthTitle: "بيانات اعتماد Google OAuth (متقدم)",
+    customOAuthDesc: "يمكنك اختياريًا إدخال Client ID و Secret الخاصين بك في Google Cloud لوصول مباشر وخاص.",
+    customClientId: "Client ID (معرف العميل)",
+    customClientSecret: "Client Secret (السر)",
+    customOAuthNotice: "اترك الحقول فارغة لاستخدام الاعتماد المدمج افتراضيًا. تسري التغييرات عند تسجيل الدخول القادم.",
   },
   auth: {
     signIn: "تسجيل الدخول",

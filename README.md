@@ -129,21 +129,22 @@ npm run build:app
 
 ## ⚙️ Google Cloud OAuth Configuration
 
-To connect with your personal Google account:
-1. Open the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a project and enable the **Google Tasks API**.
-3. Configure the **OAuth Consent Screen** (External or Internal).
-4. Create an **OAuth 2.0 Client ID** choosing **Desktop application**.
-5. Create a `.env` file in the root directory:
-   ```env
-   VITE_GOOGLE_CLIENT_ID=your_client_id_here
-   VITE_GOOGLE_CLIENT_SECRET=your_client_secret_here
-   ```
+To connect the application with Google Tasks, you can use the built-in credentials or provide your own Google Cloud project credentials:
+* **Step-by-Step Setup Guide:** See [docs/google-cloud-setup.md](./docs/google-cloud-setup.md) for full instructions on setting up your Google Cloud project, enabling the Tasks API, publishing your consent screen, or running in private test mode.
+* **In-App Configuration:** You can enter your custom `Client ID` and `Client Secret` directly in the desktop app via **Settings ⚙️ → General → Google OAuth Credentials**.
+* Alternatively, supply them in a `.env` file before compiling:
+  ```env
+  VITE_GOOGLE_CLIENT_ID=your_client_id_here
+  VITE_GOOGLE_CLIENT_SECRET=your_client_secret_here
+  ```
 
 ---
 
-## 📖 Developer & Agent Documentation
+## 📖 Documentation & Legal
 
+* [docs/google-cloud-setup.md](./docs/google-cloud-setup.md) — Complete walkthrough for Google Cloud Console OAuth setup & publishing.
+* [docs/privacy-policy.md](./docs/privacy-policy.md) — Application Privacy Policy (zero server-side storage, local-only data flow).
+* [docs/terms-of-service.md](./docs/terms-of-service.md) — Terms of Service and open-source license disclaimer.
 * [AGENTS.md](./AGENTS.md) — Primary orientation and developer guide for AI coding assistants and contributors.
 * [ARCHITECTURE.md](./ARCHITECTURE.md) — Historic architectural notes and refactoring journey.
 

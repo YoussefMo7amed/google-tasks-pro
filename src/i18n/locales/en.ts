@@ -222,6 +222,11 @@ export const en: TranslationSchema = {
     trayTitle: "System Tray & Window Behavior",
     closeToTray: "Minimize to system tray on window close",
     minimizeToTray: "Minimize to system tray on minimize",
+    customOAuthTitle: "Google OAuth Credentials (Advanced)",
+    customOAuthDesc: "Optionally provide your own Google Cloud Client ID & Secret for private API access.",
+    customClientId: "Client ID",
+    customClientSecret: "Client Secret",
+    customOAuthNotice: "Leave empty to use default built-in credentials. Changes take effect on next sign in.",
   },
   auth: {
     signIn: "Sign In",

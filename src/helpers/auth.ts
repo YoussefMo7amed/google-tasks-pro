@@ -2,7 +2,7 @@ import { shell } from "@tauri-apps/api";
 import axios from "axios";
 import { UserProfile } from "../types/googleapis";
 import { readTextFile, removeFile, writeTextFile } from "@tauri-apps/api/fs";
-import { CLIENT_ID, CLIENT_SECRET } from "../config/credentials";
+import { getClientId, getClientSecret } from "../config/credentials";
 import settings from "../config/settings";
 import { generate_oauth_port, get_access_token, get_auth_code, save_access_token, save_auth_code } from "./invoker";
 import { AccessToken } from "./commands";
@@ -35,8 +35,8 @@ export async function getAccessToken(code: string) : Promise<AccessToken> {
         const port = await portManager.getPort();
         const data = {
             code,
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
+            client_id: getClientId(),
+            client_secret: getClientSecret(),
             redirect_uri: getLocalHostUrl(port),
             grant_type: "authorization_code",
         };
@@ -59,8 +59,8 @@ export async function refreshAccessToken(refreshToken: string) : Promise<AccessT
     try {
         const data = {
             refresh_token: refreshToken,
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
+            client_id: getClientId(),
+            client_secret: getClientSecret(),
             grant_type: "refresh_token",
         };
         console.log('attempting to refresh access token');
@@ -127,7 +127,7 @@ export async function openAuthWindow() {
     url.searchParams.append("access_type", "offline");
     url.searchParams.append("prompt", "consent");
     url.searchParams.append("response_type", "code");
-    url.searchParams.append("client_id", CLIENT_ID);
+    url.searchParams.append("client_id", getClientId());
     url.searchParams.append("redirect_uri", getLocalHostUrl(await portManager.getPort()));
     url.searchParams.append("include_granted_scopes", "true");
     url.searchParams.append("state", "state_parameter_passthrough_value");

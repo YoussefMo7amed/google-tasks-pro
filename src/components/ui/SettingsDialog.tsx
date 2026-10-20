@@ -51,6 +51,7 @@ import {
   DeleteOutline,
 } from '@mui/icons-material';
 import { trashService, TrashRetention } from '../../services/trash.service';
+import { setCustomCredentials } from '../../config/credentials';
 import { useTranslation } from '../../i18n';
 import {
   loadSettings,
@@ -102,6 +103,10 @@ export default function SettingsDialog({
   const [trashRetention, setTrashRetention] = useState<TrashRetention>(() => trashService.getSettings().retention);
   const [trashCustomDays, setTrashCustomDays] = useState<number>(() => trashService.getSettings().customDays || 7);
 
+  // Custom Google OAuth Credentials state
+  const [customClientId, setCustomClientId] = useState<string>(() => localStorage.getItem('custom_google_client_id') || '');
+  const [customClientSecret, setCustomClientSecret] = useState<string>(() => localStorage.getItem('custom_google_client_secret') || '');
+
   // AI Settings state
   const [aiSettings, setAiSettings] = useState<AISettings>(() => AISettingsService.load());
   const [selectedProviderTab, setSelectedProviderTab] = useState<AIProviderType>(() => aiSettings.provider || "gemini");
@@ -130,6 +135,9 @@ export default function SettingsDialog({
       const currentTrash = trashService.getSettings();
       setTrashRetention(currentTrash.retention);
       setTrashCustomDays(currentTrash.customDays || 7);
+
+      setCustomClientId(localStorage.getItem('custom_google_client_id') || '');
+      setCustomClientSecret(localStorage.getItem('custom_google_client_secret') || '');
     }
   }, [open]);
 
@@ -324,6 +332,7 @@ export default function SettingsDialog({
         retention: trashRetention,
         customDays: Math.max(1, Number(trashCustomDays) || 1),
       });
+      setCustomCredentials(customClientId.trim(), customClientSecret.trim());
       onSettingsChange?.(updated);
       onClose();
     } catch (error) {
@@ -485,6 +494,48 @@ export default function SettingsDialog({
                 sx={{ mb: 1 }}
               />
             )}
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Google OAuth Credentials Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Key color="primary" />
+              <Typography variant="subtitle1" fontWeight={600}>
+                {t("settings.customOAuthTitle")}
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t("settings.customOAuthDesc")}
+            </Typography>
+
+            <TextField
+              fullWidth
+              size="small"
+              label={t("settings.customClientId")}
+              value={customClientId}
+              onChange={(e) => setCustomClientId(e.target.value)}
+              placeholder="xxxx.apps.googleusercontent.com"
+              sx={{ mb: 2 }}
+            />
+
+            <TextField
+              fullWidth
+              size="small"
+              type="password"
+              label={t("settings.customClientSecret")}
+              value={customClientSecret}
+              onChange={(e) => setCustomClientSecret(e.target.value)}
+              placeholder="GOCSPX-xxxx"
+              sx={{ mb: 1 }}
+            />
+
+            <Typography 
+              variant="caption" 
+              color="text.secondary" 
+              sx={{ display: 'block', mb: 1 }}
+            >
+              {t("settings.customOAuthNotice")}
+            </Typography>
 
             <Divider sx={{ my: 3 }} />
 

@@ -237,6 +237,11 @@ export interface TranslationSchema {
     trayTitle: string;
     closeToTray: string;
     minimizeToTray: string;
+    customOAuthTitle: string;
+    customOAuthDesc: string;
+    customClientId: string;
+    customClientSecret: string;
+    customOAuthNotice: string;
   };
   auth: {
     signIn: string;
