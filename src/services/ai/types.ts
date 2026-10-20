@@ -12,12 +12,34 @@ export type AIProviderType =
   | "ollama"
   | "lm_studio";
 
-export interface AISettings {
+export interface ProviderConfig {
   provider: AIProviderType;
   apiKey: string;
+  apiKeys?: string[];
   model: string;
   baseUrl?: string;
   temperature?: number;
+}
+
+export interface AISettings {
+  provider: AIProviderType;
+  apiKey: string;
+  apiKeys?: string[];
+  model: string;
+  baseUrl?: string;
+  temperature?: number;
+
+  // Backup Agent configuration
+  backupEnabled?: boolean;
+  backupProvider?: AIProviderType;
+  backupApiKey?: string;
+  backupApiKeys?: string[];
+  backupModel?: string;
+  backupBaseUrl?: string;
+  backupTemperature?: number;
+
+  // Saved configs for each provider so keys and models are never lost
+  providers?: Record<AIProviderType, ProviderConfig>;
 }
 
 export type AICopilotActionType =
@@ -134,6 +156,9 @@ export interface TaskContextSnapshot {
 export interface AIProviderResponse {
   text: string;
   actions?: AICopilotAction[];
+  usedBackup?: boolean;
+  usedProvider?: string;
+  usedModel?: string;
 }
 
 export interface IAIProvider {

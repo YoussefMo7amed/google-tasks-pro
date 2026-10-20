@@ -16,18 +16,10 @@ import {
   Box,
 } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
-  arrayMove,
 } from "@dnd-kit/sortable";
 import { AppTaskList, AppTask } from "../../types/app";
 import { useTasks } from "../../hooks";
@@ -63,15 +55,16 @@ export default function TaskListCard({
     moveTaskToList,
     indentTask,
     unindentTask,
-    reorderTasksLocally,
   } = useTasks();
 
-  // Sensors for drag and drop (pointer only - keyboard conflicts with text inputs)
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
-  );
+  // Droppable container so tasks from other lists can be dropped here
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `droppable_${taskList.id}`,
+    data: {
+      type: "list_droppable",
+      listId: taskList.id,
+    },
+  });
 
   // Organize tasks so subtasks appear immediately after their parent
   const organizeWithSubtasks = (tasks: AppTask[]): AppTask[] => {
@@ -202,45 +195,6 @@ export default function TaskListCard({
     await unindentTask(taskList.id, task.id);
   };
 
-  // Handle drag end for task reordering
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const oldIndex = incompleteTasks.findIndex(t => t.id === active.id);
-    const newIndex = incompleteTasks.findIndex(t => t.id === over.id);
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      // Get the dragged task and its subtasks
-      const draggedTask = incompleteTasks[oldIndex];
-      const draggedSubtasks = incompleteTasks.filter(t => t.parent === draggedTask.id);
-      
-      // If dragging a parent task, move it with its children
-      if (draggedSubtasks.length > 0) {
-        // Remove the task and its subtasks
-        const withoutDragged = incompleteTasks.filter(
-          t => t.id !== draggedTask.id && t.parent !== draggedTask.id
-        );
-        // Insert at new position
-        const adjustedNewIndex = withoutDragged.findIndex(t => t.id === over.id);
-        const newOrder = [...withoutDragged];
-        newOrder.splice(adjustedNewIndex !== -1 ? adjustedNewIndex : newOrder.length, 0, draggedTask, ...draggedSubtasks);
-        
-        // Combine with completed tasks
-        const allTasks = [...newOrder, ...completedTasks];
-        reorderTasksLocally(taskList.id, allTasks);
-      } else {
-        // Simple reorder for single task
-        const newOrder = arrayMove(incompleteTasks, oldIndex, newIndex);
-        const allTasks = [...newOrder, ...completedTasks];
-        reorderTasksLocally(taskList.id, allTasks);
-      }
-    }
-  };
-
   return (
     <Paper
       elevation={0}
@@ -250,14 +204,18 @@ export default function TaskListCard({
         height: isDragOverlay ? "auto" : "calc(100% - 16px)",
         maxHeight: isDragOverlay ? "none" : "calc(100% - 16px)",
         flexShrink: 0,
-        bgcolor: "background.paper",
+        bgcolor: isOver ? "action.hover" : "background.paper",
         borderRadius: "16px",
-        border: "1px solid",
-        borderColor: isActive ? "primary.main" : "divider",
+        border: "1.5px solid",
+        borderColor: isOver ? "primary.main" : isActive ? "primary.main" : "divider",
         display: "flex",
         flexDirection: "column",
-        transition: "border-color 0.2s, box-shadow 0.2s",
-        boxShadow: isActive ? "0 0 0 1px rgba(138, 180, 248, 0.35)" : "none",
+        transition: "border-color 0.2s, box-shadow 0.2s, background-color 0.2s",
+        boxShadow: isOver
+          ? "0 0 0 2px rgba(25, 118, 210, 0.35)"
+          : isActive
+          ? "0 0 0 1px rgba(138, 180, 248, 0.35)"
+          : "none",
         overflow: "hidden",
         pointerEvents: isDragOverlay ? "none" : "auto",
       }}
@@ -274,13 +232,16 @@ export default function TaskListCard({
       {/* Add Task */}
       <AddTaskInput onAdd={handleAddTask} />
 
-      {/* Task List */}
+      {/* Task List - Droppable Area */}
       <List
+        ref={setDroppableRef}
         sx={{
           py: 0,
           flex: 1,
           overflowY: "auto",
           overflowX: "hidden",
+          bgcolor: isOver ? "rgba(25, 118, 210, 0.05)" : "transparent",
+          transition: "background-color 0.2s",
           scrollbarWidth: "thin",
           scrollbarColor: "transparent transparent",
           "&:hover": {
@@ -302,41 +263,44 @@ export default function TaskListCard({
         }}
       >
         {incompleteTasks.length === 0 && completedTasks.length === 0 && (
-          <Box sx={{ py: 4, textAlign: "center" }}>
-            <Typography variant="body2" color="text.secondary">
-              No tasks
+          <Box
+            sx={{
+              py: 5,
+              textAlign: "center",
+              border: isOver ? "2px dashed" : "none",
+              borderColor: "primary.main",
+              borderRadius: 2,
+              m: 1,
+            }}
+          >
+            <Typography variant="body2" color={isOver ? "primary.main" : "text.secondary"}>
+              {isOver ? "أفلت المهمة هنا لنقلها إلى هذه القائمة" : "No tasks"}
             </Typography>
           </Box>
         )}
 
-        {/* Draggable incomplete tasks */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+        {/* Sortable incomplete tasks in unified parent DndContext */}
+        <SortableContext
+          items={incompleteTasks.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
         >
-          <SortableContext
-            items={incompleteTasks.map(t => t.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {incompleteTasks.map((task) => (
-              <SortableTaskItem
-                key={`incomplete-${task.id}`}
-                task={task}
-                onToggle={handleTaskToggle}
-                onStar={handleTaskStar}
-                onDelete={handleTaskDelete}
-                onMove={handleTaskMove}
-                onUpdate={handleTaskUpdate}
-                onAddSubtask={handleAddSubtask}
-                onIndent={handleIndentTask}
-                onUnindent={handleUnindentTask}
-                onOpenDetail={setDetailTask}
-                parentTaskTitle={task.parent ? taskTitleMap.get(task.parent) : undefined}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+          {incompleteTasks.map((task) => (
+            <SortableTaskItem
+              key={`incomplete-${task.id}`}
+              task={task}
+              onToggle={handleTaskToggle}
+              onStar={handleTaskStar}
+              onDelete={handleTaskDelete}
+              onMove={handleTaskMove}
+              onUpdate={handleTaskUpdate}
+              onAddSubtask={handleAddSubtask}
+              onIndent={handleIndentTask}
+              onUnindent={handleUnindentTask}
+              onOpenDetail={setDetailTask}
+              parentTaskTitle={task.parent ? taskTitleMap.get(task.parent) : undefined}
+            />
+          ))}
+        </SortableContext>
 
         {/* Completed Section */}
         {completedTasks.length > 0 && (

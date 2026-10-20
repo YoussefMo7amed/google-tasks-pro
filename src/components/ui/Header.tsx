@@ -21,6 +21,7 @@ import {
   userProfileSelector,
 } from "../../config/states";
 import { aiCopilotOpenAtom } from "../../store";
+import ViewSwitcher from "./ViewSwitcher";
 
 export default function Header() {
   const loggedIn = useRecoilValue(loggedInSelector);
@@ -67,6 +68,9 @@ export default function Header() {
         <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>
           Tasks
         </Typography>
+
+        <ViewSwitcher />
+
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Button
             size="small"

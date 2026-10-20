@@ -263,10 +263,14 @@ export default function AICopilotModal({
       const context = buildContextSnapshot();
       const response = await aiService.sendMessage(newMessages, context);
 
+      const backupNotice = response.usedBackup
+        ? `\n\n> 🛡️ *تمت الإجابة بواسطة الوكيل الاحتياطي (${response.usedModel || response.usedProvider})*\n> *(Handled via Backup Agent)*`
+        : "";
+
       const assistantMessage: AICopilotMessage = {
         id: `assistant_${Date.now()}`,
         role: "assistant",
-        content: response.text,
+        content: response.text + backupNotice,
         actions:
           response.actions && response.actions.length > 0
             ? response.actions

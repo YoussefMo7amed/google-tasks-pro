@@ -1,16 +1,22 @@
 /**
  * Task Lists Container
  * 
- * Horizontal scrollable container for task list cards with drag-and-drop.
- * Also shows StarredTasksCard when in starred view.
+ * Horizontal scrollable container for task list cards with unified drag-and-drop.
+ * Supports:
+ * - Dragging tasks between different lists (Cross-list drag-and-drop)
+ * - Reordering tasks within the same list
+ * - Reordering task list columns
+ * - Also shows StarredTasksCard when in starred view.
  */
 
 import { useRef, useState, useEffect } from "react";
-import { Box, IconButton, Typography, CircularProgress } from "@mui/material";
-import { ChevronLeft, ChevronRight } from "@mui/icons-material";
+import { Box, IconButton, Typography, CircularProgress, Paper, Button, Alert } from "@mui/material";
+import { ChevronLeft, ChevronRight, LockOutlined, Google } from "@mui/icons-material";
+import { handleLogin } from "../../helpers/auth";
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -23,19 +29,25 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
+  arrayMove,
 } from "@dnd-kit/sortable";
-import { useTaskLists } from "../../hooks";
+import { useTaskLists, useTasks } from "../../hooks";
 import { useRecoilValue } from "recoil";
 import { viewStateAtom } from "../../store";
+import { AppTask, AppTaskList } from "../../types/app";
 import TaskListCard from "./TaskListCard";
 import SortableTaskCard from "./SortableTaskCard";
 import StarredTasksCard from "./StarredTasksCard";
+import TaskListItem from "./TaskListItem";
 
 export default function TaskListsContainer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { taskLists, loading, error, fetchTaskLists, reorderTaskLists } = useTaskLists();
+  const { moveTaskToList, reorderTasksLocally } = useTasks();
   const viewState = useRecoilValue(viewStateAtom);
-  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const [activeTask, setActiveTask] = useState<AppTask | null>(null);
+  const [activeList, setActiveList] = useState<AppTaskList | null>(null);
 
   // Fetch task lists on mount
   useEffect(() => {
@@ -45,7 +57,7 @@ export default function TaskListsContainer() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -55,7 +67,7 @@ export default function TaskListsContainer() {
 
   const scroll = (direction: "left" | "right") => {
     if (containerRef.current) {
-      const scrollAmount = 300;
+      const scrollAmount = 320;
       containerRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
@@ -64,36 +76,108 @@ export default function TaskListsContainer() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const data = event.active.data.current;
+    if (data?.type === "task") {
+      setActiveTask(data.task);
+      setActiveList(null);
+    } else if (data?.type === "column") {
+      setActiveList(data.list);
+      setActiveTask(null);
+    }
     document.body.style.cursor = "grabbing";
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveId(null);
+    setActiveTask(null);
+    setActiveList(null);
     document.body.style.cursor = "";
 
-    if (over && active.id !== over.id) {
-      const oldIndex = taskLists.findIndex((list) => list.id === active.id);
-      const newIndex = taskLists.findIndex((list) => list.id === over.id);
+    if (!over) return;
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        reorderTaskLists(oldIndex, newIndex);
+    const activeData = active.data.current;
+    const overData = over.data.current;
+
+    // 1. Column reordering
+    if (activeData?.type === "column") {
+      const activeListId = activeData.listId;
+      const overListId = overData?.listId;
+
+      if (overListId && activeListId !== overListId) {
+        const oldIndex = taskLists.findIndex((list) => list.id === activeListId);
+        const newIndex = taskLists.findIndex((list) => list.id === overListId);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          reorderTaskLists(oldIndex, newIndex);
+        }
+      }
+      return;
+    }
+
+    // 2. Task moving or reordering
+    if (activeData?.type === "task") {
+      const sourceListId = activeData.listId;
+      const taskId = activeData.taskId;
+
+      // Resolve destination list ID
+      let targetListId: string | undefined;
+
+      if (overData?.type === "task") {
+        targetListId = overData.listId;
+      } else if (overData?.type === "list_droppable") {
+        targetListId = overData.listId;
+      } else if (overData?.type === "column") {
+        targetListId = overData.listId;
+      } else if (typeof over.id === "string") {
+        if (over.id.startsWith("droppable_")) {
+          targetListId = over.id.replace("droppable_", "");
+        } else if (over.id.startsWith("col_")) {
+          targetListId = over.id.replace("col_", "");
+        }
+      }
+
+      if (!targetListId) return;
+
+      // CASE 2A: Dropped onto ANOTHER list! (Cross-list drag-and-drop)
+      if (sourceListId !== targetListId) {
+        await moveTaskToList(sourceListId, taskId, targetListId);
+        return;
+      }
+
+      // CASE 2B: Reordered within the SAME list
+      if (sourceListId === targetListId && overData?.type === "task" && active.id !== over.id) {
+        const list = taskLists.find((l) => l.id === sourceListId);
+        if (!list) return;
+
+        const tasks = [...list.tasks];
+        const oldIndex = tasks.findIndex((t) => t.id === active.id);
+        const newIndex = tasks.findIndex((t) => t.id === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const reordered = arrayMove(tasks, oldIndex, newIndex);
+          reorderTasksLocally(sourceListId, reordered);
+        }
       }
     }
   };
 
   const handleDragCancel = () => {
-    setActiveId(null);
+    setActiveTask(null);
+    setActiveList(null);
     document.body.style.cursor = "";
   };
 
-  const activeList = activeId
-    ? taskLists.find((list) => list.id === activeId)
-    : null;
+  // Custom collision detection: checks pointerWithin first, then closestCorners
+  const collisionDetection = (args: any) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+    return closestCorners(args);
+  };
 
   // Filter visible lists
-  const visibleLists = taskLists.filter(list => list.isVisible);
+  const visibleLists = taskLists.filter((list) => list.isVisible);
 
   if (loading && taskLists.length === 0) {
     return (
@@ -103,10 +187,59 @@ export default function TaskListsContainer() {
     );
   }
 
-  if (error) {
+  if (error && taskLists.length === 0) {
+    const isAuthError = typeof error === "string" && (error.includes("401") || error.toLowerCase().includes("session") || error.toLowerCase().includes("unauthorized"));
     return (
-      <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Typography color="error">{error}</Typography>
+      <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
+        {isAuthError ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              maxWidth: 420,
+              textAlign: "center",
+              bgcolor: "background.paper",
+              borderRadius: 3,
+              border: 1,
+              borderColor: "divider",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                bgcolor: "rgba(234, 67, 53, 0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <LockOutlined sx={{ fontSize: 32, color: "error.main" }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              انتهت جلسة تسجيل الدخول
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              انتهت صلاحية جلسة Google Tasks. يرجى تسجيل الدخول مرة أخرى لمزامنة مهامك وتحديثها.
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Google />}
+              onClick={() => handleLogin(true)}
+              sx={{ mt: 1, borderRadius: 2 }}
+            >
+              تسجيل الدخول مع Google
+            </Button>
+          </Paper>
+        ) : (
+          <Typography color="error">{error}</Typography>
+        )}
       </Box>
     );
   }
@@ -150,6 +283,22 @@ export default function TaskListsContainer() {
         alignItems: "stretch",
       }}
     >
+      {/* Banner when viewing cached tasks during session expiration */}
+      {error && (
+        <Box sx={{ position: "absolute", top: 8, left: 60, right: 60, zIndex: 12 }}>
+          <Alert
+            severity="warning"
+            action={
+              <Button color="inherit" size="small" onClick={() => handleLogin(true)}>
+                تسجيل الدخول
+              </Button>
+            }
+          >
+            انتهت صلاحية جلسة Google Tasks. أنت تشاهد المهام المحفوظة محلياً — يرجى إعادة تسجيل الدخول لمزامنة التغييرات.
+          </Alert>
+        </Box>
+      )}
+
       {/* Left scroll button */}
       <IconButton
         onClick={() => scroll("left")}
@@ -176,13 +325,13 @@ export default function TaskListsContainer() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
         <SortableContext
-          items={visibleLists.map((list) => list.id)}
+          items={visibleLists.map((list) => `col_${list.id}`)}
           strategy={horizontalListSortingStrategy}
         >
           <Box
@@ -215,13 +364,13 @@ export default function TaskListsContainer() {
           </Box>
         </SortableContext>
 
-        {/* Drag Overlay */}
-        <DragOverlay>
+        {/* Unified Drag Overlay */}
+        <DragOverlay dropAnimation={{ duration: 150, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
           {activeList ? (
-            <Box 
-              sx={{ 
-                opacity: 0.9, 
-                transform: "rotate(3deg)",
+            <Box
+              sx={{
+                opacity: 0.9,
+                transform: "rotate(2deg)",
                 cursor: "grabbing",
               }}
             >
@@ -231,6 +380,29 @@ export default function TaskListsContainer() {
                 isDragOverlay
               />
             </Box>
+          ) : activeTask ? (
+            <Paper
+              elevation={6}
+              sx={{
+                width: 310,
+                borderRadius: 2,
+                p: 0.5,
+                bgcolor: "background.paper",
+                border: "1.5px solid",
+                borderColor: "primary.main",
+                transform: "rotate(2deg)",
+                cursor: "grabbing",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+              }}
+            >
+              <TaskListItem
+                task={activeTask}
+                onToggle={() => {}}
+                onStar={() => {}}
+                onDelete={() => {}}
+                onMove={() => {}}
+              />
+            </Paper>
           ) : null}
         </DragOverlay>
       </DndContext>

@@ -6,12 +6,20 @@
  */
 
 import { useEffect } from "react";
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography, Button, Paper } from "@mui/material";
+import { LockOutlined, Google } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { accessTokenSelector } from "../config/states";
-import { accessTokenAtom, viewStateAtom } from "../store";
+import { accessTokenAtom, viewStateAtom, taskViewModeAtom } from "../store";
 import { useTaskLists } from "../hooks";
-import { TaskListsContainer, EisenhowerMatrixView, AnalyticsView } from "./tasks";
+import { handleLogin } from "../helpers/auth";
+import {
+  TaskListsContainer,
+  EisenhowerMatrixView,
+  AnalyticsView,
+  UnifiedListView,
+  CalendarTasksView,
+} from "./tasks";
 
 export default function TaskPage() {
   // Get access token from OLD auth system
@@ -22,6 +30,7 @@ export default function TaskPage() {
 
   // View state
   const viewState = useRecoilValue(viewStateAtom);
+  const taskViewMode = useRecoilValue(taskViewModeAtom);
 
   // Get task lists state from NEW hooks
   const { taskLists, loading, error, fetchTaskLists } = useTaskLists();
@@ -63,22 +72,63 @@ export default function TaskPage() {
   }
 
   if (error && taskLists.length === 0) {
+    const isAuthError = typeof error === "string" && (error.includes("401") || error.toLowerCase().includes("session") || error.toLowerCase().includes("unauthorized"));
     return (
-      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" gap={2} flex={1}>
-        <Typography color="error">{error}</Typography>
-        <button
-          onClick={() => fetchTaskLists(true)}
-          style={{
-            padding: "8px 16px",
-            borderRadius: "8px",
-            border: "1px solid #444",
-            cursor: "pointer",
-            background: "#222",
-            color: "#fff",
-          }}
-        >
-          Retry
-        </button>
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" gap={2} flex={1} p={3}>
+        {isAuthError ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              maxWidth: 420,
+              textAlign: "center",
+              bgcolor: "background.paper",
+              borderRadius: 3,
+              border: 1,
+              borderColor: "divider",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                bgcolor: "rgba(234, 67, 53, 0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <LockOutlined sx={{ fontSize: 32, color: "error.main" }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              انتهت جلسة تسجيل الدخول
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              انتهت صلاحية جلسة Google Tasks. يرجى إعادة تسجيل الدخول لمزامنة مهامك وتحديثها.
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Google />}
+              onClick={() => handleLogin(true)}
+              sx={{ mt: 1, borderRadius: 2 }}
+            >
+              تسجيل الدخول مع Google
+            </Button>
+          </Paper>
+        ) : (
+          <>
+            <Typography color="error">{error}</Typography>
+            <Button variant="outlined" onClick={() => fetchTaskLists(true)}>
+              Retry
+            </Button>
+          </>
+        )}
       </Box>
     );
   }
@@ -92,10 +142,14 @@ export default function TaskPage() {
         bgcolor: "background.default",
       }}
     >
-      {viewState.view === "eisenhower" ? (
-        <EisenhowerMatrixView />
-      ) : viewState.view === "analytics" ? (
+      {viewState.view === "analytics" ? (
         <AnalyticsView />
+      ) : viewState.view === "eisenhower" ? (
+        <EisenhowerMatrixView />
+      ) : taskViewMode === "list" ? (
+        <UnifiedListView />
+      ) : taskViewMode === "calendar" ? (
+        <CalendarTasksView />
       ) : (
         <TaskListsContainer />
       )}

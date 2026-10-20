@@ -133,3 +133,39 @@ export function extractActionsFromResponse(text: string): { cleanText: string; a
 
   return { cleanText, actions: [] };
 }
+
+/**
+ * Sanitizes and normalizes conversation history:
+ * - Drops leading assistant messages (such as the initial greeting) so the conversation strictly starts with 'user'.
+ * - Merges consecutive messages of the same role so that roles strictly alternate: user -> assistant -> user -> ...
+ * - Prevents errors like "Conversation roles must alternate user/assistant/..." in Gemma, Claude, and OpenAI templates.
+ */
+export function sanitizeConversationHistory(
+  messages: { role: string; content: string }[]
+): Array<{ role: "user" | "assistant"; content: string }> {
+  const filtered = messages.filter((m) => m.role === "user" || m.role === "assistant");
+  const firstUserIdx = filtered.findIndex((m) => m.role === "user");
+  if (firstUserIdx === -1) {
+    return [];
+  }
+
+  const sliced = filtered.slice(firstUserIdx);
+  const result: Array<{ role: "user" | "assistant"; content: string }> = [];
+
+  for (const msg of sliced) {
+    const text = msg.content?.trim();
+    if (!text) continue;
+
+    const role = msg.role as "user" | "assistant";
+    const last = result[result.length - 1];
+
+    if (last && last.role === role) {
+      last.content = `${last.content}\n\n${text}`;
+    } else {
+      result.push({ role, content: text });
+    }
+  }
+
+  return result;
+}
+

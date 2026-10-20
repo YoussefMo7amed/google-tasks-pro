@@ -37,7 +37,15 @@ export default function SortableTaskItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({
+    id: task.id,
+    data: {
+      type: "task",
+      task,
+      listId: task.listId,
+      taskId: task.id,
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),

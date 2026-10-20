@@ -26,7 +26,14 @@ export default function SortableTaskCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: taskList.id });
+  } = useSortable({
+    id: `col_${taskList.id}`,
+    data: {
+      type: "column",
+      list: taskList,
+      listId: taskList.id,
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),

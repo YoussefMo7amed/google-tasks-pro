@@ -59,6 +59,13 @@ export const viewStateAtom = atom<ViewState>({
   },
 });
 
+export type TaskViewMode = "board" | "list" | "calendar" | "eisenhower";
+
+export const taskViewModeAtom = atom<TaskViewMode>({
+  key: "taskViewMode",
+  default: "board",
+});
+
 // =============================================================================
 // UI State
 // =============================================================================

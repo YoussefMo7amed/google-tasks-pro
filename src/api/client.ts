@@ -28,6 +28,7 @@ export class ApiError extends Error {
 interface ApiClientConfig {
   accessToken: string;
   onTokenExpired?: () => void;
+  refreshToken?: () => Promise<string | null>;
   onError?: (error: ApiError) => void;
 }
 
@@ -37,6 +38,11 @@ interface ApiClientConfig {
 export class GoogleTasksClient {
   private client: AxiosInstance;
   private config: ApiClientConfig;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (err: any) => void;
+  }> = [];
 
   constructor(config: ApiClientConfig) {
     this.config = config;
@@ -50,10 +56,65 @@ export class GoogleTasksClient {
       },
     });
 
-    // Response interceptor for error handling
+    const processQueue = (error: any, token: string | null = null) => {
+      this.failedQueue.forEach((prom) => {
+        if (error) {
+          prom.reject(error);
+        } else {
+          prom.resolve(token!);
+        }
+      });
+      this.failedQueue = [];
+    };
+
+    // Response interceptor for error handling and token refresh
     this.client.interceptors.response.use(
       (response) => response,
-      (error: AxiosError) => {
+      async (error: AxiosError) => {
+        const originalRequest = error.config as any;
+        const statusCode = error.response?.status;
+
+        // Auto-refresh token on 401 Unauthorized
+        if (statusCode === 401 && originalRequest && !originalRequest._retry && this.config.refreshToken) {
+          if (this.isRefreshing) {
+            return new Promise<string>((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            })
+              .then((token) => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                return this.client(originalRequest);
+              })
+              .catch((err) => {
+                throw this.handleError(err);
+              });
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            console.log("GoogleTasksClient: 401 detected, attempting auto-refresh of access token...");
+            const newToken = await this.config.refreshToken();
+            if (newToken) {
+              console.log("GoogleTasksClient: token refreshed successfully, retrying failed request");
+              this.setAccessToken(newToken);
+              processQueue(null, newToken);
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return this.client(originalRequest);
+            } else {
+              throw new Error("No refresh token available");
+            }
+          } catch (refreshErr) {
+            processQueue(refreshErr, null);
+            this.config.onTokenExpired?.();
+            const apiError = new ApiError("Session expired. Please sign in again.", 401);
+            this.config.onError?.(apiError);
+            throw apiError;
+          } finally {
+            this.isRefreshing = false;
+          }
+        }
+
         const apiError = this.handleError(error);
         
         // Check for token expiration

@@ -129,6 +129,13 @@ export default function TaskListItem({
   const itemQuadrant = extractQuadrant(task.title);
   const displayTitle = itemQuadrant ? cleanTitleFromQuadrant(task.title) : task.title;
 
+  const cleanItemNotes = cleanTitleFromQuadrant(task.notes || "").trim();
+  const hasRealItemNotes = Boolean(
+    cleanItemNotes &&
+    !/^\[?Q[1-4]\]?$/i.test(cleanItemNotes) &&
+    !/^\[?(مربع|ربع)\s*[1-4]\]?$/i.test(cleanItemNotes)
+  );
+
   // Reset edit state when task changes
   useEffect(() => {
     setEditTitle(task.title);
@@ -507,7 +514,7 @@ export default function TaskListItem({
                     {displayTitle}
                   </Typography>
                 </Box>
-                {task.notes && task.status !== "completed" && (
+                {hasRealItemNotes && task.status !== "completed" && (
                   <Typography
                     variant="caption"
                     color="text.secondary"
@@ -528,7 +535,7 @@ export default function TaskListItem({
                       wordBreak: "break-word",
                     }}
                   >
-                    {task.notes}
+                    {cleanItemNotes}
                   </Typography>
                 )}
                 {dueDateInfo && task.status !== "completed" && (

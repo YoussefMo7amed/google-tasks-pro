@@ -7,3 +7,5 @@ export { default as SortableTaskCard } from "./SortableTaskCard";
 export { default as TaskDetailModal } from "./TaskDetailModal";
 export { default as EisenhowerMatrixView } from "./EisenhowerMatrixView";
 export { default as AnalyticsView } from "./AnalyticsView";
+export { default as UnifiedListView } from "./UnifiedListView";
+export { default as CalendarTasksView } from "./CalendarTasksView";

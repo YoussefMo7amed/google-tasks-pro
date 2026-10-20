@@ -6,12 +6,14 @@
  */
 
 import { useMemo } from "react";
-import { useRecoilValue } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { setRecoil } from "recoil-nexus";
 import { accessTokenAtom } from "../store";
-import { accessTokenSelector } from "../config/states";
+import { accessTokenSelector, accessTokenState } from "../config/states";
 import { createApiClient, GoogleTasksClient } from "../api";
 import { TaskListRepository, TaskRepository, StarredRepository } from "../repositories";
 import { TaskListService, TaskService } from "../services";
+import { getAccessTokenFromStorage, refreshAndSaveAccessToken } from "../helpers/auth";
 
 interface Services {
   client: GoogleTasksClient | null;
@@ -30,6 +32,7 @@ const starredRepo = new StarredRepository();
 export function useServices(): Services {
   const atomToken = useRecoilValue(accessTokenAtom);
   const selectorToken = useRecoilValue(accessTokenSelector);
+  const setAtomToken = useSetRecoilState(accessTokenAtom);
   const accessToken = atomToken || selectorToken;
 
   const services = useMemo(() => {
@@ -45,9 +48,25 @@ export function useServices(): Services {
     // Create API client
     const client = createApiClient({
       accessToken,
+      refreshToken: async () => {
+        try {
+          const storedToken = await getAccessTokenFromStorage();
+          if (storedToken && storedToken.refresh_token) {
+            console.log("useServices: refreshing access token via refreshAndSaveAccessToken");
+            const refreshed = await refreshAndSaveAccessToken(storedToken.refresh_token);
+            if (refreshed && refreshed.access_token) {
+              setAtomToken(refreshed.access_token);
+              setRecoil(accessTokenState, refreshed.access_token);
+              return refreshed.access_token;
+            }
+          }
+        } catch (err) {
+          console.warn("useServices: failed to refresh token:", err);
+        }
+        return null;
+      },
       onTokenExpired: () => {
-        console.warn("Token expired - need to refresh");
-        // TODO: Trigger token refresh
+        console.warn("Token expired and auto-refresh unavailable - need re-auth");
       },
       onError: (error) => {
         console.error("API error:", error);

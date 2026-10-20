@@ -41,7 +41,7 @@ export async function getAccessToken(code: string) : Promise<AccessToken> {
             grant_type: "authorization_code",
         };
         console.log(data, "data");
-        const response = await axios.post("https://oauth2.googleapis.com/token", data);
+        const response = await axios.post("https://oauth2.googleapis.com/token", data, { timeout: 8000 });
         console.log(response, "response from getAccessToken");
         return response.data;
     }
@@ -53,6 +53,9 @@ export async function getAccessToken(code: string) : Promise<AccessToken> {
 }
 
 export async function refreshAccessToken(refreshToken: string) : Promise<AccessToken> {
+    if (!refreshToken) {
+        throw new Error("No refresh token provided");
+    }
     try {
         const data = {
             refresh_token: refreshToken,
@@ -60,8 +63,8 @@ export async function refreshAccessToken(refreshToken: string) : Promise<AccessT
             client_secret: CLIENT_SECRET,
             grant_type: "refresh_token",
         };
-        console.log('attempting to refresh access token', data);
-        const response = await axios.post("https://oauth2.googleapis.com/token", data);
+        console.log('attempting to refresh access token');
+        const response = await axios.post("https://oauth2.googleapis.com/token", data, { timeout: 8000 });
         return {...response.data, refresh_token: refreshToken};
     } catch (error) {
         console.error("Error refreshing access token:", error);
@@ -70,6 +73,9 @@ export async function refreshAccessToken(refreshToken: string) : Promise<AccessT
 }
 
 export async function refreshAndSaveAccessToken(refreshToken: string): Promise<AccessToken> {
+    if (!refreshToken) {
+        throw new Error("No refresh token provided");
+    }
     try {
         const accessToken = await refreshAccessToken(refreshToken);
         await saveAccessToken(accessToken);
@@ -85,7 +91,7 @@ export async function revokeAccessToken(accessToken: string) {
         const data = {
             token: accessToken,
         };
-        const response = await axios.post("https://oauth2.googleapis.com/revoke", data);
+        const response = await axios.post("https://oauth2.googleapis.com/revoke", data, { timeout: 8000 });
         return response.data;
     } catch (error) {
         console.error("Error revoking access token:", error);
@@ -102,6 +108,7 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
+      timeout: 8000,
     });
     console.log(response.data, "response from fetchUserProfile");
     return response.data;
@@ -118,6 +125,7 @@ export async function openAuthWindow() {
     const url = new URL(GOOGLE_OAUTH_ENDPOINT);
     url.searchParams.append("scope", SCOPE);
     url.searchParams.append("access_type", "offline");
+    url.searchParams.append("prompt", "consent");
     url.searchParams.append("response_type", "code");
     url.searchParams.append("client_id", CLIENT_ID);
     url.searchParams.append("redirect_uri", getLocalHostUrl(await portManager.getPort()));
@@ -162,13 +170,30 @@ export async function saveAccessToken(accessToken: string|AccessToken) {
 export async function getAccessTokenFromStorage() {
     try {
         let accessToken = await get_access_token();
-        console.log('new access token found')
-        // check if the access token is expired
-        console.log(accessToken, "accessToken");
+        console.log('getAccessTokenFromStorage: retrieved', accessToken);
+        if (!accessToken || !accessToken.access_token) {
+            console.log("getAccessTokenFromStorage: no valid access token found");
+            return null;
+        }
+
+        // Check if token is expired (Google access tokens expire in 3600 seconds = 1 hour)
         const lastLogin = parseInt(localStorage.getItem("lastLogin") || "0");
-        if ((accessToken.expires_in < Date.now() || Date.now() - lastLogin > 3620) && navigator.onLine){
-            console.log("Access token expired");
-            accessToken = await refreshAndSaveAccessToken(accessToken.refresh_token);
+        const tokenAgeMs = Date.now() - lastLogin;
+        // Expired if login was more than 55 mins ago (3300 * 1000 ms) or lastLogin missing
+        const isExpired = lastLogin === 0 || tokenAgeMs > 3300 * 1000;
+
+        if (isExpired && navigator.onLine) {
+            if (!accessToken.refresh_token) {
+                console.warn("Access token expired and no refresh token available to refresh it");
+                return accessToken;
+            }
+            console.log("Access token expired, attempting refresh");
+            try {
+                accessToken = await refreshAndSaveAccessToken(accessToken.refresh_token);
+            } catch (refreshErr) {
+                console.warn("Could not refresh token online (offline or dropped network), keeping existing token for offline access:", refreshErr);
+                return accessToken;
+            }
         }
         return accessToken;
     } catch (error) {
@@ -263,13 +288,15 @@ export async function handleLoadFrom(accessTokenBody: AccessToken) {
     }
     catch (err) {
       console.log(err);
-      setRecoil(authLoadingState, false)
       await handleLogout();
       setRecoil(messageState, {
         title: "Error",
         body: "Error signing in",
         type: "error"
       })
+    }
+    finally {
+      setRecoil(authLoadingState, false);
     }
 }
   
@@ -321,15 +348,38 @@ export async function handleLogout() {
 export async function handleInitialLogin() {
     // get access token from storage
     const accessToken = await getAccessTokenFromStorage();
-    if (!accessToken) throw new Error("Signin required");
-    pushNotification("Login Successful")
-    const profile = navigator.onLine ? await fetchUserProfile(accessToken.access_token) : await getUserProfileFromStorage();
-    if(!profile || !profile?.email) throw new Error("Something went wrong, please try again");
-    // setProfile(profile);
+    if (!accessToken || !accessToken.access_token) throw new Error("Signin required");
+
+    let profile: UserProfile | null = null;
+
+    // If online, attempt to fetch fresh profile, but always fallback to cached profile if network fails
+    if (navigator.onLine) {
+        try {
+            profile = await fetchUserProfile(accessToken.access_token);
+            if (profile) {
+                await saveUserProfile(profile);
+            }
+        } catch (fetchErr) {
+            console.warn("Could not fetch user profile online (offline or dropped network), falling back to storage:", fetchErr);
+            profile = await getUserProfileFromStorage();
+        }
+    } else {
+        console.log("App started offline, loading cached user profile from storage");
+        profile = await getUserProfileFromStorage();
+    }
+
+    // Secondary fallback in case navigator.onLine was inaccurate
+    if (!profile || !profile.email) {
+        profile = await getUserProfileFromStorage();
+    }
+
+    if (!profile || !profile.email) {
+        throw new Error("No cached profile found. Please connect to the internet to sign in.");
+    }
+
     setRecoil(userProfileState, profile);
-    // setAccessToken(accessToken.access_token);
     setRecoil(accessTokenState, accessToken.access_token);
-    pushNotification(`welcome back ${profile.name}`)
+    pushNotification(`Welcome back ${profile.name}`);
   }
 
 

@@ -16,6 +16,9 @@ use libs::notifications::{
 use libs::tauri_actions::{
     greet, load_access_token, load_code, save_access_token, save_code, test_command,
 };
+use tauri::{
+    CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
+};
 
 fn run_specta() {
     println!("Running specta to generate typescript bindings");
@@ -44,13 +47,79 @@ fn main() {
     // Create notification scheduler
     let notification_scheduler = NotificationScheduler::default();
 
-    tauri::Builder::default()
+    // Create system tray with menu
+    let show_item = CustomMenuItem::new("show".to_string(), "Open Google Tasks");
+    let hide_item = CustomMenuItem::new("hide".to_string(), "Minimize to Background");
+    let quit_item = CustomMenuItem::new("quit".to_string(), "Quit");
+    let tray_menu = SystemTrayMenu::new()
+        .add_item(show_item)
+        .add_item(hide_item)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(quit_item);
+    let system_tray = SystemTray::new().with_menu(tray_menu);
+
+    let app = tauri::Builder::default()
         .manage(notification_scheduler)
+        .system_tray(system_tray)
+        .on_system_tray_event(|app, event| match event {
+            SystemTrayEvent::LeftClick { .. } => {
+                if let Some(window) = app.get_window("main") {
+                    if window.is_visible().unwrap_or(false) {
+                        let _ = window.hide();
+                    } else {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+            SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
+                "show" => {
+                    if let Some(window) = app.get_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+                "hide" => {
+                    if let Some(window) = app.get_window("main") {
+                        let _ = window.hide();
+                    }
+                }
+                "quit" => {
+                    std::process::exit(0);
+                }
+                _ => {}
+            },
+            _ => {}
+        })
+        .on_window_event(|event| match event.event() {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                // Prevent quitting, keep app running in background for notifications & system tray
+                let _ = event.window().hide();
+                api.prevent_close();
+            }
+            _ => {}
+        })
+        .setup(|app| {
+            let app_handle = app.handle();
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(30));
+                    let scheduler = app_handle.state::<NotificationScheduler>();
+                    scheduler.check_and_notify(&app_handle);
+                }
+            });
+            Ok(())
+        })
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!(
                 "from single instance {}, {argv:?}, {cwd}",
                 app.package_info().name
             );
+            if let Some(w) = app.get_window("main") {
+                let _ = w.show();
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
         }))
         .plugin(tauri_plugin_context_menu::init())
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -72,6 +141,14 @@ fn main() {
             cancel_notification,
             get_notification_count,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|_app_handle, event| match event {
+        tauri::RunEvent::ExitRequested { api, .. } => {
+            // Keep running in background for notifications & system tray
+            api.prevent_exit();
+        }
+        _ => {}
+    });
 }

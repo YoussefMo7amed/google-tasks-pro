@@ -21,6 +21,7 @@ import {
   TextField,
   Collapse,
   Divider,
+  Tooltip,
 } from "@mui/material";
 import {
   Whatshot,
@@ -31,6 +32,9 @@ import {
   ExpandMore,
   ExpandLess,
   Label,
+  Fullscreen,
+  FullscreenExit,
+  GridView,
 } from "@mui/icons-material";
 import { useRecoilValue } from "recoil";
 import { taskListsAtom } from "../../store";
@@ -108,6 +112,7 @@ export default function EisenhowerMatrixView() {
   const [detailTask, setDetailTask] = useState<AppTask | null>(null);
   const [showUnassigned, setShowUnassigned] = useState(true);
   const [quickInput, setQuickInput] = useState<{ [key in QuadrantType]?: string }>({});
+  const [expandedQuadrant, setExpandedQuadrant] = useState<QuadrantType | null>(null);
 
   // Flatten active tasks
   const allTasks: { task: AppTask; listTitle: string }[] = [];
@@ -187,8 +192,8 @@ export default function EisenhowerMatrixView() {
         />
       </Box>
 
-      {/* Unassigned Tasks Drawer */}
-      {unassignedTasks.length > 0 && (
+      {/* Unassigned Tasks Drawer (shown only in 2x2 grid mode) */}
+      {!expandedQuadrant && unassignedTasks.length > 0 && (
         <Paper
           elevation={0}
           sx={{
@@ -302,19 +307,82 @@ export default function EisenhowerMatrixView() {
         </Paper>
       )}
 
-      {/* 2x2 Grid */}
+      {/* Expanded Quadrant Controls Banner */}
+      {expandedQuadrant && (
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 2,
+            p: 1.25,
+            px: 2,
+            borderRadius: "14px",
+            border: 1,
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 1.5,
+          }}
+        >
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<GridView sx={{ fontSize: 18 }} />}
+            onClick={() => setExpandedQuadrant(null)}
+            sx={{
+              borderRadius: "10px",
+              fontFamily: "Cairo, sans-serif",
+              fontWeight: 700,
+              textTransform: "none",
+              color: "text.primary",
+              borderColor: "divider",
+            }}
+          >
+            العودة للمصفوفة (2x2 Grid)
+          </Button>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 600 }}>
+              الانتقال السريع:
+            </Typography>
+            {QUADRANTS.map((quad) => (
+              <Chip
+                key={quad.id}
+                label={`${quad.id} (${qTasks[quad.id].length})`}
+                clickable
+                color={expandedQuadrant === quad.id ? "primary" : "default"}
+                variant={expandedQuadrant === quad.id ? "filled" : "outlined"}
+                onClick={() => setExpandedQuadrant(quad.id)}
+                sx={{
+                  fontFamily: "Cairo, sans-serif",
+                  fontWeight: 700,
+                  fontSize: "0.8rem",
+                  borderColor: quad.color,
+                  ...(expandedQuadrant === quad.id ? { bgcolor: quad.color, color: "#fff" } : {}),
+                }}
+              />
+            ))}
+          </Box>
+        </Paper>
+      )}
+
+      {/* 2x2 Grid or Maximized Single Quadrant */}
       <Box
         sx={{
           flex: 1,
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-          gridTemplateRows: { xs: "auto", md: "1fr 1fr" },
+          gridTemplateColumns: expandedQuadrant ? "1fr" : { xs: "1fr", md: "1fr 1fr" },
+          gridTemplateRows: expandedQuadrant ? "1fr" : { xs: "auto", md: "1fr 1fr" },
           gap: 2,
-          minHeight: 560,
+          minHeight: expandedQuadrant ? 480 : 560,
         }}
       >
-        {QUADRANTS.map((q) => {
+        {(expandedQuadrant ? QUADRANTS.filter((q) => q.id === expandedQuadrant) : QUADRANTS).map((q) => {
           const tasks = qTasks[q.id];
+          const isMaximized = expandedQuadrant === q.id;
+
           return (
             <Paper
               key={q.id}
@@ -322,16 +390,18 @@ export default function EisenhowerMatrixView() {
               sx={{
                 borderRadius: "16px",
                 border: "1px solid",
-                borderColor: "divider",
+                borderColor: isMaximized ? q.color : "divider",
                 bgcolor: "background.paper",
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
                 borderTop: `4px solid ${q.color}`,
+                boxShadow: isMaximized ? "0 4px 20px rgba(0,0,0,0.12)" : "none",
               }}
             >
               {/* Quadrant Header */}
               <Box
+                onClick={() => setExpandedQuadrant(isMaximized ? null : q.id)}
                 sx={{
                   p: 1.5,
                   px: 2,
@@ -341,6 +411,12 @@ export default function EisenhowerMatrixView() {
                   bgcolor: q.badgeBg,
                   borderBottom: "1px solid",
                   borderColor: "divider",
+                  cursor: "pointer",
+                  userSelect: "none",
+                  transition: "background-color 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -360,17 +436,42 @@ export default function EisenhowerMatrixView() {
                     </Typography>
                   </Box>
                 </Box>
-                <Chip
-                  label={tasks.length}
-                  size="small"
-                  sx={{
-                    fontWeight: 700,
-                    bgcolor: "background.paper",
-                    color: q.color,
-                    border: 1,
-                    borderColor: "divider",
-                  }}
-                />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Chip
+                    label={tasks.length}
+                    size="small"
+                    sx={{
+                      fontWeight: 700,
+                      bgcolor: "background.paper",
+                      color: q.color,
+                      border: 1,
+                      borderColor: "divider",
+                    }}
+                  />
+                  <Tooltip title={isMaximized ? "تصغير (العودة للمصفوفة)" : "تكبير المربع وعرض جميع المهام"}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedQuadrant(isMaximized ? null : q.id);
+                      }}
+                      sx={{
+                        color: q.color,
+                        p: 0.5,
+                        bgcolor: "background.paper",
+                        border: 1,
+                        borderColor: "divider",
+                        "&:hover": { bgcolor: "action.selected" },
+                      }}
+                    >
+                      {isMaximized ? (
+                        <FullscreenExit fontSize="small" />
+                      ) : (
+                        <Fullscreen fontSize="small" />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </Box>
 
               {/* Quick Add Input */}
@@ -425,9 +526,9 @@ export default function EisenhowerMatrixView() {
                 sx={{
                   flex: 1,
                   overflowY: "auto",
-                  px: 1,
-                  py: 0.5,
-                  maxHeight: { xs: 260, md: "none" },
+                  px: 1.5,
+                  py: 1,
+                  maxHeight: isMaximized ? "none" : { xs: 260, md: "none" },
                   scrollbarWidth: "thin",
                 }}
               >

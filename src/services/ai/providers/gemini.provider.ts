@@ -11,7 +11,8 @@ import {
   TaskContextSnapshot,
   AIProviderResponse,
 } from "../types";
-import { buildSystemPrompt, extractActionsFromResponse } from "../prompts";
+import { buildSystemPrompt, extractActionsFromResponse, sanitizeConversationHistory } from "../prompts";
+import { aiFetch } from "../ai-client";
 
 export class GeminiProvider implements IAIProvider {
   public async sendMessage(
@@ -28,13 +29,19 @@ export class GeminiProvider implements IAIProvider {
     const baseUrl = settings.baseUrl?.trim() || "https://generativelanguage.googleapis.com";
     const url = `${baseUrl.replace(/\/+$/, "")}/v1beta/models/${model}:generateContent?key=${settings.apiKey.trim()}`;
 
+    const sanitizedHistory = sanitizeConversationHistory(messages);
+    if (sanitizedHistory.length === 0) {
+      sanitizedHistory.push({
+        role: "user",
+        content: "Hello",
+      });
+    }
+
     // Map conversation history
-    const contents = messages
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      }));
+    const contents = sanitizedHistory.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
 
     const requestBody = {
       system_instruction: {
@@ -46,31 +53,27 @@ export class GeminiProvider implements IAIProvider {
       },
     };
 
-    const response = await fetch(url, {
+    const response = await aiFetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: requestBody,
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      let errorMsg = `Gemini API error (${response.status}): ${response.statusText}`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.error?.message) {
-          errorMsg = errorJson.error.message;
-        }
-      } catch {
-        // fallback
+      let errorMsg = `Gemini API error (${response.status})`;
+      if (response.data?.error?.message) {
+        errorMsg = response.data.error.message;
+      } else if (response.rawText) {
+        errorMsg = response.rawText;
       }
       throw new Error(errorMsg);
     }
 
-    const data = await response.json();
+    const data = response.data;
     const candidateText =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received from Gemini.";
+      data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response received from Gemini.";
 
     const { cleanText, actions } = extractActionsFromResponse(candidateText);
 
@@ -92,17 +95,17 @@ export class GeminiProvider implements IAIProvider {
       const baseUrl = settings.baseUrl?.trim() || "https://generativelanguage.googleapis.com";
       const url = `${baseUrl.replace(/\/+$/, "")}/v1beta/models/${model}:generateContent?key=${settings.apiKey.trim()}`;
 
-      const res = await fetch(url, {
+      const res = await aiFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: {
           contents: [{ role: "user", parts: [{ text: "ping" }] }],
           generationConfig: { maxOutputTokens: 5 },
-        }),
+        },
       });
 
       if (!res.ok) {
-        const text = await res.text();
+        const text = res.rawText || JSON.stringify(res.data);
         return { success: false, message: `Status ${res.status}: ${text}` };
       }
 

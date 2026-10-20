@@ -101,9 +101,19 @@ function App() {
           saveAuthCode(code).then(() => {
             console.log("code saved");
           });
-          getAccessToken(code).then((accessTokenBody) => {
-            handleLoadFrom(accessTokenBody);
-          });
+          getAccessToken(code)
+            .then((accessTokenBody) => {
+              handleLoadFrom(accessTokenBody);
+            })
+            .catch((err) => {
+              console.error("Failed to get access token from code:", err);
+              setLoading(false);
+              setToastMessage({
+                title: "Error",
+                body: "Could not retrieve access token. Please try again.",
+                type: "error",
+              });
+            });
         }
       },
       onError: (err) => {
@@ -121,15 +131,15 @@ function App() {
   // Check offline data for access token
   useEffect(() => {
     setLoading(true);
-    handleInitialLogin()
+
+    // Safety timeout: Ensure splash screen never hangs indefinitely
+    const safetyTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Auth initialization timed out")), 4000)
+    );
+
+    Promise.race([handleInitialLogin(), safetyTimeout])
       .catch((err) => {
-        console.log(err);
-        setLoading(false);
-        setToastMessage({
-          title: "Error",
-          body: "Error signing in",
-          type: "error",
-        });
+        console.log("Initial login attempt finished:", err?.message || err);
       })
       .finally(() => {
         setLoading(false);
@@ -196,7 +206,10 @@ function App() {
           {loggedIn ? (
             <TaskPage />
           ) : loading ? (
-            <SplashScreen message="Connecting to Google" />
+            <SplashScreen
+              message="Connecting to Google"
+              onCancel={() => setLoading(false)}
+            />
           ) : (
             <LoginChoice
               onContinueAsUser={() => setAttemptedLogin(true)}

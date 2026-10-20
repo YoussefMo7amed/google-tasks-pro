@@ -40,7 +40,7 @@ import {
   AutoAwesome,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom } from "../../store";
+import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, taskViewModeAtom } from "../../store";
 import { useTaskLists } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
@@ -57,6 +57,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const [showSettings, setShowSettings] = useRecoilState(settingsOpenAtom);
   const [, setShowAiCopilot] = useRecoilState(aiCopilotOpenAtom);
   const [viewState, setViewState] = useRecoilState(viewStateAtom);
+  const [taskViewMode, setTaskViewMode] = useRecoilState(taskViewModeAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
   const { taskLists, toggleListVisibility, fetchTaskLists } = useTaskLists();
 
@@ -90,16 +91,23 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
 
   const handleViewAll = () => {
     setViewState({ view: "all", activeListId: undefined, activeListIndex: -1 });
+    if (taskViewMode === "eisenhower") {
+      setTaskViewMode("board");
+    }
     onViewChange?.("all");
   };
 
   const handleViewStarred = () => {
     setViewState({ view: "starred", activeListId: undefined, activeListIndex: -2 });
+    if (taskViewMode === "eisenhower") {
+      setTaskViewMode("board");
+    }
     onViewChange?.("starred");
   };
 
   const handleViewEisenhower = () => {
     setViewState({ view: "eisenhower", activeListId: undefined, activeListIndex: -3 });
+    setTaskViewMode("eisenhower");
     onViewChange?.("eisenhower");
   };
 
@@ -110,6 +118,9 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
 
   const handleListClick = (listId: string, index: number) => {
     setViewState({ view: "list", activeListId: listId, activeListIndex: index });
+    if (taskViewMode === "eisenhower") {
+      setTaskViewMode("board");
+    }
     onViewChange?.("list", listId);
   };
 

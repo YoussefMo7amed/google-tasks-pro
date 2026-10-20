@@ -11,7 +11,8 @@ import {
   TaskContextSnapshot,
   AIProviderResponse,
 } from "../types";
-import { buildSystemPrompt, extractActionsFromResponse } from "../prompts";
+import { buildSystemPrompt, extractActionsFromResponse, sanitizeConversationHistory } from "../prompts";
+import { aiFetch } from "../ai-client";
 
 export class ClaudeProvider implements IAIProvider {
   public async sendMessage(
@@ -28,14 +29,15 @@ export class ClaudeProvider implements IAIProvider {
     const baseUrl = settings.baseUrl?.trim() || "https://api.anthropic.com";
     const url = `${baseUrl.replace(/\/+$/, "")}/v1/messages`;
 
-    const formattedMessages = messages
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+    const sanitizedHistory = sanitizeConversationHistory(messages);
+    if (sanitizedHistory.length === 0) {
+      sanitizedHistory.push({
+        role: "user",
+        content: "Hello",
+      });
+    }
 
-    const response = await fetch(url, {
+    const response = await aiFetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -43,32 +45,28 @@ export class ClaudeProvider implements IAIProvider {
         "anthropic-version": "2023-06-01",
         "anthropic-dangerous-direct-browser-access": "true",
       },
-      body: JSON.stringify({
+      body: {
         model,
         max_tokens: 4096,
         system: systemPrompt,
-        messages: formattedMessages,
+        messages: sanitizedHistory,
         temperature: settings.temperature ?? 0.7,
-      }),
+      },
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      let errorMsg = `Claude API error (${response.status}): ${response.statusText}`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.error?.message) {
-          errorMsg = errorJson.error.message;
-        }
-      } catch {
-        // fallback
+      let errorMsg = `Claude API error (${response.status})`;
+      if (response.data?.error?.message) {
+        errorMsg = response.data.error.message;
+      } else if (response.rawText) {
+        errorMsg = response.rawText;
       }
       throw new Error(errorMsg);
     }
 
-    const data = await response.json();
+    const data = response.data;
     const contentText =
-      data.content?.find((c: { type: string; text?: string }) => c.type === "text")?.text || "";
+      data?.content?.find((c: { type: string; text?: string }) => c.type === "text")?.text || "";
 
     const { cleanText, actions } = extractActionsFromResponse(contentText);
 
@@ -90,7 +88,7 @@ export class ClaudeProvider implements IAIProvider {
       const baseUrl = settings.baseUrl?.trim() || "https://api.anthropic.com";
       const url = `${baseUrl.replace(/\/+$/, "")}/v1/messages`;
 
-      const res = await fetch(url, {
+      const res = await aiFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -98,15 +96,15 @@ export class ClaudeProvider implements IAIProvider {
           "anthropic-version": "2023-06-01",
           "anthropic-dangerous-direct-browser-access": "true",
         },
-        body: JSON.stringify({
+        body: {
           model,
           max_tokens: 10,
           messages: [{ role: "user", content: "ping" }],
-        }),
+        },
       });
 
       if (!res.ok) {
-        const text = await res.text();
+        const text = res.rawText || JSON.stringify(res.data);
         return { success: false, message: `Status ${res.status}: ${text}` };
       }
 

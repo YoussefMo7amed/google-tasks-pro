@@ -118,6 +118,20 @@ export function useTaskLists() {
         }
       }
 
+      const isAuthErr = err instanceof Error && (err.message.includes("401") || (err as any).statusCode === 401 || err.message.toLowerCase().includes("session expired"));
+      if (isAuthErr) {
+        if (cached && taskListsRef.current.length === 0) {
+          setTaskLists(cached);
+        }
+        setError("Session expired. Please sign in again.");
+        setToast({
+          title: "Session Expired",
+          body: "Your Google session has expired. Please sign in again to sync tasks.",
+          type: "warning",
+        });
+        return;
+      }
+
       const message = err instanceof Error ? err.message : "Failed to load task lists";
       setError(message);
       setToast({ title: "Error", body: message, type: "error" });

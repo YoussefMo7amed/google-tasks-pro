@@ -4,7 +4,8 @@
  * Displays a beautiful loading screen while the app initializes.
  */
 
-import { Box, Typography, keyframes } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Box, Typography, Button, keyframes } from "@mui/material";
 import { TaskAlt } from "@mui/icons-material";
 
 // Pulse animation for the icon
@@ -46,9 +47,19 @@ const loadingDots = keyframes`
 
 interface SplashScreenProps {
   message?: string;
+  onCancel?: () => void;
 }
 
-export default function SplashScreen({ message = "Loading" }: SplashScreenProps) {
+export default function SplashScreen({ message = "Loading", onCancel }: SplashScreenProps) {
+  const [showCancel, setShowCancel] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowCancel(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <Box
       sx={{
@@ -107,18 +118,27 @@ export default function SplashScreen({ message = "Loading" }: SplashScreenProps)
         {message}
       </Typography>
 
-      {/* Credit */}
-      <Typography
-        variant="caption"
-        color="text.disabled"
-        sx={{
-          position: "absolute",
-          bottom: 24,
-          animation: `${fadeIn} 0.5s ease-out 0.4s both`,
-        }}
-      >
-        by codad5
-      </Typography>
+      {/* Cancel button if loading is taking more than a couple of seconds */}
+      {showCancel && onCancel && (
+        <Button
+          variant="text"
+          size="small"
+          onClick={onCancel}
+          sx={{
+            color: "text.secondary",
+            fontSize: "0.8rem",
+            textTransform: "none",
+            animation: `${fadeIn} 0.3s ease-out`,
+            "&:hover": {
+              color: "text.primary",
+              backgroundColor: "action.hover",
+            },
+          }}
+        >
+          Cancel and return to login
+        </Button>
+      )}
+
     </Box>
   );
 }
