@@ -28,9 +28,12 @@ import Header from "./components/ui/Header";
 import SplashScreen from "./components/ui/SplashScreen";
 import LoginChoice from "./components/ui/LoginChoice";
 import { Sidebar } from "./components/layout";
-import { aiCopilotOpenAtom, settingsOpenAtom } from "./store";
+import { aiCopilotOpenAtom, settingsOpenAtom, shortcutsModalOpenAtom } from "./store";
 import AICopilotModal from "./components/ai/AICopilotModal";
 import SettingsDialog from "./components/ui/SettingsDialog";
+import KeyboardShortcutsModal from "./components/ui/KeyboardShortcutsModal";
+import QuickCreateTaskDialog from "./components/ui/QuickCreateTaskDialog";
+import { useGlobalKeyboardShortcuts, useTaskLists } from "./hooks";
 import { listen_for_auth_code } from "./helpers/eventlistner";
 import { SettingsStore } from "./helpers/DBStores";
 import settings from "./config/settings";
@@ -49,20 +52,15 @@ function App() {
   const [toastMessage, setToastMessage] = useRecoilState(messageState);
   const [aiCopilotOpen, setAiCopilotOpen] = useRecoilState(aiCopilotOpenAtom);
   const [settingsOpen, setSettingsOpen] = useRecoilState(settingsOpenAtom);
+  const [shortcutsOpen, setShortcutsOpen] = useRecoilState(shortcutsModalOpenAtom);
   const setIsOnline = useSetRecoilState(isOnlineSelector);
   const refreshIsOnline = () => setIsOnline(() => navigator.onLine);
+  const { fetchTaskLists } = useTaskLists();
 
-  // Global keyboard shortcut: Cmd+K / Ctrl+K to toggle AI Copilot
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setAiCopilotOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [setAiCopilotOpen]);
+  // Global keyboard shortcuts (Undo/Redo, ?, Cmd+K, 1-4, Esc, etc.)
+  useGlobalKeyboardShortcuts({
+    onSync: () => fetchTaskLists(true),
+  });
 
   // Handle toast messages with MUI Snackbar
   const handleCloseToast = () => {
@@ -261,6 +259,15 @@ function App() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+
+      {/* Keyboard Shortcuts Cheat Sheet Modal */}
+      <KeyboardShortcutsModal
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
+
+      {/* Quick Create Task Modal (N / C) */}
+      <QuickCreateTaskDialog />
     </Box>
   );
 }

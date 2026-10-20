@@ -104,6 +104,21 @@ export const settingsOpenAtom = atom<boolean>({
   default: false,
 });
 
+export const shortcutsModalOpenAtom = atom<boolean>({
+  key: "shortcutsModalOpen",
+  default: false,
+});
+
+export const addCategoryOpenAtom = atom<boolean>({
+  key: "addCategoryOpen",
+  default: false,
+});
+
+export const createTaskModalOpenAtom = atom<boolean>({
+  key: "createTaskModalOpen",
+  default: false,
+});
+
 // =============================================================================
 // Language / i18n State
 // =============================================================================

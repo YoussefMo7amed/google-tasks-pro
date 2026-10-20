@@ -38,9 +38,10 @@ import {
   CloudOff,
   Sync,
   AutoAwesome,
+  KeyboardAltOutlined,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, taskViewModeAtom } from "../../store";
+import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom } from "../../store";
 import { useTaskLists } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
@@ -55,9 +56,10 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const { t, isRtl } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [listsExpanded, setListsExpanded] = useState(true);
-  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useRecoilState(addCategoryOpenAtom);
   const [showSettings, setShowSettings] = useRecoilState(settingsOpenAtom);
   const [, setShowAiCopilot] = useRecoilState(aiCopilotOpenAtom);
+  const [, setShowShortcuts] = useRecoilState(shortcutsModalOpenAtom);
   const [viewState, setViewState] = useRecoilState(viewStateAtom);
   const [taskViewMode, setTaskViewMode] = useRecoilState(taskViewModeAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
@@ -261,6 +263,14 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                   color="primary"
                 >
                   <AutoAwesome />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={`${t("shortcuts.modalTitle")} (?)`} placement={isRtl ? "left" : "right"}>
+                <IconButton 
+                  onClick={() => setShowShortcuts(true)}
+                  sx={{ color: "text.secondary" }}
+                >
+                  <KeyboardAltOutlined />
                 </IconButton>
               </Tooltip>
             </Box>
@@ -672,12 +682,52 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
             )}
           </Box>
 
-          {/* Settings Button */}
+          {/* Shortcuts & Settings Buttons */}
           <Divider sx={{ mb: 0.5 }} />
+
+          {/* Keyboard Shortcuts Button */}
+          <ListItemButton
+            onClick={() => setShowShortcuts(true)}
+            sx={{
+              py: 0.8,
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: isCollapsed ? 0 : 36 }}>
+              <KeyboardAltOutlined fontSize="small" sx={{ color: "text.secondary" }} />
+            </ListItemIcon>
+            {!isCollapsed && (
+              <>
+                <ListItemText
+                  primary={t("shortcuts.modalTitle")}
+                  primaryTypographyProps={{
+                    variant: "body2",
+                    textAlign: isRtl ? "right" : "left",
+                    color: "text.secondary",
+                  }}
+                />
+                <Chip
+                  label="?"
+                  size="small"
+                  sx={{
+                    height: 18,
+                    minWidth: 18,
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    bgcolor: "action.selected",
+                    color: "text.secondary",
+                    ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
+                  }}
+                />
+              </>
+            )}
+          </ListItemButton>
+
+          {/* Settings Button */}
           <ListItemButton
             onClick={() => setShowSettings(true)}
             sx={{
-              py: 1,
+              py: 0.8,
               justifyContent: isCollapsed ? 'center' : 'flex-start',
             }}
           >

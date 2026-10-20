@@ -238,4 +238,32 @@ export interface TranslationSchema {
     completedTasks: string;
     productivityRate: string;
   };
+  shortcuts: {
+    modalTitle: string;
+    modalSubtitle: string;
+    generalGroup: string;
+    actionsGroup: string;
+    navigationGroup: string;
+    showShortcuts: string;
+    aiCopilot: string;
+    settings: string;
+    syncGoogle: string;
+    closeEscape: string;
+    undo: string;
+    redo: string;
+    newTask: string;
+    newList: string;
+    boardView: string;
+    listView: string;
+    calendarView: string;
+    eisenhowerView: string;
+    nextSidebarTab: string;
+    prevSidebarTab: string;
+    undoTooltip: string;
+    redoTooltip: string;
+    nothingToUndo: string;
+    nothingToRedo: string;
+    undoneNotice: string;
+    redoneNotice: string;
+  };
 }

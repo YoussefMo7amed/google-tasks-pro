@@ -72,6 +72,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
     return (
       <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider" }}>
         <Button
+          data-add-task-btn="true"
           startIcon={<EditOutlined sx={{ fontSize: 18 }} />}
           onClick={handleExpand}
           sx={{

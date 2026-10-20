@@ -14,25 +14,32 @@ import {
   Button,
   Tooltip,
 } from "@mui/material";
-import { Logout, AutoAwesome, Translate, Check } from "@mui/icons-material";
+import { Logout, AutoAwesome, Translate, Check, Undo, Redo, KeyboardAltOutlined } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
   attemptLogoutState,
   loggedInSelector,
   userProfileSelector,
 } from "../../config/states";
-import { aiCopilotOpenAtom } from "../../store";
+import { aiCopilotOpenAtom, shortcutsModalOpenAtom } from "../../store";
 import ViewSwitcher from "./ViewSwitcher";
 import { useTranslation } from "../../i18n";
+import { useUndoRedo } from "../../hooks/useUndoRedo";
 
 export default function Header() {
   const loggedIn = useRecoilValue(loggedInSelector);
   const profile = useRecoilValue(userProfileSelector);
   const setAttemptLogout = useSetRecoilState(attemptLogoutState);
   const setAiCopilotOpen = useSetRecoilState(aiCopilotOpenAtom);
-  const { t, language, setLanguage, supportedLanguages } = useTranslation();
+  const setShortcutsOpen = useSetRecoilState(shortcutsModalOpenAtom);
+  const { t, language, setLanguage, supportedLanguages, isRtl } = useTranslation();
+  const { canUndo, canRedo, undo, redo, getUndoLabel, getRedoLabel } = useUndoRedo();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [langMenuAnchor, setLangMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const isMac = typeof navigator !== "undefined" && navigator.platform?.toUpperCase().indexOf("MAC") >= 0;
+  const undoShortcut = isMac ? "⌘Z" : "Ctrl+Z";
+  const redoShortcut = isMac ? "⌘⇧Z" : "Ctrl+Y";
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -75,7 +82,57 @@ export default function Header() {
 
         <ViewSwitcher />
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          {/* Undo Button */}
+          <Tooltip title={canUndo ? `${t("shortcuts.undoTooltip", { shortcut: undoShortcut })}: ${getUndoLabel()}` : t("shortcuts.nothingToUndo")}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={!canUndo}
+                onClick={() => undo()}
+                sx={{
+                  color: canUndo ? "text.primary" : "text.disabled",
+                  p: 0.6,
+                }}
+              >
+                <Undo sx={{ fontSize: 19, transform: isRtl ? "scaleX(-1)" : "none" }} />
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          {/* Redo Button */}
+          <Tooltip title={canRedo ? `${t("shortcuts.redoTooltip", { shortcut: redoShortcut })}: ${getRedoLabel()}` : t("shortcuts.nothingToRedo")}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={!canRedo}
+                onClick={() => redo()}
+                sx={{
+                  color: canRedo ? "text.primary" : "text.disabled",
+                  p: 0.6,
+                }}
+              >
+                <Redo sx={{ fontSize: 19, transform: isRtl ? "scaleX(-1)" : "none" }} />
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          {/* Keyboard Shortcuts Map Button */}
+          <Tooltip title={`${t("shortcuts.modalTitle")} (?)`}>
+            <IconButton
+              size="small"
+              onClick={() => setShortcutsOpen(true)}
+              sx={{
+                color: "text.primary",
+                p: 0.6,
+              }}
+            >
+              <KeyboardAltOutlined sx={{ fontSize: 19 }} />
+            </IconButton>
+          </Tooltip>
+
+          <Divider orientation="vertical" flexItem sx={{ mx: 0.25, height: 20, alignSelf: "center" }} />
+
           {/* Language Switcher */}
           <Tooltip title={language === "en" ? "تبديل إلى العربية" : "Switch to English"}>
             <Button

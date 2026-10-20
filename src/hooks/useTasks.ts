@@ -4,7 +4,7 @@
  * Provides task data and operations to components.
  */
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import { taskListsAtom, toastAtom, starredTaskIdsAtom } from "../store";
 import { useServices } from "./useServices";
@@ -17,12 +17,20 @@ import {
 import { historyService } from "../services/history.service";
 import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
+import { undoRedoService } from "../services/undo-redo.service";
 
 export function useTasks() {
   const { tasks: service } = useServices();
   const [taskLists, setTaskLists] = useRecoilState(taskListsAtom);
   const [starredIds, setStarredIds] = useRecoilState(starredTaskIdsAtom);
   const setToast = useSetRecoilState(toastAtom);
+
+  const createTaskRef = useRef<((input: CreateTaskInput, isUndo?: boolean) => Promise<AppTask | null>) | null>(null);
+  const deleteTaskRef = useRef<((listId: string, taskId: string, isUndo?: boolean) => Promise<boolean>) | null>(null);
+  const restoreTaskRef = useRef<((listId: string, task: AppTask) => Promise<void>) | null>(null);
+  const toggleCompleteRef = useRef<((listId: string, taskId: string, isUndo?: boolean) => Promise<boolean>) | null>(null);
+  const toggleStarRef = useRef<((listId: string, taskId: string, isUndo?: boolean) => Promise<boolean>) | null>(null);
+  const updateTaskRef = useRef<((listId: string, taskId: string, title: string, notes?: string, due?: Date, isUndo?: boolean) => Promise<boolean>) | null>(null);
 
   /**
    * Helper to update a task in the local state
@@ -44,9 +52,59 @@ export function useTasks() {
   }, [setTaskLists]);
 
   /**
-   * Create a new task (with offline-first queue support)
+   * Helper to restore a previously deleted task (used by Undo)
    */
-  const createTask = useCallback(async (input: CreateTaskInput): Promise<AppTask | null> => {
+  const restoreTask = useCallback(async (listId: string, task: AppTask) => {
+    setTaskLists(prev => {
+      const next = prev.map(list => {
+        if (list.id !== listId) return list;
+        return {
+          ...list,
+          tasks: [task, ...list.tasks],
+          incompleteCount: list.incompleteCount + (task.status === "needsAction" ? 1 : 0),
+        };
+      });
+      offlineCacheService.saveSnapshot(next);
+      return next;
+    });
+
+    if (task.isStarred) {
+      setStarredIds(prev => new Set(prev).add(task.id));
+    }
+
+    if (!navigator.onLine || !service || task.id.startsWith("temp_")) {
+      syncQueueService.enqueue(
+        "CREATE_TASK",
+        listId,
+        {
+          title: task.title,
+          notes: task.notes,
+          due: task.due,
+          parentId: task.parent,
+          tempId: task.id,
+        },
+        task.id
+      );
+    } else {
+      try {
+        await service.createTask({
+          title: task.title,
+          notes: task.notes,
+          due: task.due ? new Date(task.due) : undefined,
+          listId,
+          parentId: task.parent,
+        });
+      } catch (e) {
+        console.warn("Failed to restore task online:", e);
+      }
+    }
+  }, [service, setTaskLists, setStarredIds]);
+  restoreTaskRef.current = restoreTask;
+
+  /**
+   * Create a new task (with offline-first queue support and Undo history)
+   */
+  const createTask = useCallback(async (input: CreateTaskInput, isUndoRedoAction = false): Promise<AppTask | null> => {
     // Helper to perform local offline creation
     const createLocallyOffline = () => {
       const tempId = `temp_task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -92,6 +150,23 @@ export function useTasks() {
         return next;
       });
 
+      if (!isUndoRedoAction) {
+        const created = { ...offlineTask };
+        undoRedoService.push({
+          id: `create_${created.id}_${Date.now()}`,
+          type: "CREATE_TASK",
+          description: `Create "${created.title}"`,
+          descriptionAr: `إنشاء "${created.title}"`,
+          undo: async () => {
+            await deleteTaskRef.current?.(created.listId, created.id, true);
+          },
+          redo: async () => {
+            await createTaskRef.current?.(input, true);
+          },
+          timestamp: Date.now(),
+        });
+      }
+
       setToast({ title: "Task added (saved offline 💾)", type: "info" });
       return offlineTask;
     };
@@ -122,17 +197,35 @@ export function useTasks() {
         await scheduleTaskNotification(newTask);
       }
 
+      if (!isUndoRedoAction) {
+        const created = { ...newTask };
+        undoRedoService.push({
+          id: `create_${created.id}_${Date.now()}`,
+          type: "CREATE_TASK",
+          description: `Create "${created.title}"`,
+          descriptionAr: `إنشاء "${created.title}"`,
+          undo: async () => {
+            await deleteTaskRef.current?.(created.listId, created.id, true);
+          },
+          redo: async () => {
+            await createTaskRef.current?.(input, true);
+          },
+          timestamp: Date.now(),
+        });
+      }
+
       return newTask;
     } catch (err) {
       console.warn("Failed to create task online, falling back to offline creation:", err);
       return createLocallyOffline();
     }
   }, [service, setTaskLists, setToast]);
+  createTaskRef.current = createTask;
 
   /**
    * Toggle task completion
    */
-  const toggleTaskComplete = useCallback(async (listId: string, taskId: string): Promise<boolean> => {
+  const toggleTaskComplete = useCallback(async (listId: string, taskId: string, isUndoRedoAction = false): Promise<boolean> => {
     if (!service) return false;
 
     // Optimistic update
@@ -141,6 +234,24 @@ export function useTasks() {
 
     const newStatus: GoogleTaskStatus = currentTask.status === "completed" ? "needsAction" : "completed";
     updateTaskInState(listId, taskId, task => ({ ...task, status: newStatus }));
+
+    if (!isUndoRedoAction) {
+      const taskTitle = currentTask.title;
+      const isCompletedNow = newStatus === "completed";
+      undoRedoService.push({
+        id: `toggle_${taskId}_${Date.now()}`,
+        type: "TOGGLE_COMPLETE",
+        description: isCompletedNow ? `Complete "${taskTitle}"` : `Uncheck "${taskTitle}"`,
+        descriptionAr: isCompletedNow ? `إكمال "${taskTitle}"` : `إلغاء إكمال "${taskTitle}"`,
+        undo: async () => {
+          await toggleCompleteRef.current?.(listId, taskId, true);
+        },
+        redo: async () => {
+          await toggleCompleteRef.current?.(listId, taskId, true);
+        },
+        timestamp: Date.now(),
+      });
+    }
 
     const isOffline = !navigator.onLine || taskId.startsWith("temp_");
     if (isOffline) {
@@ -207,12 +318,15 @@ export function useTasks() {
       return true;
     }
   }, [service, taskLists, updateTaskInState, setTaskLists, setToast]);
+  toggleCompleteRef.current = toggleTaskComplete;
 
   /**
    * Toggle task starred status
    */
-  const toggleTaskStar = useCallback(async (listId: string, taskId: string): Promise<boolean> => {
+  const toggleTaskStar = useCallback(async (listId: string, taskId: string, isUndoRedoAction = false): Promise<boolean> => {
     if (!service) return false;
+
+    const currentTask = taskLists.find(l => l.id === listId)?.tasks.find(t => t.id === taskId);
 
     // Optimistic update
     const wasStarred = starredIds.has(taskId);
@@ -224,6 +338,24 @@ export function useTasks() {
     }
     setStarredIds(newStarredIds);
     updateTaskInState(listId, taskId, task => ({ ...task, isStarred: !wasStarred }));
+
+    if (!isUndoRedoAction && currentTask) {
+      const taskTitle = currentTask.title;
+      const willBeStarred = !wasStarred;
+      undoRedoService.push({
+        id: `star_${taskId}_${Date.now()}`,
+        type: "STAR_TASK",
+        description: willBeStarred ? `Star "${taskTitle}"` : `Unstar "${taskTitle}"`,
+        descriptionAr: willBeStarred ? `تمييز بنجمة "${taskTitle}"` : `إزالة النجمة عن "${taskTitle}"`,
+        undo: async () => {
+          await toggleStarRef.current?.(listId, taskId, true);
+        },
+        redo: async () => {
+          await toggleStarRef.current?.(listId, taskId, true);
+        },
+        timestamp: Date.now(),
+      });
+    }
 
     try {
       await service.toggleStar(listId, taskId);
@@ -237,11 +369,30 @@ export function useTasks() {
       return false;
     }
   }, [service, starredIds, setStarredIds, updateTaskInState, setToast]);
+  toggleStarRef.current = toggleTaskStar;
 
   /**
    * Delete a task
    */
-  const deleteTask = useCallback(async (listId: string, taskId: string): Promise<boolean> => {
+  const deleteTask = useCallback(async (listId: string, taskId: string, isUndoRedoAction = false): Promise<boolean> => {
+    const taskToDelete = taskLists.find(l => l.id === listId)?.tasks.find(t => t.id === taskId);
+    if (!isUndoRedoAction && taskToDelete) {
+      const savedTask = { ...taskToDelete };
+      undoRedoService.push({
+        id: `delete_${taskId}_${Date.now()}`,
+        type: "DELETE_TASK",
+        description: `Delete "${savedTask.title}"`,
+        descriptionAr: `حذف "${savedTask.title}"`,
+        undo: async () => {
+          await restoreTaskRef.current?.(listId, savedTask);
+        },
+        redo: async () => {
+          await deleteTaskRef.current?.(listId, taskId, true);
+        },
+        timestamp: Date.now(),
+      });
+    }
+
     const performLocalDelete = () => {
       setTaskLists(prev => {
         const next = prev.map(list => {
@@ -308,6 +459,7 @@ export function useTasks() {
       return performLocalDelete();
     }
   }, [service, setTaskLists, setStarredIds, setToast]);
+  deleteTaskRef.current = deleteTask;
 
   /**
    * Move task to another list
@@ -584,10 +736,29 @@ export function useTasks() {
     taskId: string, 
     title: string, 
     notes?: string,
-    due?: Date
+    due?: Date,
+    isUndoRedoAction = false
   ): Promise<boolean> => {
     // Get current task for notification handling
     const currentTask = taskLists.find(l => l.id === listId)?.tasks.find(t => t.id === taskId);
+    if (!isUndoRedoAction && currentTask) {
+      const oldTitle = currentTask.title;
+      const oldNotes = currentTask.notes;
+      const oldDue = currentTask.due ? new Date(currentTask.due) : undefined;
+      undoRedoService.push({
+        id: `update_${taskId}_${Date.now()}`,
+        type: "UPDATE_TASK",
+        description: `Edit "${title}"`,
+        descriptionAr: `تعديل "${title}"`,
+        undo: async () => {
+          await updateTaskRef.current?.(listId, taskId, oldTitle, oldNotes, oldDue, true);
+        },
+        redo: async () => {
+          await updateTaskRef.current?.(listId, taskId, title, notes, due, true);
+        },
+        timestamp: Date.now(),
+      });
+    }
 
     // Optimistic update
     updateTaskInState(listId, taskId, task => ({ 
@@ -647,6 +818,7 @@ export function useTasks() {
       return updateLocallyOffline();
     }
   }, [service, taskLists, updateTaskInState, setTaskLists, setToast]);
+  updateTaskRef.current = updateTask;
 
   /**
    * Reorder tasks locally (optimistic, no API call as Google Tasks API doesn't support batch reorder)
@@ -668,6 +840,7 @@ export function useTasks() {
 
     // Actions
     createTask,
+    restoreTask,
     createSubtask,
     updateTask,
     toggleTaskComplete,
