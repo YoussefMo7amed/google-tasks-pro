@@ -61,15 +61,31 @@ impl NotificationScheduler {
 
         for notification in scheduled.values_mut() {
             if !notification.shown && notification.notify_at <= now {
-                // Show OS notification
-                if let Err(e) = tauri::api::notification::Notification::new(
+                println!(
+                    "[NotificationScheduler] 🔔 Firing notification for '{}': {}",
+                    notification.title, notification.body
+                );
+
+                // Show OS notification via Tauri
+                let _ = tauri::api::notification::Notification::new(
                     &app.config().tauri.bundle.identifier,
                 )
                 .title(&notification.title)
                 .body(&notification.body)
-                .show()
+                .show();
+
+                // On macOS, osascript guarantees banner and chime sound even in `tauri dev`
+                #[cfg(target_os = "macos")]
                 {
-                    eprintln!("Failed to show notification: {:?}", e);
+                    let script = format!(
+                        "display notification \"{}\" with title \"{}\" sound name \"default\"",
+                        notification.body.replace('\\', "\\\\").replace('"', "\\\""),
+                        notification.title.replace('\\', "\\\\").replace('"', "\\\"")
+                    );
+                    let _ = std::process::Command::new("osascript")
+                        .arg("-e")
+                        .arg(script)
+                        .spawn();
                 }
 
                 notification.shown = true;
@@ -97,6 +113,11 @@ pub fn schedule_notification(
     let notify_at = DateTime::parse_from_rfc3339(&notify_at_iso)
         .map_err(|e| format!("Invalid date: {}", e))?
         .with_timezone(&Utc);
+
+    println!(
+        "[NotificationScheduler] ⏰ Scheduled task '{}' ({}) at UTC {}",
+        title, task_id, notify_at
+    );
 
     scheduler.schedule(task_id.clone(), title, body, notify_at);
     Ok(task_id)

@@ -56,14 +56,10 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
   // Get user's preferred notification hour
   const notifyHour = await getNotificationHour();
 
-  // Extract calendar date (YYYY-MM-DD) cleanly to avoid UTC timezone day-shifting
-  const dueStr = typeof task.due === "string" ? task.due : (task.due as Date).toISOString();
-  const dateMatch = dueStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  // Parse calendar date accurately in local timezone
   const notifyAt = new Date();
-  if (dateMatch) {
-    const y = parseInt(dateMatch[1], 10);
-    const m = parseInt(dateMatch[2], 10);
-    const d = parseInt(dateMatch[3], 10);
+  if (typeof task.due === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.due)) {
+    const [y, m, d] = task.due.split('-').map(Number);
     notifyAt.setFullYear(y, m - 1, d);
   } else {
     const parsed = new Date(task.due);
@@ -82,9 +78,9 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
     notifyAt.setHours(notifyHour, 0, 0, 0);
   }
 
-  // Don't schedule if already past notification time
-  if (notifyAt <= new Date()) {
-    console.debug(`Skipping notification for ${task.id}: already past due (${notifyAt.toISOString()})`);
+  // Only skip if more than 60 seconds in the past (to allow scheduling tasks for current minute)
+  if (notifyAt.getTime() < Date.now() - 60000) {
+    console.debug(`Skipping notification for ${task.id}: already past due (${notifyAt.toLocaleString()})`);
     return false;
   }
 

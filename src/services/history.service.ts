@@ -103,7 +103,12 @@ class HistoryService {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
-        this.history = JSON.parse(data);
+        const parsed: CompletedHistoryItem[] = JSON.parse(data);
+        // Automatically purge any leftover demo-generated tasks
+        this.history = parsed.filter((item) => !item.id.startsWith("demo-"));
+        if (this.history.length !== parsed.length) {
+          this.save();
+        }
       }
     } catch (e) {
       console.warn("Failed to load completed history from localStorage:", e);
@@ -117,6 +122,15 @@ class HistoryService {
     } catch (e) {
       console.warn("Failed to save completed history to localStorage:", e);
     }
+  }
+
+  /**
+   * Clear all history (used to reset analytics or wipe demo data)
+   */
+  public clearHistory(): void {
+    this.history = [];
+    this.save();
+    this.notify();
   }
 
   /**
@@ -162,6 +176,12 @@ class HistoryService {
     if (!taskLists || taskLists.length === 0) return;
 
     let changed = false;
+    const initialCount = this.history.length;
+    this.history = this.history.filter((h) => !h.id.startsWith("demo-"));
+    if (this.history.length !== initialCount) {
+      changed = true;
+    }
+
     const existingIds = new Set(this.history.map((h) => h.id));
 
     for (const list of taskLists) {

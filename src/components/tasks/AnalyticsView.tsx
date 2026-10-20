@@ -16,6 +16,7 @@ import {
   Chip,
   LinearProgress,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import {
   LocalFireDepartment,
@@ -24,6 +25,7 @@ import {
   DateRange,
   PieChart,
   History,
+  DeleteOutline,
 } from "@mui/icons-material";
 import {
   historyService,
@@ -141,6 +143,26 @@ export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
             {t("analytics.subtitle")}
           </Typography>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Tooltip title={language === "ar" ? "تصفير وإعادة ضبط السجل" : "Reset analytics history"}>
+            <IconButton
+              size="small"
+              onClick={() => {
+                historyService.clearHistory();
+                refreshStats();
+              }}
+              sx={{
+                color: "text.secondary",
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 2,
+                "&:hover": { color: "error.main", borderColor: "error.main" },
+              }}
+            >
+              <DeleteOutline fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 

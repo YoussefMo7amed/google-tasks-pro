@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRecoilState } from 'recoil';
+import { invoke } from '@tauri-apps/api/tauri';
 import { settingsActiveTabAtom } from '../../store';
 import {
   Dialog,
@@ -453,6 +454,30 @@ export default function SettingsDialog({
             >
               {t("settings.notificationsNotice", { time: formatHour(notificationHour, language, timeFormat) })}
             </Typography>
+
+            <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                color="primary"
+                startIcon={<Notifications fontSize="small" />}
+                onClick={async () => {
+                  try {
+                    await invoke("schedule_notification", {
+                      taskId: `test_ping_${Date.now()}`,
+                      title: "Google Tasks Pro",
+                      body: language === "ar" ? "🔔 تم بنجاح! نظام الإشعارات يعمل بكفاءة تامة." : "🔔 Test Successful! Notifications are working properly.",
+                      notifyAtIso: new Date(Date.now() + 2000).toISOString(),
+                    });
+                  } catch (e) {
+                    console.error("Test notification failed:", e);
+                  }
+                }}
+                sx={{ borderRadius: 2, textTransform: "none", fontSize: "0.8rem", py: 0.5, px: 1.5 }}
+              >
+                {language === "ar" ? "تجربة إشعار فوري (خلال ثانيتين)" : "Test Notification (in 2 seconds)"}
+              </Button>
+            </Box>
 
             <Divider sx={{ my: 3 }} />
 
