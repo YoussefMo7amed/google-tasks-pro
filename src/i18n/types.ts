@@ -123,6 +123,28 @@ export interface TranslationSchema {
     list: string;
     saveChanges: string;
     saving: string;
+    time: string;
+    setTime: string;
+    clearTime: string;
+    repeats: string;
+    repeatEvery: string;
+    daily: string;
+    weekly: string;
+    monthly: string;
+    yearly: string;
+    starts: string;
+    ends: string;
+    never: string;
+    onDate: string;
+    afterOccurrences: string;
+    occurrences: string;
+    saveRepeat: string;
+    removeRepeat: string;
+    eisenhowerMatrix: string;
+    q1: string;
+    q2: string;
+    q3: string;
+    q4: string;
   };
   eisenhower: {
     title: string;

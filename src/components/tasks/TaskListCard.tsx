@@ -21,7 +21,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { AppTaskList, AppTask } from "../../types/app";
+import { AppTaskList, AppTask, RecurrenceRule } from "../../types/app";
 import { useTasks } from "../../hooks";
 import TaskListHeader from "./TaskListHeader";
 import SortableTaskItem from "./SortableTaskItem";
@@ -164,11 +164,20 @@ export default function TaskListCard({
     setSortBy(newSort);
   };
 
-  const handleAddTask = async (title: string, dueDate?: Date) => {
+  const handleAddTask = async (
+    title: string,
+    dueDate?: Date,
+    notes?: string,
+    exactTime?: string,
+    recurrence?: RecurrenceRule
+  ) => {
     await createTask({
       title,
+      notes,
       due: dueDate,
       listId: taskList.id,
+      exactTime,
+      recurrence,
     });
   };
 
@@ -188,8 +197,15 @@ export default function TaskListCard({
     await moveTaskToList(taskList.id, task.id, toListId);
   };
 
-  const handleTaskUpdate = async (task: AppTask, title: string, notes?: string, due?: Date) => {
-    await updateTask(taskList.id, task.id, title, notes, due);
+  const handleTaskUpdate = async (
+    task: AppTask, 
+    title: string, 
+    notes?: string, 
+    due?: Date,
+    exactTime?: string,
+    recurrence?: RecurrenceRule
+  ) => {
+    await updateTask(taskList.id, task.id, title, notes, due, exactTime, recurrence);
   };
 
   const handleAddSubtask = async (task: AppTask, title: string) => {

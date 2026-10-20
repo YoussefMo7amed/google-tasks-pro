@@ -8,13 +8,14 @@ import { useCallback, useRef } from "react";
 import { useRecoilState, useSetRecoilState } from "recoil";
 import { taskListsAtom, toastAtom, starredTaskIdsAtom } from "../store";
 import { useServices } from "./useServices";
-import { AppTask, CreateTaskInput } from "../types/app";
+import { AppTask, CreateTaskInput, RecurrenceRule } from "../types/app";
 import { GoogleTaskStatus } from "../types/google-tasks";
 import { 
   scheduleTaskNotification, 
   cancelTaskNotification 
 } from "../services/notification.service";
 import { historyService } from "../services/history.service";
+import { recurrenceService } from "../services/recurrence.service";
 import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
 import { undoRedoService } from "../services/undo-redo.service";
@@ -31,7 +32,7 @@ export function useTasks() {
   const restoreTaskRef = useRef<((listId: string, task: AppTask) => Promise<void>) | null>(null);
   const toggleCompleteRef = useRef<((listId: string, taskId: string, isUndo?: boolean) => Promise<boolean>) | null>(null);
   const toggleStarRef = useRef<((listId: string, taskId: string, isUndo?: boolean) => Promise<boolean>) | null>(null);
-  const updateTaskRef = useRef<((listId: string, taskId: string, title: string, notes?: string, due?: Date, isUndo?: boolean) => Promise<boolean>) | null>(null);
+  const updateTaskRef = useRef<((listId: string, taskId: string, title: string, notes?: string, due?: Date, exactTime?: string, recurrence?: RecurrenceRule, isUndo?: boolean) => Promise<boolean>) | null>(null);
 
   /**
    * Helper to update a task in the local state
@@ -127,7 +128,13 @@ export function useTasks() {
         listId: input.listId,
         parent: input.parentId,
         updated: new Date().toISOString(),
+        exactTime: input.exactTime,
+        recurrence: input.recurrence,
       };
+
+      if (input.recurrence) {
+        recurrenceService.saveRule(tempId, input.recurrence);
+      }
 
       syncQueueService.enqueue(
         "CREATE_TASK",
@@ -181,7 +188,16 @@ export function useTasks() {
     }
 
     try {
-      const newTask = await service.createTask(input);
+      const createdTask = await service.createTask(input);
+      const newTask: AppTask = {
+        ...createdTask,
+        exactTime: input.exactTime,
+        recurrence: input.recurrence,
+      };
+
+      if (input.recurrence) {
+        recurrenceService.saveRule(newTask.id, input.recurrence);
+      }
       
       // Add to local state
       setTaskLists(prev => {
@@ -247,6 +263,13 @@ export function useTasks() {
         { ...currentTask, status: newStatus },
         listTitle
       );
+      // Spawn next occurrence if recurring
+      if (currentTask.recurrence || recurrenceService.getRule(taskId)) {
+        recurrenceService.handleTaskCompletion(currentTask, async (nextInput) => {
+          const res = await createTaskRef.current?.(nextInput);
+          return Boolean(res);
+        });
+      }
     } else {
       historyService.recordUncompletion(taskId);
     }
@@ -743,6 +766,8 @@ export function useTasks() {
     title: string, 
     notes?: string,
     due?: Date,
+    exactTime?: string,
+    recurrence?: RecurrenceRule,
     isUndoRedoAction = false
   ): Promise<boolean> => {
     // Get current task for notification handling
@@ -751,19 +776,29 @@ export function useTasks() {
       const oldTitle = currentTask.title;
       const oldNotes = currentTask.notes;
       const oldDue = currentTask.due ? new Date(currentTask.due) : undefined;
+      const oldExactTime = currentTask.exactTime;
+      const oldRecurrence = currentTask.recurrence;
       undoRedoService.push({
         id: `update_${taskId}_${Date.now()}`,
         type: "UPDATE_TASK",
         description: `Edit "${title}"`,
         descriptionAr: `تعديل "${title}"`,
         undo: async () => {
-          await updateTaskRef.current?.(listId, taskId, oldTitle, oldNotes, oldDue, true);
+          await updateTaskRef.current?.(listId, taskId, oldTitle, oldNotes, oldDue, oldExactTime, oldRecurrence, true);
         },
         redo: async () => {
-          await updateTaskRef.current?.(listId, taskId, title, notes, due, true);
+          await updateTaskRef.current?.(listId, taskId, title, notes, due, exactTime, recurrence, true);
         },
         timestamp: Date.now(),
       });
+    }
+
+    if (recurrence !== undefined) {
+      if (recurrence) {
+        recurrenceService.saveRule(taskId, recurrence);
+      } else {
+        recurrenceService.removeRule(taskId);
+      }
     }
 
     // Optimistic update
@@ -772,6 +807,8 @@ export function useTasks() {
       title,
       notes: notes ?? task.notes,
       due: due ? due.toISOString() : task.due,
+      exactTime: exactTime !== undefined ? exactTime : task.exactTime,
+      recurrence: recurrence !== undefined ? recurrence : task.recurrence,
     }));
 
     const updateLocallyOffline = () => {

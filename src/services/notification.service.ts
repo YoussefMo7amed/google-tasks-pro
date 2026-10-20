@@ -36,9 +36,18 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
   const notifyHour = await getNotificationHour();
 
   const dueDate = new Date(task.due);
-  // Set notification for configured hour on the due date
+  // Set notification for configured hour or exact time on the due date
   const notifyAt = new Date(dueDate);
-  notifyAt.setHours(notifyHour, 0, 0, 0);
+  if (task.exactTime) {
+    const [h, m] = task.exactTime.split(':').map(Number);
+    if (!isNaN(h) && !isNaN(m)) {
+      notifyAt.setHours(h, m, 0, 0);
+    } else {
+      notifyAt.setHours(notifyHour, 0, 0, 0);
+    }
+  } else {
+    notifyAt.setHours(notifyHour, 0, 0, 0);
+  }
 
   // Don't schedule if already past notification time
   if (notifyAt <= new Date()) {
@@ -50,7 +59,7 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
     await invoke('schedule_notification', {
       taskId: task.id,
       title: `📋 ${task.title}`,
-      body: `Due today`,
+      body: task.exactTime ? `Due today at ${task.exactTime}` : `Due today`,
       notifyAtIso: notifyAt.toISOString(),
     });
     

@@ -11,6 +11,20 @@ import { GoogleTask, GoogleTaskList, GoogleTaskStatus } from "./google-tasks";
 // App Task Types
 // =============================================================================
 
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type RecurrenceEndType = 'never' | 'on_date' | 'after_occurrences';
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  interval: number; // e.g. 1 (every week)
+  daysOfWeek?: number[]; // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+  time?: string; // "HH:mm"
+  endType: RecurrenceEndType;
+  endDate?: string; // ISO date
+  endCount?: number; // count
+  occurrenceCount?: number;
+}
+
 /**
  * Extended task with app-specific properties
  */
@@ -21,6 +35,10 @@ export interface AppTask extends GoogleTask {
   listId: string;
   /** Subtasks (eagerly loaded children) */
   subtasks?: AppTask[];
+  /** Exact time of day (HH:mm) stored locally */
+  exactTime?: string;
+  /** Recurrence rule for repeating tasks */
+  recurrence?: RecurrenceRule;
 }
 
 /**
@@ -44,6 +62,8 @@ export interface CreateTaskInput {
   due?: Date;
   parentId?: string;
   listId: string;
+  exactTime?: string;
+  recurrence?: RecurrenceRule;
 }
 
 /**
@@ -56,6 +76,8 @@ export interface UpdateTaskInput {
   notes?: string;
   due?: Date;
   status?: GoogleTaskStatus;
+  exactTime?: string;
+  recurrence?: RecurrenceRule;
 }
 
 // =============================================================================

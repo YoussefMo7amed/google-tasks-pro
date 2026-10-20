@@ -46,6 +46,7 @@ import {
   Close,
   CalendarMonth,
   OpenWith,
+  Repeat,
 } from "@mui/icons-material";
 import { AppTask } from "../../types/app";
 import { useRecoilValue } from "recoil";
@@ -54,6 +55,7 @@ import {
   extractQuadrant,
   cleanTitleFromQuadrant,
 } from "../../services/history.service";
+import { recurrenceService } from "../../services/recurrence.service";
 import { OpenInNew } from "@mui/icons-material";
 import { useTranslation } from "../../i18n";
 import { formatLocalizedDueDate } from "../../i18n/dateUtils";
@@ -516,21 +518,27 @@ export default function TaskListItem({
                     {cleanItemNotes}
                   </Typography>
                 )}
-                {dueDateInfo && task.status !== "completed" && (
-                  <Chip
-                    icon={<Event sx={{ fontSize: 14 }} />}
-                    label={dueDateInfo.label}
-                    size="small"
-                    color={dueDateInfo.isOverdue ? "error" : "primary"}
-                    variant="outlined"
-                    sx={{
-                      mt: 0.5,
-                      height: 22,
-                      fontSize: "0.7rem",
-                      "& .MuiChip-icon": { fontSize: 14 },
-                    }}
-                  />
-                )}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", mt: 0.5 }}>
+                  {dueDateInfo && task.status !== "completed" && (
+                    <Chip
+                      icon={<Event sx={{ fontSize: 14 }} />}
+                      label={task.exactTime ? `${dueDateInfo.label} • ${task.exactTime}` : dueDateInfo.label}
+                      size="small"
+                      color={dueDateInfo.isOverdue ? "error" : "primary"}
+                      variant="outlined"
+                      sx={{
+                        height: 22,
+                        fontSize: "0.7rem",
+                        "& .MuiChip-icon": { fontSize: 14 },
+                      }}
+                    />
+                  )}
+                  {(task.recurrence || recurrenceService.getRule(task.id)) && task.status !== "completed" && (
+                    <Tooltip title={t("tasks.repeats")}>
+                      <Repeat sx={{ fontSize: 15, color: "secondary.main" }} />
+                    </Tooltip>
+                  )}
+                </Box>
               </>
             )}
           </Box>

@@ -31,6 +31,10 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  Popover,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from "@mui/material";
 import {
   Close,
@@ -43,8 +47,10 @@ import {
   DriveFileMove,
   Add,
   CalendarToday,
+  AccessTime,
+  Repeat,
 } from "@mui/icons-material";
-import { AppTask } from "../../types/app";
+import { AppTask, RecurrenceRule, RecurrenceFrequency, RecurrenceEndType } from "../../types/app";
 import { useRecoilValue } from "recoil";
 import { taskListsAtom } from "../../store";
 import {
@@ -52,13 +58,21 @@ import {
   extractQuadrant,
   applyQuadrantToTitle,
 } from "../../services/history.service";
+import { recurrenceService } from "../../services/recurrence.service";
 import { useTranslation } from "../../i18n";
 
 interface TaskDetailModalProps {
   task: AppTask | null;
   open: boolean;
   onClose: () => void;
-  onUpdate: (task: AppTask, title: string, notes?: string, due?: Date) => Promise<void>;
+  onUpdate: (
+    task: AppTask,
+    title: string,
+    notes?: string,
+    due?: Date,
+    exactTime?: string,
+    recurrence?: RecurrenceRule
+  ) => Promise<void>;
   onToggle: (task: AppTask) => Promise<void>;
   onStar: (task: AppTask) => Promise<void>;
   onDelete: (task: AppTask) => Promise<void>;
@@ -77,7 +91,7 @@ export default function TaskDetailModal({
   onMove,
   onAddSubtask,
 }: TaskDetailModalProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
 
   const [title, setTitle] = useState("");
@@ -88,6 +102,20 @@ export default function TaskDetailModal({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Time & Recurrence state
+  const [exactTime, setExactTime] = useState<string>("");
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
+  const [timeAnchorEl, setTimeAnchorEl] = useState<HTMLElement | null>(null);
+  const [repeatAnchorEl, setRepeatAnchorEl] = useState<HTMLElement | null>(null);
+
+  // Recurrence rule editor
+  const [repeatFreq, setRepeatFreq] = useState<RecurrenceFrequency>("weekly");
+  const [repeatInterval, setRepeatInterval] = useState<number>(1);
+  const [repeatDays, setRepeatDays] = useState<number[]>([5]);
+  const [repeatEndType, setRepeatEndType] = useState<RecurrenceEndType>("never");
+  const [repeatEndDate, setRepeatEndDate] = useState<string>("");
+  const [repeatEndCount, setRepeatEndCount] = useState<number>(10);
+
   // Sync state whenever the opened task changes
   useEffect(() => {
     if (task) {
@@ -97,6 +125,18 @@ export default function TaskDetailModal({
       setSelectedListId(task.listId || "");
       setQuadrant(extractQuadrant(task.title));
       setNewSubtaskTitle("");
+
+      setExactTime(task.exactTime || "");
+      const existingRule = task.recurrence || recurrenceService.getRule(task.id);
+      setRecurrence(existingRule || null);
+      if (existingRule) {
+        setRepeatFreq(existingRule.frequency);
+        setRepeatInterval(existingRule.interval);
+        if (existingRule.daysOfWeek) setRepeatDays(existingRule.daysOfWeek);
+        setRepeatEndType(existingRule.endType);
+        if (existingRule.endDate) setRepeatEndDate(existingRule.endDate);
+        if (existingRule.endCount) setRepeatEndCount(existingRule.endCount);
+      }
     }
   }, [task]);
 
@@ -120,6 +160,32 @@ export default function TaskDetailModal({
     setDueDate(d);
   };
 
+  const handleDayOfWeekToggle = (dayIndex: number) => {
+    setRepeatDays((prev) => {
+      if (prev.includes(dayIndex)) {
+        return prev.length > 1 ? prev.filter((d) => d !== dayIndex) : prev;
+      }
+      return [...prev, dayIndex].sort((a, b) => a - b);
+    });
+  };
+
+  const handleSaveRepeat = () => {
+    const rule: RecurrenceRule = {
+      frequency: repeatFreq,
+      interval: Math.max(1, repeatInterval),
+      daysOfWeek: repeatFreq === "weekly" ? repeatDays : undefined,
+      time: exactTime || undefined,
+      endType: repeatEndType,
+      endDate: repeatEndType === "on_date" ? repeatEndDate : undefined,
+      endCount: repeatEndType === "after_occurrences" ? repeatEndCount : undefined,
+    };
+    setRecurrence(rule);
+    if (!dueDate) {
+      handleSetQuickDate(0);
+    }
+    setRepeatAnchorEl(null);
+  };
+
   const handleSave = async () => {
     if (!title.trim()) return;
     setIsSaving(true);
@@ -133,7 +199,9 @@ export default function TaskDetailModal({
         task,
         title.trim(),
         notes.trim() ? notes.trim() : undefined,
-        dueDate || undefined
+        dueDate || undefined,
+        exactTime || undefined,
+        recurrence || undefined
       );
       onClose();
     } finally {
@@ -358,6 +426,30 @@ export default function TaskDetailModal({
               </Button>
             )}
           </Box>
+
+          {/* Time & Recurrence Controls */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5, flexWrap: "wrap" }}>
+            <Chip
+              icon={<AccessTime sx={{ fontSize: 16 }} />}
+              label={exactTime ? `${t("tasks.time")}: ${exactTime}` : t("tasks.setTime")}
+              size="small"
+              onClick={(e) => setTimeAnchorEl(e.currentTarget)}
+              onDelete={exactTime ? () => setExactTime("") : undefined}
+              color={exactTime ? "info" : "default"}
+              variant={exactTime ? "filled" : "outlined"}
+              sx={{ borderRadius: "8px" }}
+            />
+            <Chip
+              icon={<Repeat sx={{ fontSize: 16 }} />}
+              label={recurrence ? `${t("tasks.repeats")}: ${t(`tasks.${recurrence.frequency}`)}` : t("tasks.repeats")}
+              size="small"
+              onClick={(e) => setRepeatAnchorEl(e.currentTarget)}
+              onDelete={recurrence ? () => setRecurrence(null) : undefined}
+              color={recurrence ? "secondary" : "default"}
+              variant={recurrence ? "filled" : "outlined"}
+              sx={{ borderRadius: "8px" }}
+            />
+          </Box>
         </Box>
 
         {/* Target List Selector */}
@@ -530,6 +622,176 @@ export default function TaskDetailModal({
           {isSaving ? t("tasks.saving") : t("tasks.saveChanges")}
         </Button>
       </DialogActions>
+
+      {/* Time Picker Popover */}
+      <Popover
+        open={Boolean(timeAnchorEl)}
+        anchorEl={timeAnchorEl}
+        onClose={() => setTimeAnchorEl(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5, minWidth: 220 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            {t("tasks.setTime")}
+          </Typography>
+          <TextField
+            type="time"
+            fullWidth
+            size="small"
+            value={exactTime}
+            onChange={(e) => setExactTime(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+          />
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+            {exactTime && (
+              <Button size="small" onClick={() => { setExactTime(""); setTimeAnchorEl(null); }}>
+                {t("tasks.clearTime")}
+              </Button>
+            )}
+            <Button size="small" variant="contained" onClick={() => setTimeAnchorEl(null)}>
+              {t("common.save")}
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
+
+      {/* Repeats Popover */}
+      <Popover
+        open={Boolean(repeatAnchorEl)}
+        anchorEl={repeatAnchorEl}
+        onClose={() => setRepeatAnchorEl(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <Box sx={{ p: 2.5, width: 300, display: "flex", flexDirection: "column", gap: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+            {t("tasks.repeats")}
+          </Typography>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Typography variant="body2" sx={{ minWidth: 50, color: "text.secondary" }}>
+              {t("tasks.repeatEvery")}
+            </Typography>
+            <TextField
+              type="number"
+              size="small"
+              value={repeatInterval}
+              onChange={(e) => setRepeatInterval(Math.max(1, parseInt(e.target.value) || 1))}
+              sx={{ width: 70 }}
+              inputProps={{ min: 1 }}
+            />
+            <FormControl size="small" sx={{ flex: 1 }}>
+              <Select
+                value={repeatFreq}
+                onChange={(e) => setRepeatFreq(e.target.value as RecurrenceFrequency)}
+              >
+                <MenuItem value="daily">{t("tasks.daily")}</MenuItem>
+                <MenuItem value="weekly">{t("tasks.weekly")}</MenuItem>
+                <MenuItem value="monthly">{t("tasks.monthly")}</MenuItem>
+                <MenuItem value="yearly">{t("tasks.yearly")}</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
+          {repeatFreq === "weekly" && (
+            <Box>
+              <Box sx={{ display: "flex", justifyContent: "space-between", gap: 0.5, mt: 0.5 }}>
+                {(language === "ar" ? ["ح", "ن", "ث", "ر", "خ", "ج", "س"] : ["S", "M", "T", "W", "T", "F", "S"]).map((dayName, index) => {
+                  const isSelected = repeatDays.includes(index);
+                  return (
+                    <Button
+                      key={dayName + index}
+                      size="small"
+                      variant={isSelected ? "contained" : "outlined"}
+                      onClick={() => handleDayOfWeekToggle(index)}
+                      sx={{
+                        minWidth: 32,
+                        width: 32,
+                        height: 32,
+                        p: 0,
+                        borderRadius: "50%",
+                        fontSize: "0.8rem",
+                        fontWeight: isSelected ? 700 : 500,
+                      }}
+                    >
+                      {dayName}
+                    </Button>
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
+
+          <Box>
+            <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+              {t("tasks.ends")}
+            </Typography>
+            <RadioGroup
+              value={repeatEndType}
+              onChange={(e) => setRepeatEndType(e.target.value as RecurrenceEndType)}
+              sx={{ mt: 0.5 }}
+            >
+              <FormControlLabel
+                value="never"
+                control={<Radio size="small" />}
+                label={<Typography variant="body2">{t("tasks.never")}</Typography>}
+              />
+              <FormControlLabel
+                value="on_date"
+                control={<Radio size="small" />}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="body2">{t("tasks.onDate")}</Typography>
+                    {repeatEndType === "on_date" && (
+                      <TextField
+                        type="date"
+                        size="small"
+                        value={repeatEndDate}
+                        onChange={(e) => setRepeatEndDate(e.target.value)}
+                        sx={{ width: 140 }}
+                      />
+                    )}
+                  </Box>
+                }
+              />
+              <FormControlLabel
+                value="after_occurrences"
+                control={<Radio size="small" />}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="body2">{t("tasks.afterOccurrences")}</Typography>
+                    {repeatEndType === "after_occurrences" && (
+                      <TextField
+                        type="number"
+                        size="small"
+                        value={repeatEndCount}
+                        onChange={(e) => setRepeatEndCount(Math.max(1, parseInt(e.target.value) || 1))}
+                        sx={{ width: 60 }}
+                        inputProps={{ min: 1 }}
+                      />
+                    )}
+                    <Typography variant="body2">{t("tasks.occurrences")}</Typography>
+                  </Box>
+                }
+              />
+            </RadioGroup>
+          </Box>
+
+          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+            {recurrence ? (
+              <Button
+                size="small"
+                color="error"
+                onClick={() => { setRecurrence(null); setRepeatAnchorEl(null); }}
+              >
+                {t("tasks.removeRepeat")}
+              </Button>
+            ) : <Box />}
+            <Button size="small" variant="contained" onClick={handleSaveRepeat}>
+              {t("tasks.saveRepeat")}
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
     </Dialog>
   );
 }
