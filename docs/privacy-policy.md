@@ -1,52 +1,61 @@
-# Privacy Policy for Google Tasks Desktop (Pro)
+# Privacy Policy for G Tasks Desktop (Google Tasks Pro)
 
-*Last updated: October 2026*
+*Last updated: October 21, 2026*
 
-**Google Tasks Desktop** ("the App", "we", "our") is an open-source, desktop client built with Tauri and React to interact with your Google Tasks account.
+**G Tasks Desktop** ("the Application", "Software", "we", "us", or "our") is an independent, open-source desktop client designed for Google Tasks.
 
-We believe your privacy is fundamental. This policy explains how information is handled when you use the App.
-
----
-
-## 1. Zero Data Collection
-* **We do NOT operate any servers, analytics trackers, or databases.**
-* None of your personal data, tasks, notes, lists, or authentication tokens are ever sent to us, stored on any third-party backend, or monetized in any way.
-* All data flows directly and exclusively between your local device and the official **Google Tasks API** (`https://tasks.googleapis.com`).
+This Privacy Policy explains how information is handled when you use the Application. We take your privacy with the utmost seriousness. The Application is architected on a **local-only, zero-knowledge** foundation.
 
 ---
 
-## 2. Google OAuth & Account Permissions
-* The App connects to your Google account using standard OAuth 2.0 authorization.
-* The App requests access strictly to:
-  * `https://www.googleapis.com/auth/tasks`: Required to read, create, update, and manage your tasks and task lists.
-* **Storage of Tokens:** Your OAuth access and refresh tokens are stored securely in your local operating system storage (`localStorage` / local configuration directory). They never leave your device.
-* You can revoke the App's access at any time through your [Google Account Permissions](https://myaccount.google.com/permissions).
+## 1. Compliance with Google API Services User Data Policy
+G Tasks Desktop's use and transfer to any other app of information received from Google APIs will adhere to the **[Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy)**, including the **Limited Use** requirements:
+
+* **Limited Use Disclosure:** We do not use Google user data for serving advertisements, training generalized artificial intelligence/machine learning models, selling to data brokers, or any purpose other than providing and improving user-facing task management features in accordance with your explicit actions.
+* **Direct Communication Only:** All API requests regarding your Google Tasks data (creating, reading, updating, or deleting tasks and lists) are sent directly from your personal device to Google's official API servers (`https://tasks.googleapis.com`) using TLS encryption (HTTPS).
 
 ---
 
-## 3. Local-First Data Storage
-* Any cached task snapshots, custom tags, recurring task rules, or Eisenhower Matrix assignments are saved strictly on your local machine using client-side storage (`localStorage` and Tauri local app data).
-* If you clear your local application cache or uninstall the app, local cache files are removed.
+## 2. Zero Personal Data Collection & No External Servers
+* **No Developer Servers:** We do **NOT** operate, host, or maintain any backend servers, databases, or intermediary relays.
+* **No Telemetry or Tracking:** We do **NOT** collect, track, log, or transmit any analytics, crash reports, unique device identifiers, user IDs, or behavioral analytics.
+* **No Data Sharing or Sale:** We never sell, rent, monetize, share, or disclose any of your tasks, notes, account credentials, or tokens to any third party.
 
 ---
 
-## 4. Third-Party Services
-* **Google APIs:** The App interacts with Google APIs. Your use of Google Tasks remains subject to the [Google Privacy Policy](https://policies.google.com/privacy).
-* **Optional AI Copilot:** If you choose to configure an optional AI provider (e.g., Google Gemini, OpenAI, Ollama, LM Studio), prompts are transmitted directly using your personal API key to that provider or to your local machine (in the case of Ollama/LM Studio).
+## 3. How Google Account Information & Tokens Are Handled
+* **OAuth 2.0 Authorization:** The Application utilizes industry-standard OAuth 2.0 protocol. You sign in directly through Google's official authentication page.
+* **Requested Scopes:**
+  * `https://www.googleapis.com/auth/tasks`: Solely used to fetch and update your tasks, task lists, due dates, and completion status.
+* **Local-Only Storage:** OAuth authentication tokens (access tokens and refresh tokens) are saved exclusively on your local computer's secure storage (`localStorage` and application storage managed by your OS). Tokens never leave your local device.
+* **Revocation:** You have full control and can revoke access to this Application at any time through your [Google Account Security Settings](https://myaccount.google.com/permissions).
 
 ---
 
-## 5. Security
-Because the App runs as a desktop application locally on your machine:
-* Communication with Google's servers occurs via encrypted HTTPS (TLS 1.2+).
-* No intermediate proxy or relay is used.
+## 4. Local-First Caching & Custom Features
+* **Local Offline Storage:** Features such as local task snapshots (for instant offline startup), custom task tags, recurring task rules, and Eisenhower Matrix quadrant assignments are stored strictly locally on your machine.
+* **Optional AI Copilot:** If you choose to configure third-party AI models (e.g., Google Gemini, OpenAI, or local engines like Ollama/LM Studio), requests are initiated directly from your device using your personal API key or to your local machine (`localhost`). No data passes through any intermediary server.
 
 ---
 
-## 6. Open Source
-Google Tasks Desktop is fully open-source. You can inspect the source code, verify all network requests, and audit data handling directly in the project repository.
+## 5. Security of Your Information
+Because G Tasks Desktop runs natively on your machine, your data is as secure as your personal operating system and computer:
+* Communication with Google is secured using end-to-end encrypted HTTPS.
+* No proxy, server, or intermediary entity can access or intercept your credentials.
 
 ---
 
-## 7. Contact
-If you have any questions or feedback regarding this Privacy Policy, please open an issue on the GitHub repository.
+## 6. Children's Privacy
+The Application does not knowingly collect or solicit any personal information from children under the age of 13. Because no information is collected or transmitted to any server, the Application is safe for general use.
+
+---
+
+## 7. Changes to This Privacy Policy
+We may update this Privacy Policy periodically to reflect enhancements or legal requirements. Any modifications will be posted to this repository with an updated revision date.
+
+---
+
+## 8. Contact Information
+If you have questions, concerns, or requests regarding this Privacy Policy, please open an issue on the official GitHub repository:
+- **Repository:** [https://github.com/YoussefMo7amed/google-tasks-pro](https://github.com/YoussefMo7amed/google-tasks-pro)
+- **Developer Contact:** youssef.mo7amed@protonmail.com
