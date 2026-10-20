@@ -163,4 +163,15 @@ npm run build
 
 ---
 
+## 7. Roadmap: Tauri v2 & Mobile (Android APK) Migration
+* **Current Core Focus:** Ultra-stable Tauri v1.4 desktop client powering macOS (`.dmg`), Windows (`.exe`, `.msi`), and Linux (`.deb`, `.AppImage`).
+* **Planned Milestone:** Migrate to Tauri v2 in an isolated experimental branch (`feature/tauri-v2-migration`).
+* **Migration Requirements:**
+  1. Migrate plugins from v1 git branches to official v2 crates (`@tauri-apps/plugin-store`, `@tauri-apps/plugin-log`, etc.).
+  2. Convert `allowlist` in `tauri.conf.json` to the v2 Capabilities & ACL permission system (`src-tauri/capabilities/`).
+  3. Refactor `main.rs` system tray implementation from `SystemTray` to `tauri::tray::TrayIconBuilder`.
+  4. Initialize Android Studio toolchain via `tauri android init` to generate mobile `.apk` artifacts.
+
+---
+
 *Updated & Maintained for Google Tasks Desktop.*
