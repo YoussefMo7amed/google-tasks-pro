@@ -30,6 +30,7 @@ export function useTaskLists() {
   const setStarredIds = useSetRecoilState(starredTaskIdsAtom);
 
   const isFetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef<number>(0);
   const taskListsRef = useRef(taskLists);
   taskListsRef.current = taskLists;
 
@@ -46,6 +47,12 @@ export function useTaskLists() {
 
     if (!service) {
       setLoading(false);
+      return;
+    }
+
+    // Skip redundant network fetch if already loaded and fetched recently (<30s), unless forced
+    const now = Date.now();
+    if (!forceRefresh && taskListsRef.current.length > 0 && now - lastFetchTimeRef.current < 30_000) {
       return;
     }
 
@@ -90,6 +97,7 @@ export function useTaskLists() {
       // 3. Fetch fresh data from Google Tasks API
       const lists = await service.getAll(forceRefresh);
       setTaskLists(lists);
+      lastFetchTimeRef.current = Date.now();
       setIsOnline(true);
       setError(null);
 

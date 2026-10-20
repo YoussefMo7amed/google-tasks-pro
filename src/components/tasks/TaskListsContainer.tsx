@@ -51,10 +51,12 @@ export default function TaskListsContainer() {
   const [activeTask, setActiveTask] = useState<AppTask | null>(null);
   const [activeList, setActiveList] = useState<AppTaskList | null>(null);
 
-  // Fetch task lists on mount
+  // Only fetch task lists on mount if empty
   useEffect(() => {
-    fetchTaskLists();
-  }, [fetchTaskLists]);
+    if (taskLists.length === 0) {
+      fetchTaskLists();
+    }
+  }, [fetchTaskLists, taskLists.length]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

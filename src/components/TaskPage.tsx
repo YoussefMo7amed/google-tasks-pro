@@ -5,7 +5,7 @@
  * Bridges old auth system with new hooks.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Box, CircularProgress, Typography, Button, Paper } from "@mui/material";
 import { LockOutlined, Google } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
@@ -134,27 +134,67 @@ export default function TaskPage() {
     );
   }
 
+  const currentViewKey =
+    viewState.view === "analytics"
+      ? "analytics"
+      : viewState.view === "eisenhower"
+      ? "eisenhower"
+      : viewState.view === "trash"
+      ? "trash"
+      : taskViewMode === "list"
+      ? "list"
+      : taskViewMode === "calendar"
+      ? "calendar"
+      : "board";
+
+  const [mountedViews, setMountedViews] = useState<Set<string>>(() => new Set([currentViewKey]));
+
+  useEffect(() => {
+    setMountedViews((prev) => {
+      if (prev.has(currentViewKey)) return prev;
+      return new Set(prev).add(currentViewKey);
+    });
+  }, [currentViewKey]);
+
   return (
     <Box
       sx={{
         flex: 1,
         overflow: "hidden",
         display: "flex",
+        position: "relative",
         bgcolor: "background.default",
       }}
     >
-      {viewState.view === "analytics" ? (
-        <AnalyticsView />
-      ) : viewState.view === "eisenhower" ? (
-        <EisenhowerMatrixView />
-      ) : viewState.view === "trash" ? (
-        <TrashTasksView />
-      ) : taskViewMode === "list" ? (
-        <UnifiedListView />
-      ) : taskViewMode === "calendar" ? (
-        <CalendarTasksView />
-      ) : (
-        <TaskListsContainer />
+      {mountedViews.has("board") && (
+        <Box sx={{ flex: 1, display: currentViewKey === "board" ? "flex" : "none", width: "100%", height: "100%" }}>
+          <TaskListsContainer />
+        </Box>
+      )}
+      {mountedViews.has("list") && (
+        <Box sx={{ flex: 1, display: currentViewKey === "list" ? "flex" : "none", width: "100%", height: "100%" }}>
+          <UnifiedListView />
+        </Box>
+      )}
+      {mountedViews.has("calendar") && (
+        <Box sx={{ flex: 1, display: currentViewKey === "calendar" ? "flex" : "none", width: "100%", height: "100%" }}>
+          <CalendarTasksView />
+        </Box>
+      )}
+      {mountedViews.has("eisenhower") && (
+        <Box sx={{ flex: 1, display: currentViewKey === "eisenhower" ? "flex" : "none", width: "100%", height: "100%" }}>
+          <EisenhowerMatrixView />
+        </Box>
+      )}
+      {mountedViews.has("analytics") && (
+        <Box sx={{ flex: 1, display: currentViewKey === "analytics" ? "flex" : "none", width: "100%", height: "100%" }}>
+          <AnalyticsView />
+        </Box>
+      )}
+      {mountedViews.has("trash") && (
+        <Box sx={{ flex: 1, display: currentViewKey === "trash" ? "flex" : "none", width: "100%", height: "100%" }}>
+          <TrashTasksView />
+        </Box>
       )}
     </Box>
   );

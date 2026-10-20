@@ -5,7 +5,7 @@
  * Supports drag-drop reordering of tasks.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Paper,
   List,
@@ -144,14 +144,21 @@ export default function TaskListCard({
   };
 
   // Separate and sort tasks
-  const incompleteTasks = sortTasks(
-    taskList.tasks.filter((task) => task.status === "needsAction"),
-    sortBy
-  );
-  const completedTasks = taskList.tasks.filter((task) => task.status === "completed");
+  const incompleteTasks = useMemo(() => {
+    return sortTasks(
+      taskList.tasks.filter((task) => task.status === "needsAction"),
+      sortBy
+    );
+  }, [taskList.tasks, sortBy]);
+
+  const completedTasks = useMemo(() => {
+    return taskList.tasks.filter((task) => task.status === "completed");
+  }, [taskList.tasks]);
 
   // Create a map of task IDs to titles for parent lookup
-  const taskTitleMap = new Map(taskList.tasks.map(t => [t.id, t.title]));
+  const taskTitleMap = useMemo(() => {
+    return new Map(taskList.tasks.map((t) => [t.id, t.title]));
+  }, [taskList.tasks]);
 
   const handleSortChange = (newSort: string) => {
     setSortBy(newSort);

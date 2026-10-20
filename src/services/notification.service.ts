@@ -110,8 +110,11 @@ export async function scheduleAllTaskNotifications(tasks: AppTask[]): Promise<nu
 
   let scheduled = 0;
   for (const task of eligibleTasks) {
-    const success = await scheduleTaskNotification(task);
-    if (success) scheduled++;
+    // Only invoke Tauri IPC if not already scheduled
+    if (!scheduledTaskIds.has(task.id)) {
+      const success = await scheduleTaskNotification(task);
+      if (success) scheduled++;
+    }
   }
 
   console.debug(`Scheduled ${scheduled}/${eligibleTasks.length} task notifications`);
