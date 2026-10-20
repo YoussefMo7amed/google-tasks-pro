@@ -173,6 +173,9 @@ export const en: TranslationSchema = {
     connectionSuccess: "Connected successfully!",
     connectionFailed: "Connection failed",
     testConnection: "Test Connection",
+    apiKeyRequiredTitle: "API Key Required",
+    apiKeyRequiredBody: "No API key configured for {provider}. Add your key in AI Settings to start chatting.",
+    configureKeyBtn: "Configure API Key",
   },
   settings: {
     title: "Settings & Integrations",

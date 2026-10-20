@@ -41,12 +41,11 @@ import {
   KeyboardAltOutlined,
   DeleteOutline,
 } from "@mui/icons-material";
-import { useRecoilState, useRecoilValue } from "recoil";
-import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom } from "../../store";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom } from "../../store";
 import { useTaskLists, useTrash } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
-import SettingsDialog from "../ui/SettingsDialog";
 import { useTranslation } from "../../i18n";
 
 interface SidebarProps {
@@ -58,7 +57,8 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [listsExpanded, setListsExpanded] = useState(true);
   const [showAddCategory, setShowAddCategory] = useRecoilState(addCategoryOpenAtom);
-  const [showSettings, setShowSettings] = useRecoilState(settingsOpenAtom);
+  const setShowSettings = useSetRecoilState(settingsOpenAtom);
+  const setSettingsActiveTab = useSetRecoilState(settingsActiveTabAtom);
   const [, setShowAiCopilot] = useRecoilState(aiCopilotOpenAtom);
   const [, setShowShortcuts] = useRecoilState(shortcutsModalOpenAtom);
   const [viewState, setViewState] = useRecoilState(viewStateAtom);
@@ -795,7 +795,10 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
 
           {/* Settings Button */}
           <ListItemButton
-            onClick={() => setShowSettings(true)}
+            onClick={() => {
+              setSettingsActiveTab(0);
+              setShowSettings(true);
+            }}
             sx={{
               py: 0.8,
               justifyContent: isCollapsed ? 'center' : 'flex-start',
@@ -820,11 +823,6 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
       <AddCategoryDialog
         open={showAddCategory}
         onClose={() => setShowAddCategory(false)}
-      />
-
-      <SettingsDialog
-        open={showSettings}
-        onClose={() => setShowSettings(false)}
       />
     </>
   );

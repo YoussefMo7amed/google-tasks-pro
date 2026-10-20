@@ -20,6 +20,7 @@ import {
   ListItemText,
   Fade,
   Checkbox,
+  Alert,
 } from "@mui/material";
 import {
   Close,
@@ -40,7 +41,7 @@ import {
   PlaylistRemove,
 } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
-import { taskListsAtom, viewStateAtom, toastAtom } from "../../store";
+import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom } from "../../store";
 import { useTasks, useTaskLists } from "../../hooks";
 import {
   aiService,
@@ -112,6 +113,7 @@ export default function AICopilotModal({
   const taskLists = useRecoilValue(taskListsAtom);
   const viewState = useRecoilValue(viewStateAtom);
   const setToast = useSetRecoilState(toastAtom);
+  const setSettingsActiveTab = useSetRecoilState(settingsActiveTabAtom);
   const { createTask, createSubtask, updateTask, deleteTask } = useTasks();
   const { createTaskList, renameTaskList, deleteTaskList } = useTaskLists();
 
@@ -137,6 +139,23 @@ export default function AICopilotModal({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentSettings = AISettingsService.load();
+  const isLocalProvider = currentSettings.provider === "ollama" || currentSettings.provider === "lm_studio";
+  const hasKey = Boolean(currentSettings.apiKey && currentSettings.apiKey.trim().length > 0);
+  const isMissingKey = !isLocalProvider && !hasKey;
+
+  const providerDisplayName =
+    currentSettings.provider === "gemini"
+      ? "Google Gemini"
+      : currentSettings.provider === "claude"
+      ? "Anthropic Claude"
+      : currentSettings.provider === "openai_compatible"
+      ? "OpenAI / Groq"
+      : currentSettings.provider.toUpperCase();
+
+  const handleOpenAISettings = useCallback(() => {
+    setSettingsActiveTab(1);
+    onOpenSettings();
+  }, [setSettingsActiveTab, onOpenSettings]);
 
   // Initialize or reload chat sessions when modal opens
   const initializeSessions = useCallback(() => {
@@ -242,17 +261,13 @@ export default function AICopilotModal({
     const trimmed = userText.trim();
     if (!trimmed || loading) return;
 
-    if (
-      !currentSettings.apiKey &&
-      currentSettings.provider !== "ollama" &&
-      currentSettings.provider !== "lm_studio"
-    ) {
+    if (isMissingKey) {
       setToast({
-        title: "API Key Required",
-        body: `Please configure your ${currentSettings.provider} API Key in Settings first.`,
-        type: "error",
+        title: t("ai.apiKeyRequiredTitle"),
+        body: t("ai.apiKeyRequiredBody", { provider: providerDisplayName }),
+        type: "warning",
       });
-      onOpenSettings();
+      handleOpenAISettings();
       return;
     }
 
@@ -716,7 +731,7 @@ export default function AICopilotModal({
           </Tooltip>
 
           <Tooltip title={language === "ar" ? "إعدادات الذكاء الاصطناعي" : "AI Settings"}>
-            <IconButton size="small" onClick={onOpenSettings}>
+            <IconButton size="small" onClick={handleOpenAISettings}>
               <Tune fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -843,6 +858,62 @@ export default function AICopilotModal({
 
         {/* Right Chat Column */}
         <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+          {/* Missing API Key Warning Banner */}
+          {isMissingKey && (
+            <Box
+              sx={{
+                px: 2,
+                pt: 1.5,
+                pb: 1,
+                flexShrink: 0,
+                bgcolor: "background.paper",
+                borderBottom: 1,
+                borderColor: "divider",
+              }}
+            >
+              <Alert
+                severity="warning"
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  alignItems: "center",
+                  py: 0.5,
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "rgba(237, 108, 2, 0.12)"
+                      : "rgba(237, 108, 2, 0.08)",
+                  borderColor: "warning.main",
+                }}
+                action={
+                  <Button
+                    color="warning"
+                    size="small"
+                    variant="contained"
+                    onClick={handleOpenAISettings}
+                    startIcon={<Tune sx={{ fontSize: 16 }} />}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      fontSize: "0.8rem",
+                      borderRadius: 1.5,
+                      px: 1.5,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {t("ai.configureKeyBtn")}
+                  </Button>
+                }
+              >
+                <Typography variant="subtitle2" fontWeight={700}>
+                  {t("ai.apiKeyRequiredTitle")}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {t("ai.apiKeyRequiredBody", { provider: providerDisplayName })}
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+
           {/* Quick Prompts Bar */}
           <Box
             sx={{

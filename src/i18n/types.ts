@@ -188,6 +188,9 @@ export interface TranslationSchema {
     connectionSuccess: string;
     connectionFailed: string;
     testConnection: string;
+    apiKeyRequiredTitle: string;
+    apiKeyRequiredBody: string;
+    configureKeyBtn: string;
   };
   settings: {
     title: string;

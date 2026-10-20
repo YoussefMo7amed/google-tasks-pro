@@ -11,7 +11,59 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 [![Tauri](https://img.shields.io/badge/Tauri-1.4-orange.svg)](https://tauri.app)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20العربية-purple.svg)](src/i18n/)
 
-![Screenshot](screenshot.png)
+<br/><br/>
+
+<img src="docs/screenshots/01-board-view.png" alt="Google Tasks Pro Board View" width="100%" />
+
+</div>
+
+---
+
+## 📸 Screenshots Showcase
+
+<div align="center">
+
+### 📋 Board View (Multi-Column Kanban)
+*Side-by-side horizontal task lists with status filters, tags, and due indicators.*
+<br/>
+<img src="docs/screenshots/01-board-view.png" alt="Board View" width="95%" />
+
+<br/><br/>
+
+### 📑 Unified List View
+*Consolidated task feed across all lists with rapid inline search and completion.*
+<br/>
+<img src="docs/screenshots/02-list-view.png" alt="Unified List View" width="95%" />
+
+<br/><br/>
+
+### 📅 Calendar Agenda View
+*Full monthly agenda view to visualize deadlines, overdue tasks, and upcoming schedules.*
+<br/>
+<img src="docs/screenshots/03-calendar-view.png" alt="Calendar View" width="95%" />
+
+<br/><br/>
+
+### 🎯 Eisenhower Priority Matrix
+*Automated 4-quadrant urgency and importance matrix for deep focus and delegation.*
+<br/>
+<img src="docs/screenshots/04-eisenhower-matrix.png" alt="Eisenhower Matrix" width="95%" />
+
+<br/><br/>
+
+### 📈 Analytics & Productivity Streaks
+*Track completion velocity, daily productivity streaks, and task distribution statistics.*
+<br/>
+<img src="docs/screenshots/05-analytics-view.png" alt="Analytics View" width="95%" />
+
+<br/><br/>
+
+### 🤖 Multi-Provider AI Copilot & 1-Click Task Breakdown
+*Conversational AI assistant that understands your tasks, organizes schedules, and generates actionable task items.*
+
+| AI Chat & Contextual Planning | 1-Click Action Execution & Subtasks |
+| :---: | :---: |
+| <img src="docs/screenshots/06-ai-copilot-chat.png" alt="AI Copilot Chat" width="100%" /> | <img src="docs/screenshots/07-ai-copilot-actions.png" alt="AI Copilot Actions" width="100%" /> |
 
 </div>
 

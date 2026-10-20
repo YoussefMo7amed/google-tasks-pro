@@ -34,7 +34,7 @@ export const DEFAULT_BASE_URLS: Record<AIProviderType, string> = {
 };
 
 export const PROVIDER_LABELS: Record<AIProviderType, string> = {
-  gemini: "Google Gemini (Recommended)",
+  gemini: "Google Gemini",
   openai_compatible: "OpenAI / OpenRouter / Groq",
   claude: "Anthropic Claude",
   ollama: "Ollama (Local Open-Source)",

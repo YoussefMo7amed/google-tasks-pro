@@ -104,6 +104,11 @@ export const settingsOpenAtom = atom<boolean>({
   default: false,
 });
 
+export const settingsActiveTabAtom = atom<number>({
+  key: "settingsActiveTab",
+  default: 0,
+});
+
 export const shortcutsModalOpenAtom = atom<boolean>({
   key: "shortcutsModalOpen",
   default: false,

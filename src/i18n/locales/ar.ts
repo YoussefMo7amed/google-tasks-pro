@@ -173,6 +173,9 @@ export const ar: TranslationSchema = {
     connectionSuccess: "تم الاتصال بنجاح!",
     connectionFailed: "فشل الاتصال",
     testConnection: "فحص الاتصال",
+    apiKeyRequiredTitle: "مطلوب إدخال مفتاح API",
+    apiKeyRequiredBody: "لم يتم إدخال مفتاح API لمزود الخدمة ({provider}). يرجى إضافة المفتاح في إعدادات الذكاء الاصطناعي للبدء.",
+    configureKeyBtn: "إعداد مفتاح API",
   },
   settings: {
     title: "الإعدادات والتكاملات",

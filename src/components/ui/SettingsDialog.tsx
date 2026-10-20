@@ -7,6 +7,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useRecoilState } from 'recoil';
+import { settingsActiveTabAtom } from '../../store';
 import {
   Dialog,
   DialogTitle,
@@ -79,7 +81,7 @@ interface SettingsDialogProps {
 }
 
 const getProviderLabels = (language: string): Record<AIProviderType, string> => ({
-  gemini: language === "ar" ? "Google Gemini (موصى به)" : "Google Gemini (Recommended)",
+  gemini: "Google Gemini",
   openai_compatible: "OpenAI / OpenRouter / Groq",
   claude: "Anthropic Claude",
   ollama: language === "ar" ? "Ollama (محلي مفتوح المصدر)" : "Ollama (Local Open-Source)",
@@ -93,7 +95,7 @@ export default function SettingsDialog({
 }: SettingsDialogProps) {
   const { t, language, setLanguage, supportedLanguages } = useTranslation();
   const providerLabels = getProviderLabels(language);
-  const [activeTab, setActiveTab] = useState<number>(0);
+  const [activeTab, setActiveTab] = useRecoilState(settingsActiveTabAtom);
   const [notificationHour, setNotificationHour] = useState<number>(9);
   const [timeFormat, setTimeFormat] = useState<TimeFormatPreference>('both');
   const [loading, setLoading] = useState(true);
