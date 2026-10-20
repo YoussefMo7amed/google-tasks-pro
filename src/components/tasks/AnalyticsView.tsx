@@ -8,7 +8,7 @@
  * - Detailed completion timeline log with exact timestamps
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -30,8 +30,11 @@ import {
   StreakStats,
   CompletedHistoryItem,
 } from "../../services/history.service";
+import { useTranslation } from "../../i18n";
 
 export default function AnalyticsView() {
+  const { t, language } = useTranslation();
+
   const [stats, setStats] = useState<StreakStats>({
     currentStreak: 0,
     longestStreak: 0,
@@ -70,6 +73,26 @@ export default function AnalyticsView() {
       ? Math.round((quadrantBreakdown.Q2 / totalCategorized) * 100)
       : 0;
 
+  // Format date labels dynamically according to active language
+  const formattedActivity = useMemo(() => {
+    return dailyActivity.map((day) => {
+      const parts = day.dateKey.split("-");
+      let localizedLabel = day.label;
+      if (parts.length === 3) {
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        localizedLabel = d.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", {
+          weekday: "narrow",
+          month: "numeric",
+          day: "numeric",
+        });
+      }
+      return {
+        ...day,
+        localizedLabel,
+      };
+    });
+  }, [dailyActivity, language]);
+
   return (
     <Box
       sx={{
@@ -87,10 +110,11 @@ export default function AnalyticsView() {
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
-            📊 Productivity & Streak Analytics | الإحصائيات والإنجاز
+            <span>📊</span>
+            <span>{t("analytics.title")}</span>
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            Track your daily momentum, completion history, and focus balance
+            {t("analytics.subtitle")}
           </Typography>
         </Box>
       </Box>
@@ -129,19 +153,36 @@ export default function AnalyticsView() {
               justifyContent: "center",
               color: "#ff9800",
               boxShadow: "0 0 20px rgba(251, 140, 0, 0.4)",
+              flexShrink: 0,
             }}
           >
             <LocalFireDepartment sx={{ fontSize: 40 }} />
           </Box>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, color: "#ffb74d" }}>
-              {stats.currentStreak} {stats.currentStreak === 1 ? "Day" : "Days"}
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                color: "#ffb74d",
+                display: "flex",
+                alignItems: "baseline",
+                gap: 1,
+              }}
+            >
+              <span>{stats.currentStreak}</span>
+              <Typography
+                component="span"
+                sx={{ fontSize: "1.25rem", fontWeight: 700, color: "#ffb74d" }}
+              >
+                {stats.currentStreak === 1 ? t("analytics.daySingular") : t("analytics.daysPlural")}
+              </Typography>
             </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              Current Streak 🔥 سلسلة الإنجاز
+            <Typography variant="body2" sx={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
+              <span>{t("analytics.currentStreak")}</span>
+              <span>🔥</span>
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Personal Best: {stats.longestStreak} days
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+              {t("analytics.personalBest", { days: stats.longestStreak })}
             </Typography>
           </Box>
         </Paper>
@@ -163,14 +204,14 @@ export default function AnalyticsView() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
             <CheckCircle sx={{ color: "primary.main", fontSize: 20 }} />
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              COMPLETED TODAY
+              {t("analytics.completedToday")}
             </Typography>
           </Box>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             {stats.completedToday}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            tasks finished today
+            {t("analytics.tasksToday")}
           </Typography>
         </Paper>
 
@@ -191,14 +232,14 @@ export default function AnalyticsView() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
             <DateRange sx={{ color: "info.main", fontSize: 20 }} />
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              PAST 7 DAYS
+              {t("analytics.past7Days")}
             </Typography>
           </Box>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             {stats.completedThisWeek}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            tasks in the last week
+            {t("analytics.tasksPastWeek")}
           </Typography>
         </Paper>
 
@@ -219,14 +260,14 @@ export default function AnalyticsView() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
             <EmojiEvents sx={{ color: "warning.main", fontSize: 20 }} />
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              TOTAL RECORDED
+              {t("analytics.totalRecorded")}
             </Typography>
           </Box>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             {stats.totalCompleted}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            lifetime completed tasks
+            {t("analytics.lifetimeCompleted")}
           </Typography>
         </Paper>
       </Box>
@@ -242,8 +283,9 @@ export default function AnalyticsView() {
           borderColor: "divider",
         }}
       >
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
-          📈 14-Day Completion Activity | نشاط آخر 14 يوم
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+          <span>📈</span>
+          <span>{t("analytics.activityTitle")}</span>
         </Typography>
 
         <Box
@@ -257,12 +299,12 @@ export default function AnalyticsView() {
             overflowX: "auto",
           }}
         >
-          {dailyActivity.map((day) => {
+          {formattedActivity.map((day) => {
             const heightPercent = Math.max(6, (day.count / maxDailyCount) * 100);
             return (
               <Tooltip
                 key={day.dateKey}
-                title={`${day.dateKey}: ${day.count} task${day.count !== 1 ? "s" : ""} completed`}
+                title={`${day.dateKey}: ${t("analytics.activityTooltip", { count: day.count })}`}
                 arrow
               >
                 <Box
@@ -311,7 +353,7 @@ export default function AnalyticsView() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {day.label}
+                    {day.localizedLabel}
                   </Typography>
                 </Box>
               </Tooltip>
@@ -342,7 +384,7 @@ export default function AnalyticsView() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
             <PieChart sx={{ color: "primary.main", fontSize: 22 }} />
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Eisenhower Quadrants Completed
+              {t("analytics.eisenhowerTitle")}
             </Typography>
           </Box>
 
@@ -351,7 +393,7 @@ export default function AnalyticsView() {
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                 <Typography variant="body2" sx={{ color: "#f28b82", fontWeight: 600 }}>
-                  🔴 Q1: Do First (هام وعاجل)
+                  🔴 {t("analytics.q1Label")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {quadrantBreakdown.Q1}
@@ -373,7 +415,7 @@ export default function AnalyticsView() {
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                 <Typography variant="body2" sx={{ color: "#8ab4f8", fontWeight: 600 }}>
-                  🔵 Q2: Schedule & Deep Work (هام وغير عاجل)
+                  🔵 {t("analytics.q2Label")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {quadrantBreakdown.Q2} ({q2Ratio}%)
@@ -395,7 +437,7 @@ export default function AnalyticsView() {
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                 <Typography variant="body2" sx={{ color: "#fdd663", fontWeight: 600 }}>
-                  🟡 Q3: Delegate (عاجل وغير هام)
+                  🟡 {t("analytics.q3Label")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {quadrantBreakdown.Q3}
@@ -417,7 +459,7 @@ export default function AnalyticsView() {
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                 <Typography variant="body2" sx={{ color: "#c58af9", fontWeight: 600 }}>
-                  ⚪ Q4: Eliminate (غير هام وغير عاجل)
+                  ⚪ {t("analytics.q4Label")}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {quadrantBreakdown.Q4}
@@ -452,12 +494,16 @@ export default function AnalyticsView() {
           }}
         >
           <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-              💡 Productivity Insight | تحليل الفاعلية
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+              <span>💡</span>
+              <span>{t("analytics.insightTitle")}</span>
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-              The highest performers spend the majority of their time in <b>Quadrant 2 (Important, Not Urgent)</b>.
-              Focusing on Q2 prevents emergencies, develops long-term skills, and builds real momentum.
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ lineHeight: 1.6, textAlign: "start" }}
+            >
+              {t("analytics.insightBody")}
             </Typography>
           </Box>
 
@@ -472,12 +518,12 @@ export default function AnalyticsView() {
             }}
           >
             <Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
-              Deep Work (Q2) Ratio: {q2Ratio}%
+              {t("analytics.deepWorkRatio", { ratio: q2Ratio })}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
               {q2Ratio >= 40
-                ? "🌟 Excellent balance! You are spending meaningful time on strategic deep work."
-                : "💡 Aim to tag more important, proactive tasks as Q2 to stay ahead of deadlines."}
+                ? t("analytics.insightExcellent")
+                : t("analytics.insightImprove")}
             </Typography>
           </Box>
         </Paper>
@@ -497,24 +543,25 @@ export default function AnalyticsView() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
           <History sx={{ color: "primary.main", fontSize: 22 }} />
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-            Recent Completion Log | سجل المهام المكتملة حديثاً ({historyItems.length})
+            {t("analytics.recentLogTitle")} ({historyItems.length})
           </Typography>
         </Box>
 
         {historyItems.length === 0 ? (
           <Box sx={{ py: 4, textAlign: "center" }}>
-            <Typography variant="body2" color="text.secondary">
-              No completed tasks recorded yet. Complete some tasks to start building your streak!
+            <Typography variant="body2" color="text.secondary" dir="auto">
+              {t("analytics.noCompletedTasks")}
             </Typography>
           </Box>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {historyItems.slice(0, 30).map((item) => {
-              const timeStr = new Date(item.completedAt).toLocaleTimeString([], {
+              const dateObj = new Date(item.completedAt);
+              const timeStr = dateObj.toLocaleTimeString(language === "ar" ? "ar-EG" : "en-US", {
                 hour: "2-digit",
                 minute: "2-digit",
               });
-              const dateStr = new Date(item.completedAt).toLocaleDateString([], {
+              const dateStr = dateObj.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", {
                 month: "short",
                 day: "numeric",
               });
@@ -567,7 +614,7 @@ export default function AnalyticsView() {
                     </Typography>
                   </Box>
 
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0, ml: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0, marginInlineStart: 2 }}>
                     {item.listName && (
                       <Chip
                         label={item.listName}
@@ -577,7 +624,7 @@ export default function AnalyticsView() {
                       />
                     )}
                     <Typography variant="caption" color="text.secondary">
-                      {dateStr} at {timeStr}
+                      {dateStr} {t("analytics.atTime")} {timeStr}
                     </Typography>
                   </Box>
                 </Box>

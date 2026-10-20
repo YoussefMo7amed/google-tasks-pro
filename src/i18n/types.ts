@@ -235,9 +235,35 @@ export interface TranslationSchema {
   };
   analytics: {
     title: string;
+    subtitle: string;
     streaks: string;
     completedTasks: string;
     productivityRate: string;
+    currentStreak: string;
+    personalBest: string;
+    daySingular: string;
+    daysPlural: string;
+    completedToday: string;
+    tasksToday: string;
+    past7Days: string;
+    tasksPastWeek: string;
+    totalRecorded: string;
+    lifetimeCompleted: string;
+    activityTitle: string;
+    activityTooltip: string;
+    eisenhowerTitle: string;
+    q1Label: string;
+    q2Label: string;
+    q3Label: string;
+    q4Label: string;
+    insightTitle: string;
+    insightBody: string;
+    deepWorkRatio: string;
+    insightExcellent: string;
+    insightImprove: string;
+    recentLogTitle: string;
+    noCompletedTasks: string;
+    atTime: string;
   };
   shortcuts: {
     modalTitle: string;
