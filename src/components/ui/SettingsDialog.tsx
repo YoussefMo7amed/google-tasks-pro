@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { invoke } from '@tauri-apps/api/tauri';
-import { settingsActiveTabAtom } from '../../store';
+import { settingsActiveTabAtom, aiSettingsAtom } from '../../store';
 import {
   Dialog,
   DialogTitle,
@@ -72,7 +72,8 @@ import {
   DEFAULT_BASE_URLS,
   ALL_PROVIDERS,
   AISettingsService,
-} from '../../services/ai/ai-settings.service';
+  getProviderModels,
+} from '../../services/ai';
 import { aiService } from '../../services/ai/ai.service';
 
 interface SettingsDialogProps {
@@ -81,21 +82,19 @@ interface SettingsDialogProps {
   onSettingsChange?: (settings: AppSettings) => void;
 }
 
-const getProviderLabels = (language: string): Record<AIProviderType, string> => ({
-  gemini: "Google Gemini",
-  openai_compatible: "OpenAI / OpenRouter / Groq",
-  claude: "Anthropic Claude",
-  ollama: language === "ar" ? "Ollama (محلي مفتوح المصدر)" : "Ollama (Local Open-Source)",
-  lm_studio: language === "ar" ? "LM Studio (محلي مفتوح المصدر)" : "LM Studio (Local Open-Source)",
-});
-
 export default function SettingsDialog({ 
   open, 
   onClose,
   onSettingsChange,
 }: SettingsDialogProps) {
   const { t, language, setLanguage, supportedLanguages } = useTranslation();
-  const providerLabels = getProviderLabels(language);
+  const providerLabels: Record<AIProviderType, string> = {
+    gemini: t("settings.providers.gemini"),
+    openai_compatible: t("settings.providers.openaiCompatible"),
+    claude: t("settings.providers.claude"),
+    ollama: t("settings.providers.ollama"),
+    lm_studio: t("settings.providers.lmStudio"),
+  };
   const [activeTab, setActiveTab] = useRecoilState(settingsActiveTabAtom);
   const [notificationHour, setNotificationHour] = useState<number>(9);
   const [timeFormat, setTimeFormat] = useState<TimeFormatPreference>('both');
@@ -110,8 +109,8 @@ export default function SettingsDialog({
   const [customClientId, setCustomClientId] = useState<string>(() => localStorage.getItem('custom_google_client_id') || '');
   const [customClientSecret, setCustomClientSecret] = useState<string>(() => localStorage.getItem('custom_google_client_secret') || '');
 
-  // AI Settings state
-  const [aiSettings, setAiSettings] = useState<AISettings>(() => AISettingsService.load());
+  // AI Settings state (stored in Recoil for instant app-wide synchronization)
+  const [aiSettings, setAiSettings] = useRecoilState(aiSettingsAtom);
   const [selectedProviderTab, setSelectedProviderTab] = useState<AIProviderType>(() => aiSettings.provider || "gemini");
   const [showApiKey, setShowApiKey] = useState(false);
   const [newKeyInput, setNewKeyInput] = useState('');
@@ -195,7 +194,8 @@ export default function SettingsDialog({
           ? {
               backupApiKey: updated.apiKey,
               backupApiKeys: updated.apiKeys,
-              backupModel: updated.model,
+              // Only overwrite backupModel if primary is different provider, preserving intra-provider backup model
+              backupModel: isPrimary ? prev.backupModel || updated.model : updated.model,
               backupBaseUrl: updated.baseUrl,
             }
           : {}),
@@ -245,7 +245,9 @@ export default function SettingsDialog({
   // Swap Primary and Backup Roles
   const handleSwapRoles = () => {
     const oldPrimary = aiSettings.provider;
+    const oldPrimaryModel = aiSettings.model;
     const oldBackup = aiSettings.backupProvider || "openai_compatible";
+    const oldBackupModel = aiSettings.backupModel || DEFAULT_MODELS[oldBackup];
 
     setAiSettings((prev: AISettings) => {
       const pConfig = prev.providers?.[oldBackup];
@@ -256,12 +258,12 @@ export default function SettingsDialog({
         provider: oldBackup,
         apiKey: pConfig?.apiKey || '',
         apiKeys: pConfig?.apiKeys || [],
-        model: pConfig?.model || DEFAULT_MODELS[oldBackup],
+        model: oldBackupModel,
         baseUrl: pConfig?.baseUrl || DEFAULT_BASE_URLS[oldBackup],
         backupProvider: oldPrimary,
         backupApiKey: bConfig?.apiKey || '',
         backupApiKeys: bConfig?.apiKeys || [],
-        backupModel: bConfig?.model || DEFAULT_MODELS[oldPrimary],
+        backupModel: oldPrimaryModel,
         backupBaseUrl: bConfig?.baseUrl || DEFAULT_BASE_URLS[oldPrimary],
       };
     });
@@ -270,10 +272,11 @@ export default function SettingsDialog({
     setTestResult(null);
   };
 
-  const handleSetPrimary = (newPrimary: AIProviderType) => {
+  const handleSetPrimary = (newPrimary: AIProviderType, newModel?: string) => {
     setAiSettings((prev: AISettings) => {
       const pConfig = prev.providers?.[newPrimary];
-      const newBackup = prev.backupProvider === newPrimary ? prev.provider : prev.backupProvider;
+      const model = newModel || (newPrimary === prev.provider ? prev.model : (pConfig?.model || DEFAULT_MODELS[newPrimary]));
+      const newBackup = prev.backupProvider === newPrimary && prev.provider !== newPrimary ? prev.provider : prev.backupProvider;
       const bConfig = prev.providers?.[newBackup || "openai_compatible"];
 
       return {
@@ -281,27 +284,29 @@ export default function SettingsDialog({
         provider: newPrimary,
         apiKey: pConfig?.apiKey || '',
         apiKeys: pConfig?.apiKeys || [],
-        model: pConfig?.model || DEFAULT_MODELS[newPrimary],
+        model,
         baseUrl: pConfig?.baseUrl || DEFAULT_BASE_URLS[newPrimary],
         backupProvider: newBackup,
         backupApiKey: bConfig?.apiKey || '',
         backupApiKeys: bConfig?.apiKeys || [],
-        backupModel: bConfig?.model || DEFAULT_MODELS[newBackup || "openai_compatible"],
+        backupModel: prev.backupModel || bConfig?.model || DEFAULT_MODELS[newBackup || "openai_compatible"],
         backupBaseUrl: bConfig?.baseUrl || DEFAULT_BASE_URLS[newBackup || "openai_compatible"],
       };
     });
     setTestResult(null);
   };
 
-  const handleSetBackup = (newBackup: AIProviderType) => {
+  const handleSetBackup = (newBackup: AIProviderType, newModel?: string) => {
     setAiSettings((prev: AISettings) => {
       const bConfig = prev.providers?.[newBackup];
+      const model = newModel || (newBackup === prev.provider ? (prev.backupModel || DEFAULT_MODELS[newBackup]) : (bConfig?.model || DEFAULT_MODELS[newBackup]));
       return {
         ...prev,
+        backupEnabled: true,
         backupProvider: newBackup,
-        backupApiKey: bConfig?.apiKey || '',
-        backupApiKeys: bConfig?.apiKeys || [],
-        backupModel: bConfig?.model || DEFAULT_MODELS[newBackup],
+        backupApiKey: bConfig?.apiKey || (newBackup === prev.provider ? prev.apiKey : ''),
+        backupApiKeys: bConfig?.apiKeys || (newBackup === prev.provider ? prev.apiKeys : []),
+        backupModel: model,
         backupBaseUrl: bConfig?.baseUrl || DEFAULT_BASE_URLS[newBackup],
       };
     });
@@ -645,8 +650,8 @@ export default function SettingsDialog({
 
               <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
                 {/* Primary Agent Selector */}
-                <Box sx={{ flex: 1, minWidth: 220 }}>
-                  <Typography variant="caption" fontWeight={600} color="primary.main" sx={{ display: 'block', mb: 0.5 }}>
+                <Box sx={{ flex: 1, minWidth: 240, display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Typography variant="caption" fontWeight={600} color="primary.main" sx={{ display: 'block' }}>
                     {t("settings.primaryAgent")}
                   </Typography>
                   <FormControl fullWidth size="small">
@@ -663,6 +668,44 @@ export default function SettingsDialog({
                           </MenuItem>
                         );
                       })}
+                    </Select>
+                  </FormControl>
+
+                  {/* Primary Sub-Model Picker */}
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={aiSettings.model || DEFAULT_MODELS[aiSettings.provider]}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAiSettings((prev) => ({
+                          ...prev,
+                          model: val,
+                          providers: {
+                            ...prev.providers,
+                            [prev.provider]: {
+                              ...prev.providers?.[prev.provider],
+                              model: val,
+                            },
+                          },
+                        }));
+                      }}
+                    >
+                      {getProviderModels(aiSettings.provider).map((m) => (
+                        <MenuItem key={m.id} value={m.id}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                            <Typography variant="body2" fontWeight={500}>{m.label}</Typography>
+                            <Chip size="small" label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)} sx={{ height: 18, fontSize: '0.65rem' }} />
+                          </Box>
+                        </MenuItem>
+                      ))}
+                      {!getProviderModels(aiSettings.provider).some((m) => m.id === aiSettings.model) && aiSettings.model && (
+                        <MenuItem value={aiSettings.model}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                            <Typography variant="body2" fontWeight={500}>{aiSettings.model}</Typography>
+                            <Chip size="small" label={t("ai.modelTags.custom")} sx={{ height: 18, fontSize: '0.65rem' }} />
+                          </Box>
+                        </MenuItem>
+                      )}
                     </Select>
                   </FormControl>
                 </Box>
@@ -688,8 +731,8 @@ export default function SettingsDialog({
                 </Box>
 
                 {/* Backup Agent Selector */}
-                <Box sx={{ flex: 1, minWidth: 220 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                <Box sx={{ flex: 1, minWidth: 240, display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography variant="caption" fontWeight={600} color="secondary.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <ShieldOutlined sx={{ fontSize: 15 }} /> {t("settings.backupAgent")}
                     </Typography>
@@ -726,6 +769,37 @@ export default function SettingsDialog({
                           </MenuItem>
                         );
                       })}
+                    </Select>
+                  </FormControl>
+
+                  {/* Backup Sub-Model Picker */}
+                  <FormControl fullWidth size="small" disabled={!aiSettings.backupEnabled}>
+                    <Select
+                      value={aiSettings.backupModel || DEFAULT_MODELS[aiSettings.backupProvider || "openai_compatible"]}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAiSettings((prev) => ({
+                          ...prev,
+                          backupModel: val,
+                        }));
+                      }}
+                    >
+                      {getProviderModels(aiSettings.backupProvider || "openai_compatible").map((m) => (
+                        <MenuItem key={m.id} value={m.id}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                            <Typography variant="body2" fontWeight={500}>{m.label}</Typography>
+                            <Chip size="small" label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)} sx={{ height: 18, fontSize: '0.65rem' }} />
+                          </Box>
+                        </MenuItem>
+                      ))}
+                      {!getProviderModels(aiSettings.backupProvider || "openai_compatible").some((m) => m.id === aiSettings.backupModel) && aiSettings.backupModel && (
+                        <MenuItem value={aiSettings.backupModel}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                            <Typography variant="body2" fontWeight={500}>{aiSettings.backupModel}</Typography>
+                            <Chip size="small" label={t("ai.modelTags.custom")} sx={{ height: 18, fontSize: '0.65rem' }} />
+                          </Box>
+                        </MenuItem>
+                      )}
                     </Select>
                   </FormControl>
                 </Box>
@@ -798,13 +872,13 @@ export default function SettingsDialog({
                         variant="outlined"
                         color="primary"
                         startIcon={<Star sx={{ fontSize: 16 }} />}
-                        onClick={() => handleSetPrimary(selectedProviderTab)}
+                        onClick={() => handleSetPrimary(selectedProviderTab, currentProviderConfig.model)}
                         sx={{ textTransform: 'none', fontSize: '0.75rem' }}
                       >
                         {t("settings.setAsPrimary")}
                       </Button>
                     )}
-                    {aiSettings.backupProvider !== selectedProviderTab && (
+                    {!(aiSettings.backupEnabled && aiSettings.backupProvider === selectedProviderTab && aiSettings.backupModel === (currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab])) && (
                       <Button
                         size="small"
                         variant="outlined"
@@ -812,7 +886,7 @@ export default function SettingsDialog({
                         startIcon={<ShieldOutlined sx={{ fontSize: 16 }} />}
                         onClick={() => {
                           setAiSettings((prev) => ({ ...prev, backupEnabled: true }));
-                          handleSetBackup(selectedProviderTab);
+                          handleSetBackup(selectedProviderTab, currentProviderConfig.model);
                         }}
                         sx={{ textTransform: 'none', fontSize: '0.75rem' }}
                       >
@@ -822,14 +896,65 @@ export default function SettingsDialog({
                   </Box>
                 </Box>
 
-                <TextField
-                  label={t("settings.modelName")}
-                  size="small"
-                  fullWidth
-                  value={currentProviderConfig.model || ""}
-                  onChange={(e) => updateProviderConfig(selectedProviderTab, { model: e.target.value })}
-                  helperText={t("settings.suggestedDefault", { defaultModel: DEFAULT_MODELS[selectedProviderTab] })}
-                />
+                {/* Sub-Model Picker with Curated Catalog & Custom Option */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel id="provider-model-select-label">{t("settings.selectModel")}</InputLabel>
+                    <Select
+                      labelId="provider-model-select-label"
+                      label={t("settings.selectModel")}
+                      value={
+                        getProviderModels(selectedProviderTab).some((m) => m.id === (currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab]))
+                          ? (currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab])
+                          : "__custom__"
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "__custom__") {
+                          if (getProviderModels(selectedProviderTab).some((m) => m.id === currentProviderConfig.model)) {
+                            updateProviderConfig(selectedProviderTab, { model: "" });
+                          }
+                        } else {
+                          updateProviderConfig(selectedProviderTab, { model: val });
+                        }
+                      }}
+                    >
+                      {getProviderModels(selectedProviderTab).map((m) => (
+                        <MenuItem key={m.id} value={m.id}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <Typography variant="body2" fontWeight={500}>{m.label}</Typography>
+                              <Typography variant="caption" color="text.secondary">{m.id}</Typography>
+                            </Box>
+                            <Chip
+                              size="small"
+                              label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)}
+                              sx={{ height: 18, fontSize: '0.65rem' }}
+                            />
+                          </Box>
+                        </MenuItem>
+                      ))}
+                      <MenuItem value="__custom__">
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                          <Typography variant="body2" fontStyle="italic">{t("settings.customModelOption")}</Typography>
+                          <Chip size="small" label={t("ai.modelTags.custom")} sx={{ height: 18, fontSize: '0.65rem' }} />
+                        </Box>
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {(!getProviderModels(selectedProviderTab).some((m) => m.id === currentProviderConfig.model)) && (
+                    <TextField
+                      label={t("settings.customModelOption")}
+                      placeholder={t("settings.customModelPlaceholder")}
+                      size="small"
+                      fullWidth
+                      value={currentProviderConfig.model || ""}
+                      onChange={(e) => updateProviderConfig(selectedProviderTab, { model: e.target.value })}
+                      helperText={t("settings.suggestedDefault", { defaultModel: DEFAULT_MODELS[selectedProviderTab] })}
+                    />
+                  )}
+                </Box>
 
                 {/* Multiple API Keys Manager for this specific provider */}
                 {!isCurrentLocal && (

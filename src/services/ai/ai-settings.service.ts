@@ -18,7 +18,7 @@ export const ALL_PROVIDERS: AIProviderType[] = [
 ];
 
 export const DEFAULT_MODELS: Record<AIProviderType, string> = {
-  gemini: "gemini-3.8-flash",
+  gemini: "gemini-2.5-flash",
   claude: "claude-3-5-sonnet-20241022",
   openai_compatible: "gpt-4o-mini",
   ollama: "llama3.2",
@@ -153,14 +153,10 @@ export class AISettingsService {
         }
       }
 
-      // Auto-migrate deprecated models like gemini-2.0-flash
-      if (providers.gemini.model === "gemini-2.0-flash" || providers.gemini.model === "gemini-1.5-flash") {
-        providers.gemini.model = "gemini-3.8-flash";
-      }
-
       const activePrimary = providers[primaryProv];
       const backupProv: AIProviderType = parsed.backupProvider || "openai_compatible";
       const activeBackup = providers[backupProv];
+      const backupModel = parsed.backupModel || activeBackup.model || DEFAULT_MODELS[backupProv];
 
       return {
         ...DEFAULT_SETTINGS,
@@ -175,7 +171,7 @@ export class AISettingsService {
         backupProvider: backupProv,
         backupApiKey: activeBackup.apiKey,
         backupApiKeys: activeBackup.apiKeys,
-        backupModel: activeBackup.model,
+        backupModel,
         backupBaseUrl: activeBackup.baseUrl,
         providers,
       };
@@ -190,12 +186,18 @@ export class AISettingsService {
 
   public static save(settings: AISettings): void {
     try {
-      const providers = settings.providers || createDefaultProviderConfigs();
+      const defaultConfigs = createDefaultProviderConfigs();
+      const providers: Record<AIProviderType, ProviderConfig> = {
+        ...defaultConfigs,
+        ...(settings.providers || {}),
+      };
 
       // Ensure current primary provider config is updated
-      if (providers[settings.provider]) {
+      const primary = providers[settings.provider];
+      if (primary) {
         providers[settings.provider] = {
-          ...providers[settings.provider],
+          ...primary,
+          provider: settings.provider,
           apiKey: settings.apiKey,
           apiKeys: settings.apiKeys && settings.apiKeys.length > 0 ? settings.apiKeys : (settings.apiKey ? [settings.apiKey] : []),
           model: settings.model,
@@ -205,16 +207,22 @@ export class AISettingsService {
       }
 
       // Ensure current backup provider config is updated
-      if (settings.backupProvider && providers[settings.backupProvider]) {
-        providers[settings.backupProvider] = {
-          ...providers[settings.backupProvider],
-          apiKey: settings.backupApiKey || providers[settings.backupProvider].apiKey || "",
-          apiKeys: settings.backupApiKeys && settings.backupApiKeys.length > 0
-            ? settings.backupApiKeys
-            : (settings.backupApiKey ? [settings.backupApiKey] : providers[settings.backupProvider].apiKeys),
-          model: settings.backupModel || providers[settings.backupProvider].model,
-          baseUrl: settings.backupBaseUrl || providers[settings.backupProvider].baseUrl,
-        };
+      if (settings.backupProvider) {
+        const backup = providers[settings.backupProvider];
+        if (backup) {
+          const isSameProvider = settings.backupProvider === settings.provider;
+          providers[settings.backupProvider] = {
+            ...backup,
+            provider: settings.backupProvider,
+            apiKey: settings.backupApiKey || backup.apiKey || "",
+            apiKeys: settings.backupApiKeys && settings.backupApiKeys.length > 0
+              ? settings.backupApiKeys
+              : (settings.backupApiKey ? [settings.backupApiKey] : backup.apiKeys),
+            // DO NOT overwrite provider's primary model if backup is the same provider
+            model: isSameProvider ? backup.model : (settings.backupModel || backup.model),
+            baseUrl: settings.backupBaseUrl || backup.baseUrl,
+          };
+        }
       }
 
       settings.providers = providers;

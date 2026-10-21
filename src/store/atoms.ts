@@ -7,6 +7,7 @@
 
 import { atom } from "recoil";
 import { AppTaskList, UserProfile, ViewState, ToastMessage } from "../types/app";
+import { AISettings, AISettingsService } from "../services/ai";
 
 // =============================================================================
 // Auth State
@@ -114,6 +115,11 @@ export const aiCopilotOpenAtom = atom<boolean>({
 export const aiCopilotMinimizedAtom = atom<boolean>({
   key: "aiCopilotMinimized",
   default: false,
+});
+
+export const aiSettingsAtom = atom<AISettings>({
+  key: "aiSettings",
+  default: typeof window !== "undefined" ? AISettingsService.load() : ({} as AISettings),
 });
 
 export const settingsOpenAtom = atom<boolean>({

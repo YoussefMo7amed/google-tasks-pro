@@ -22,6 +22,9 @@ import {
   Checkbox,
   Alert,
   Portal,
+  Menu,
+  MenuItem,
+  ListItemIcon,
 } from "@mui/material";
 import {
   Close,
@@ -41,9 +44,11 @@ import {
   CheckCircleOutline,
   CancelOutlined,
   PlaylistRemove,
+  KeyboardArrowDown,
+  ShieldOutlined,
 } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
-import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom, aiCopilotMinimizedAtom } from "../../store";
+import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom, aiCopilotMinimizedAtom, aiSettingsAtom } from "../../store";
 import { useTasks, useTaskLists } from "../../hooks";
 import {
   aiService,
@@ -52,7 +57,13 @@ import {
   TaskContextSnapshot,
 } from "../../services";
 import { useTranslation } from "../../i18n";
-import { AISettingsService } from "../../services/ai/ai-settings.service";
+import {
+  AISettingsService,
+  getProviderModels,
+  getModelOption,
+  DEFAULT_MODELS,
+  DEFAULT_BASE_URLS,
+} from "../../services/ai";
 import {
   AIChatHistoryService,
   AIChatSession,
@@ -134,12 +145,11 @@ export default function AICopilotModal({
   const [dismissedActionKeys, setDismissedActionKeys] = useState<Set<string>>(new Set());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [currentSettings, setCurrentSettings] = useState(() => AISettingsService.load());
+  const [currentSettings, setCurrentSettings] = useRecoilState(aiSettingsAtom);
+  const [modelMenuAnchor, setModelMenuAnchor] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setCurrentSettings(AISettingsService.load());
-    } else {
+    if (!open) {
       setIsMinimized(false);
     }
   }, [open, setIsMinimized]);
@@ -150,12 +160,76 @@ export default function AICopilotModal({
 
   const providerDisplayName =
     currentSettings.provider === "gemini"
-      ? "Google Gemini"
+      ? t("settings.providers.gemini")
       : currentSettings.provider === "claude"
-      ? "Anthropic Claude"
+      ? t("settings.providers.claude")
       : currentSettings.provider === "openai_compatible"
-      ? "OpenAI / Groq"
-      : currentSettings.provider.toUpperCase();
+      ? t("settings.providers.openaiCompatible")
+      : currentSettings.provider === "ollama"
+      ? t("settings.providers.ollama")
+      : t("settings.providers.lmStudio");
+
+  const activeModelOption = getModelOption(currentSettings.provider, currentSettings.model);
+  const providerModels = getProviderModels(currentSettings.provider);
+
+  const handleSelectModel = (modelId: string) => {
+    const updated = {
+      ...currentSettings,
+      model: modelId,
+      providers: {
+        ...currentSettings.providers,
+        [currentSettings.provider]: {
+          ...currentSettings.providers?.[currentSettings.provider],
+          provider: currentSettings.provider,
+          apiKey: currentSettings.apiKey,
+          apiKeys: currentSettings.apiKeys,
+          baseUrl: currentSettings.baseUrl,
+          temperature: currentSettings.temperature,
+          model: modelId,
+        },
+      },
+    };
+    setCurrentSettings(updated);
+    AISettingsService.save(updated);
+    setModelMenuAnchor(null);
+    setToast({
+      title: t("ai.switchModel"),
+      body: modelId,
+      type: "info",
+    });
+  };
+
+  const handleQuickSwitchToBackup = () => {
+    if (!currentSettings.backupProvider) return;
+    const backupProv = currentSettings.backupProvider;
+    const backupMod = currentSettings.backupModel || DEFAULT_MODELS[backupProv];
+    const bConfig = currentSettings.providers?.[backupProv];
+    const oldPrimary = currentSettings.provider;
+    const oldPrimaryModel = currentSettings.model;
+    const pConfig = currentSettings.providers?.[oldPrimary];
+
+    const updated = {
+      ...currentSettings,
+      provider: backupProv,
+      apiKey: bConfig?.apiKey || (backupProv === oldPrimary ? currentSettings.apiKey : ''),
+      apiKeys: bConfig?.apiKeys || (backupProv === oldPrimary ? currentSettings.apiKeys : []),
+      model: backupMod,
+      baseUrl: bConfig?.baseUrl || DEFAULT_BASE_URLS[backupProv],
+      backupProvider: oldPrimary,
+      backupApiKey: pConfig?.apiKey || '',
+      backupApiKeys: pConfig?.apiKeys || [],
+      backupModel: oldPrimaryModel,
+      backupBaseUrl: pConfig?.baseUrl || DEFAULT_BASE_URLS[oldPrimary],
+    };
+    setCurrentSettings(updated);
+    AISettingsService.save(updated);
+    setModelMenuAnchor(null);
+    setToast({
+      title: t("ai.switchModel"),
+      body: `${backupProv.toUpperCase()} (${backupMod})`,
+      type: "info",
+    });
+  };
 
   const handleOpenAISettings = useCallback(() => {
     setSettingsActiveTab(1);
@@ -296,7 +370,7 @@ export default function AICopilotModal({
       const response = await aiService.sendMessage(newMessages, context);
 
       const backupNotice = response.usedBackup
-        ? `\n\n> 🛡️ *تمت الإجابة بواسطة الوكيل الاحتياطي (${response.usedModel || response.usedProvider})*\n> *(Handled via Backup Agent)*`
+        ? `\n\n> 🛡️ *${t("ai.answeredByBackup", { model: response.usedModel || response.usedProvider || "" })}*`
         : "";
 
       const assistantMessage: AICopilotMessage = {
@@ -325,10 +399,19 @@ export default function AICopilotModal({
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
+      const isCapacityError =
+        errMsg.includes("503") ||
+        errMsg.includes("429") ||
+        errMsg.toLowerCase().includes("overloaded") ||
+        errMsg.toLowerCase().includes("capacity");
+
       const errorMessage: AICopilotMessage = {
         id: `error_${Date.now()}`,
         role: "assistant",
-        content: t("ai.connectionError", { error: errMsg }),
+        content:
+          isCapacityError && currentSettings.backupEnabled && currentSettings.backupModel
+            ? `${t("ai.connectionError", { error: errMsg })}\n\n💡 *${t("ai.highDemandNotice")}*`
+            : t("ai.connectionError", { error: errMsg }),
         timestamp: Date.now(),
       };
       const finalMessages = [...newMessages, errorMessage];
@@ -707,9 +790,41 @@ export default function AICopilotModal({
                 />
               )}
             </Box>
-            <Typography variant="caption" color="text.secondary">
-              {currentSettings.provider.toUpperCase()} ({currentSettings.model})
-            </Typography>
+            
+            {/* Quick Model Selector Chip */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
+              <Chip
+                size="small"
+                variant="outlined"
+                clickable
+                onClick={(e) => setModelMenuAnchor(e.currentTarget)}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                    <Typography variant="caption" fontWeight={600}>
+                      {providerDisplayName}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.5 }}>•</Typography>
+                    <Typography variant="caption" fontWeight={600} color="primary.main">
+                      {activeModelOption?.label || currentSettings.model}
+                    </Typography>
+                    {activeModelOption && (
+                      <Chip
+                        size="small"
+                        label={t(`ai.modelTags.${activeModelOption.tag === "quota_saver" ? "quotaSaver" : activeModelOption.tag}`)}
+                        sx={{ height: 16, fontSize: '0.6rem', ml: 0.3 }}
+                      />
+                    )}
+                    <KeyboardArrowDown sx={{ fontSize: 14, ml: 0.2, opacity: 0.7 }} />
+                  </Box>
+                }
+                sx={{
+                  height: 24,
+                  bgcolor: 'action.hover',
+                  borderColor: 'divider',
+                  '&:hover': { bgcolor: 'action.selected', borderColor: 'primary.main' },
+                }}
+              />
+            </Box>
           </Box>
         </Box>
 
@@ -770,6 +885,102 @@ export default function AICopilotModal({
           </IconButton>
         </Box>
       </DialogTitle>
+
+      {/* Quick Model Switcher Menu */}
+      <Menu
+        anchorEl={modelMenuAnchor}
+        open={Boolean(modelMenuAnchor)}
+        onClose={() => setModelMenuAnchor(null)}
+        PaperProps={{
+          sx: { minWidth: 260, maxWidth: 360, borderRadius: 2, p: 0.5 },
+        }}
+      >
+        <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            {t("ai.switchModel")} — {providerDisplayName}
+          </Typography>
+        </Box>
+        {providerModels.map((m) => {
+          const isSelected = m.id === currentSettings.model;
+          return (
+            <MenuItem
+              key={m.id}
+              selected={isSelected}
+              onClick={() => handleSelectModel(m.id)}
+              sx={{ py: 1, display: 'flex', justifyContent: 'space-between', gap: 1 }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <Typography variant="body2" fontWeight={isSelected ? 700 : 500}>
+                    {m.label}
+                  </Typography>
+                  {isSelected && <Check sx={{ fontSize: 15, color: 'primary.main' }} />}
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {m.id} {m.contextWindow ? `(${m.contextWindow})` : ''}
+                </Typography>
+              </Box>
+              <Chip
+                size="small"
+                label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)}
+                sx={{ height: 18, fontSize: '0.65rem' }}
+              />
+            </MenuItem>
+          );
+        })}
+
+        {!providerModels.some((m) => m.id === currentSettings.model) && currentSettings.model && (
+          <MenuItem
+            selected
+            onClick={() => handleSelectModel(currentSettings.model)}
+            sx={{ py: 1, display: 'flex', justifyContent: 'space-between', gap: 1 }}
+          >
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                <Typography variant="body2" fontWeight={700}>
+                  {currentSettings.model}
+                </Typography>
+                <Check sx={{ fontSize: 15, color: 'primary.main' }} />
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                {currentSettings.model}
+              </Typography>
+            </Box>
+            <Chip
+              size="small"
+              label={t("ai.modelTags.custom")}
+              sx={{ height: 18, fontSize: '0.65rem' }}
+            />
+          </MenuItem>
+        )}
+
+        {currentSettings.backupEnabled && currentSettings.backupModel && (
+          <>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem onClick={handleQuickSwitchToBackup} sx={{ py: 1 }}>
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <ShieldOutlined sx={{ fontSize: 18, color: 'secondary.main' }} />
+              </ListItemIcon>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="body2" fontWeight={600} color="secondary.main">
+                  {t("ai.quickSwitchToBackup")}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {(currentSettings.backupProvider || "").toUpperCase()} • {currentSettings.backupModel}
+                </Typography>
+              </Box>
+            </MenuItem>
+          </>
+        )}
+
+        <Divider sx={{ my: 0.5 }} />
+        <MenuItem onClick={handleOpenAISettings} sx={{ py: 1 }}>
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <Tune sx={{ fontSize: 18 }} />
+          </ListItemIcon>
+          <Typography variant="body2">{t("settings.modelsAndKeysVault")}</Typography>
+        </MenuItem>
+      </Menu>
 
       {/* Main Body: Flex row containing history sidebar + chat content */}
       <Box sx={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
@@ -1072,6 +1283,24 @@ export default function AICopilotModal({
 
                     {/* Markdown rendering with Cairo font & RTL/LTR support */}
                     <MarkdownViewer content={msg.content} isUser={isUser} />
+
+                    {/* Quick switch to backup button on capacity error */}
+                    {msg.content.includes(t("ai.highDemandNotice")) && currentSettings.backupEnabled && currentSettings.backupModel && (
+                      <Box sx={{ mt: 1.5, pt: 1, borderTop: '1px dashed', borderColor: 'divider', display: 'flex', gap: 1 }}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="secondary"
+                          startIcon={<ShieldOutlined sx={{ fontSize: 16 }} />}
+                          onClick={() => {
+                            handleQuickSwitchToBackup();
+                          }}
+                          sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.78rem' }}
+                        >
+                          {t("ai.quickSwitchToBackup")} ({currentSettings.backupModel})
+                        </Button>
+                      </Box>
+                    )}
                   </Paper>
 
                   {/* Enhanced Granular Actions Preview Card */}

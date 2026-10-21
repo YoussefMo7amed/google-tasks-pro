@@ -39,7 +39,7 @@ export interface AISettings {
   backupTemperature?: number;
 
   // Saved configs for each provider so keys and models are never lost
-  providers?: Record<AIProviderType, ProviderConfig>;
+  providers?: Partial<Record<AIProviderType, ProviderConfig>>;
 }
 
 export type AICopilotActionType =

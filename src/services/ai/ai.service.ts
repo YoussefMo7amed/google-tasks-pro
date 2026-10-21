@@ -13,6 +13,7 @@ import {
   TaskContextSnapshot,
   AIProviderResponse,
   AIProviderType,
+  ProviderConfig,
 } from "./types";
 import { AISettingsService, DEFAULT_MODELS, DEFAULT_BASE_URLS } from "./ai-settings.service";
 import { GeminiProvider } from "./providers/gemini.provider";
@@ -106,6 +107,14 @@ class AIService {
     // 2. If Primary Provider failed and Backup Agent is enabled, failover to Backup Agent
     if (settings.backupEnabled) {
       const backupProviderType = settings.backupProvider || "openai_compatible";
+      const isIntraProvider = backupProviderType === primaryType;
+
+      // Skip intra-provider failover if primary failed due to invalid authentication
+      const isAuthError = lastPrimaryError && (/401|403|unauthorized|forbidden|api key not valid|invalid api key/i.test(lastPrimaryError.message));
+      if (isIntraProvider && isAuthError) {
+        throw lastPrimaryError;
+      }
+
       const backupConfig = settings.providers?.[backupProviderType] || {
         provider: backupProviderType,
         apiKey: settings.backupApiKey || "",
@@ -118,11 +127,13 @@ class AIService {
       const isLocalBackup = backupProviderType === "ollama" || backupProviderType === "lm_studio";
       const rawBackupKeys = backupConfig.apiKeys && backupConfig.apiKeys.length > 0
         ? backupConfig.apiKeys
-        : (backupConfig.apiKey ? [backupConfig.apiKey] : []);
+        : (backupConfig.apiKey ? [backupConfig.apiKey] : (isIntraProvider ? (primaryConfig.apiKeys?.length ? primaryConfig.apiKeys : [primaryConfig.apiKey]) : []));
       const backupKeys = isLocalBackup ? [""] : rawBackupKeys.filter((k) => k && k.trim().length > 0);
 
+      const targetBackupModel = settings.backupModel || backupConfig.model || DEFAULT_MODELS[backupProviderType];
+
       if (backupKeys.length > 0) {
-        console.info("Primary AI provider failed. Failing over to Backup AI Agent...");
+        console.info(`Primary AI model (${settings.model}) failed. Failing over to Backup Agent (${backupProviderType} - ${targetBackupModel})...`);
         let lastBackupError: Error | null = null;
 
         for (let j = 0; j < backupKeys.length; j++) {
@@ -131,7 +142,7 @@ class AIService {
             ...settings,
             provider: backupProviderType,
             apiKey: bKey,
-            model: backupConfig.model || DEFAULT_MODELS[backupProviderType],
+            model: targetBackupModel,
             baseUrl: backupConfig.baseUrl || DEFAULT_BASE_URLS[backupProviderType],
             temperature: backupConfig.temperature ?? 0.7,
           };
@@ -143,7 +154,7 @@ class AIService {
               ...res,
               usedBackup: true,
               usedProvider: backupProviderType,
-              usedModel: backupSettings.model,
+              usedModel: targetBackupModel,
             };
           } catch (bErr: any) {
             lastBackupError = bErr instanceof Error ? bErr : new Error(String(bErr));
@@ -189,12 +200,14 @@ class AIService {
     settings: AISettings
   ): Promise<{ success: boolean; message: string }> {
     const backupProviderType = settings.backupProvider || "openai_compatible";
-    const backupConfig = settings.providers?.[backupProviderType] || {
+    const rawBackup = settings.providers?.[backupProviderType];
+    const backupConfig: ProviderConfig = {
       provider: backupProviderType,
-      apiKey: settings.backupApiKey || "",
-      model: settings.backupModel || DEFAULT_MODELS[backupProviderType],
-      baseUrl: settings.backupBaseUrl || DEFAULT_BASE_URLS[backupProviderType],
-      temperature: settings.backupTemperature ?? 0.7,
+      apiKey: settings.backupApiKey || rawBackup?.apiKey || "",
+      apiKeys: settings.backupApiKeys || rawBackup?.apiKeys,
+      model: settings.backupModel || rawBackup?.model || DEFAULT_MODELS[backupProviderType],
+      baseUrl: settings.backupBaseUrl || rawBackup?.baseUrl || DEFAULT_BASE_URLS[backupProviderType],
+      temperature: settings.backupTemperature ?? rawBackup?.temperature ?? 0.7,
     };
     return this.testProvider(backupProviderType, backupConfig);
   }
@@ -203,3 +216,4 @@ class AIService {
 export const aiService = new AIService();
 export * from "./types";
 export * from "./ai-settings.service";
+export * from "./model-catalog";

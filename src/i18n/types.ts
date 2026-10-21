@@ -254,6 +254,37 @@ export interface TranslationSchema {
     quickPromptRefineText: string;
     copyResponse: string;
     processingRequest: string;
+    switchModel: string;
+    quickSwitchToBackup: string;
+    highDemandNotice: string;
+    modelTags: {
+      recommended: string;
+      fast: string;
+      reasoning: string;
+      pro: string;
+      quotaSaver: string;
+      custom: string;
+    };
+    models: {
+      gemini25FlashDesc: string;
+      gemini20FlashDesc: string;
+      gemini20FlashLiteDesc: string;
+      gemini15FlashDesc: string;
+      gemini15ProDesc: string;
+      claudeSonnetDesc: string;
+      claudeHaikuDesc: string;
+      claudeOpusDesc: string;
+      gpt4oMiniDesc: string;
+      gpt4oDesc: string;
+      o3MiniDesc: string;
+      llama70bGroqDesc: string;
+      llama32Desc: string;
+      llama31Desc: string;
+      qwen25Desc: string;
+      deepseekR1Desc: string;
+      mistralDesc: string;
+      lmStudioAutoDesc: string;
+    };
   };
   settings: {
     title: string;
@@ -276,7 +307,19 @@ export interface TranslationSchema {
     activeAgentsAndBackup: string;
     activeAgentsSubtitle: string;
     primaryAgent: string;
+    primaryModel: string;
     backupAgent: string;
+    backupModel: string;
+    selectModel: string;
+    customModelOption: string;
+    customModelPlaceholder: string;
+    providers: {
+      gemini: string;
+      openaiCompatible: string;
+      claude: string;
+      ollama: string;
+      lmStudio: string;
+    };
     swapRolesTooltip: string;
     enabled: string;
     disabled: string;
