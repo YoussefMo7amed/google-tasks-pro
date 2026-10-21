@@ -22,7 +22,7 @@ jobs:
           - platform: macos-latest
             target: aarch64-apple-darwin
             name: macOS Apple Silicon (M1/M2/M3/M4)
-          - platform: macos-13
+          - platform: macos-latest
             target: x86_64-apple-darwin
             name: macOS Intel
           - platform: windows-latest
@@ -72,10 +72,14 @@ jobs:
         with:
           tagName: ${{ github.ref_name || inputs.release_tag || 'v2.0.0' }}
           releaseName: "Google Tasks Pro ${{ github.ref_name || inputs.release_tag || 'v2.0.0' }}"
+          args: --target ${{ matrix.target }}
           releaseBody: |
             ## 🚀 Google Tasks Pro Release
 
-            ### ✨ What's New:
+            ### ✨ What's New in v2.0.0:
+            * **AI Multi-Model Catalog & Reasoning Switcher:** Support for cutting-edge models (Gemini 3.8 Flash, Gemini 3.5 Flash, Gemini 3.1 Pro, Claude 3.7 Sonnet, o3-mini, DeepSeek R1) with instant Thinking toggle for near-instant answers.
+            * **Intra-Provider Auto-Backup Failover:** Automatic fallback between sub-models or providers when quota limits (429) or high demand spikes occur.
+            * **Full List CRUD Management:** Create, rename, and delete task lists natively with confirmation safeguards and markdown tables rendering.
             * **Guest / Offline Mode:** Instant local task workspace without requiring a Google sign-in.
             * **Multi-Account Switcher:** 1-click switching between multiple saved Google accounts and Guest mode.
             * **Cloud Sync:** Seamlessly merge and upload local guest tasks to Google Tasks upon signing in.
