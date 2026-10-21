@@ -33,6 +33,8 @@ G Tasks Desktop's use and transfer to any other app of information received from
 ---
 
 ## 4. Local-First Caching & Custom Features
+* **Guest / Offline Mode:** You can choose to use the Application entirely without connecting a Google Account. In Guest Mode, zero external network requests are made; all tasks, lists, and edits are stored 100% locally on your machine.
+* **Per-Account Storage Sandboxing:** When multiple Google accounts or Guest mode are used on the same computer, each account's offline cache, trash bin, sync queue, and task history are stored in strictly isolated namespaces (`guest` vs `user_{email}`). Switching accounts switches only between their respective isolated vaults, preventing any cross-account data exposure.
 * **Local Offline Storage:** Features such as local task snapshots (for instant offline startup), custom task tags, recurring task rules, and Eisenhower Matrix quadrant assignments are stored strictly locally on your machine.
 * **Optional AI Copilot:** If you choose to configure third-party AI models (e.g., Google Gemini, OpenAI, or local engines like Ollama/LM Studio), requests are initiated directly from your device using your personal API key or to your local machine (`localhost`). No data passes through any intermediary server.
 

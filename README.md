@@ -2,7 +2,7 @@
 
 # 🚀 Google Tasks Pro
 
-**A powerful, modern, offline-first desktop client for Google Tasks with AI Copilot, Eisenhower Matrix, Calendar, Recycle Bin, and bilingual Arabic/English support.**
+**A powerful, modern, offline-first desktop client for Google Tasks with Guest Mode, Multi-Account Switcher, AI Copilot, Eisenhower Matrix, Calendar, Recycle Bin, and bilingual Arabic/English support.**
 
 Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material UI (MUI v7)** • **Recoil**
 
@@ -70,6 +70,27 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 ---
 
 ## ✨ Features Overview
+
+### 👤 Guest Mode & Offline Independence (No Google Sign-In Required)
+* **Instant Start Without Account:** Use Google Tasks Pro as a standalone local productivity suite immediately without needing to connect a Google account.
+* **Full Feature Parity Locally:** Enjoy board, list, calendar, and Eisenhower views, recurring tasks, trash retention, undo/redo, and keyboard shortcuts completely offline.
+* **Strict Storage Sandboxing:** Guest tasks, trash, and history are kept in a dedicated, isolated namespace (`offline_snapshot_guest`) ensuring complete privacy with zero external network requests.
+
+### 🔄 Multi-Account Switcher (Instant 1-Click Profile Switching)
+* **Manage Multiple Google Accounts:** Store and switch between multiple Google accounts (work, personal, freelance) and Guest mode with a single click from the user avatar menu.
+* **Zero Data Leakage:** Each account operates in an isolated sandbox (`user_{email}`) with its own offline cache, recycle bin, sync queue, and task history.
+* **Fast Switching Without Browser Prompts:** Authenticate once; switch between accounts instantly without opening the browser each time.
+* **Account Removal:** Easily unlink or remove accounts from the local device with one click.
+
+### ☁️ Optional Cloud Sync & Seamless Task Migration
+* **Decide Later:** Start in Guest Mode and optionally sign in to Google anytime.
+* **Smart Migration Prompt:** When signing in after using Guest mode, choose to **Merge & Upload** your local tasks to Google Tasks or start fresh with existing cloud tasks.
+* **Zero Accidental Overwriting:** Your data is protected before any sync begins.
+
+### ⚡ Native macOS OAuth Auto-Focus & Loopback Resilience
+* **Direct IPv4 Loopback:** Eliminates IPv6 resolution conflicts on modern macOS and Chromium browsers (Chrome/Brave).
+* **Native App Activation:** Leverages Cocoa's `[NSApp activateIgnoringOtherApps:YES]` on the Rust backend to automatically bring Google Tasks Pro to the foreground the exact millisecond sign-in succeeds.
+* **Auto-Closing Tabs:** Clean, self-closing browser callback page with explicit keyboard shortcut hints (`⌘W` / `Ctrl+W`).
 
 ### 🌐 Full Internationalization & Native RTL (English & العربية)
 * **True Dual-Language Support:** Seamlessly toggle between **English** and **Arabic (العربية)** anytime without reloading.
@@ -224,6 +245,9 @@ To connect the application with Google Tasks, you can use the built-in credentia
 
 ### 🚀 Maintainer & Lead Developer (v2.0+)
 * **[Youssef Mohamed](https://github.com/YoussefMo7amed)**
+  * **Guest / Offline Mode & Cloud Sync:** Full local task suite without Google sign-in, with optional 1-click cloud sync and migration to Google Tasks.
+  * **Multi-Account Switcher & Storage Sandboxing:** Seamless 1-click switching between multiple Google accounts and Guest mode with strict per-account data isolation.
+  * **macOS Auto-Focus & IPv4 OAuth Resilience:** Native Cocoa AppKit activation (`[NSApp activateIgnoringOtherApps:YES]`) and explicit IPv4 loopback handling.
   * **Smart Recurring Tasks & Precision Times:** Full recurrence engine (Daily/Weekly/Monthly/Custom days), automatic next occurrence generation upon completion, and custom hour/minute notifications.
   * **One-Click Eisenhower Prioritization:** Rapid quadrant tagging (Q1-Q4) integrated directly into the quick-add creation bar.
   * **macOS Menu Bar Tray & Background Worker:** Runs seamlessly in the background with a top menu bar tray icon for uninterrupted notifications and background sync.
