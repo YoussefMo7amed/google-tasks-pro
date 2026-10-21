@@ -11,6 +11,8 @@ import {
   handleLoadFrom,
   handleLogin,
   handleLogout,
+  cancelLoginSession,
+  handleManualAuthCode,
 } from "./helpers/auth";
 import { loadContextmenu } from "./helpers/windowhelper";
 import TaskPage from "./components/TaskPage";
@@ -206,7 +208,11 @@ function App() {
           ) : loading ? (
             <SplashScreen
               message="Connecting to Google"
-              onCancel={() => setLoading(false)}
+              onCancel={() => {
+                cancelLoginSession();
+                setLoading(false);
+              }}
+              onManualCode={handleManualAuthCode}
             />
           ) : (
             <LoginChoice

@@ -5,7 +5,17 @@
  */
 
 import { useState, useEffect } from "react";
-import { Box, Typography, Button, keyframes } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  keyframes,
+} from "@mui/material";
 import { TaskAlt } from "@mui/icons-material";
 
 // Pulse animation for the icon
@@ -48,10 +58,18 @@ const loadingDots = keyframes`
 interface SplashScreenProps {
   message?: string;
   onCancel?: () => void;
+  onManualCode?: (input: string) => Promise<boolean>;
 }
 
-export default function SplashScreen({ message = "Loading", onCancel }: SplashScreenProps) {
+export default function SplashScreen({
+  message = "Loading",
+  onCancel,
+  onManualCode,
+}: SplashScreenProps) {
   const [showCancel, setShowCancel] = useState(false);
+  const [showManualDialog, setShowManualDialog] = useState(false);
+  const [manualInput, setManualInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -118,27 +136,91 @@ export default function SplashScreen({ message = "Loading", onCancel }: SplashSc
         {message}
       </Typography>
 
-      {/* Cancel button if loading is taking more than a couple of seconds */}
-      {showCancel && onCancel && (
-        <Button
-          variant="text"
-          size="small"
-          onClick={onCancel}
-          sx={{
-            color: "text.secondary",
-            fontSize: "0.8rem",
-            textTransform: "none",
-            animation: `${fadeIn} 0.3s ease-out`,
-            "&:hover": {
-              color: "text.primary",
-              backgroundColor: "action.hover",
-            },
-          }}
-        >
-          Cancel and return to login
-        </Button>
+      {/* Cancel button & Manual Code Fallback if loading takes time */}
+      {showCancel && (
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+          {onCancel && (
+            <Button
+              variant="text"
+              size="small"
+              onClick={onCancel}
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.8rem",
+                textTransform: "none",
+                animation: `${fadeIn} 0.3s ease-out`,
+                "&:hover": {
+                  color: "text.primary",
+                  backgroundColor: "action.hover",
+                },
+              }}
+            >
+              Cancel and return to login
+            </Button>
+          )}
+
+          {onManualCode && (
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => setShowManualDialog(true)}
+              sx={{
+                color: "primary.main",
+                fontSize: "0.78rem",
+                textTransform: "none",
+                opacity: 0.85,
+                "&:hover": { opacity: 1, textDecoration: "underline" },
+              }}
+            >
+              Having trouble with browser redirect? Paste code or link
+            </Button>
+          )}
+        </Box>
       )}
 
+      {/* Manual Code Input Dialog */}
+      <Dialog
+        open={showManualDialog}
+        onClose={() => setShowManualDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Paste Authorization Code or URL</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            If your browser shows <code>ERR_CONNECTION_REFUSED</code> or didn't redirect automatically, copy the entire URL from your browser address bar (or just the <code>code=</code> parameter) and paste it below:
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            placeholder="http://localhost:49968/?code=4/0AX... or 4/0AX..."
+            value={manualInput}
+            onChange={(e) => setManualInput(e.target.value)}
+            disabled={submitting}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowManualDialog(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!manualInput.trim() || submitting}
+            onClick={async () => {
+              setSubmitting(true);
+              try {
+                const ok = await onManualCode?.(manualInput.trim());
+                if (ok) setShowManualDialog(false);
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            {submitting ? "Signing in..." : "Sign In"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

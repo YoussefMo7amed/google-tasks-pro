@@ -1,4 +1,5 @@
 import { shell } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/tauri";
 import axios from "axios";
 import { UserProfile } from "../types/googleapis";
 import { readTextFile, removeFile, writeTextFile } from "@tauri-apps/api/fs";
@@ -15,24 +16,46 @@ const DEFAULT_DIRECTORY = settings.fs.DEFAULT_DIRECTORY;
 const GOOGLE_OAUTH_ENDPOINT = settings.auth.GOOGLE_OAUTH_ENDPOINT;
 const SCOPE = settings.auth.SCOPE;
 const STORAGE_PATHS = settings.storage.paths;
-// anonymous class for managing port
+
 class PortManager {
-    private port ?: number;
-    async getPort() {
-        this.port = this.port || await this.generatePort();
+    private port?: number;
+
+    async startNewSession(): Promise<number> {
+        // If there was an existing port, attempt to cancel it first to prevent port leaks
+        if (this.port) {
+            try {
+                await invoke('plugin:oauth|cancel', { port: this.port });
+            } catch {
+                // Ignore if already stopped
+            }
+            this.port = undefined;
+        }
+        const port = await generate_oauth_port();
+        this.port = port as number;
         return this.port;
     }
-    async generatePort() : Promise<number> {
-        const port = await generate_oauth_port();
-        return port as number;
+
+    getPort(): number {
+        return this.port || 0;
+    }
+
+    reset() {
+        if (this.port) {
+            invoke('plugin:oauth|cancel', { port: this.port }).catch(() => {});
+            this.port = undefined;
+        }
     }
 }
 
 const portManager = new PortManager();
 
-export async function getAccessToken(code: string) : Promise<AccessToken> {
+export function cancelLoginSession() {
+    portManager.reset();
+}
+
+export async function getAccessToken(code: string, portOverride?: number): Promise<AccessToken> {
     try {
-        const port = await portManager.getPort();
+        const port = portOverride || portManager.getPort();
         const data = {
             code,
             client_id: getClientId(),
@@ -40,16 +63,15 @@ export async function getAccessToken(code: string) : Promise<AccessToken> {
             redirect_uri: getLocalHostUrl(port),
             grant_type: "authorization_code",
         };
-        console.log(data, "data");
+        console.log(data, "data for token exchange");
         const response = await axios.post("https://oauth2.googleapis.com/token", data, { timeout: 8000 });
         console.log(response, "response from getAccessToken");
         return response.data;
     }
     catch (error) {
-        console.log(error, "error from getAccessToken");
+        console.error("Error getting access token:", error);
         throw new Error("Error getting access token");
     }
-
 }
 
 export async function refreshAccessToken(refreshToken: string) : Promise<AccessToken> {
@@ -121,17 +143,74 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
 
  // to handle login to get auth
 export async function openAuthWindow() {
-    // create and set a new URL object with the endpoint and query parameters
+    // ALWAYS start a fresh OAuth listener session so retries never reuse a dead port
+    const port = await portManager.startNewSession();
     const url = new URL(GOOGLE_OAUTH_ENDPOINT);
     url.searchParams.append("scope", SCOPE);
     url.searchParams.append("access_type", "offline");
     url.searchParams.append("prompt", "consent");
     url.searchParams.append("response_type", "code");
     url.searchParams.append("client_id", getClientId());
-    url.searchParams.append("redirect_uri", getLocalHostUrl(await portManager.getPort()));
+    url.searchParams.append("redirect_uri", getLocalHostUrl(port));
     url.searchParams.append("include_granted_scopes", "true");
     url.searchParams.append("state", "state_parameter_passthrough_value");
     shell.open(url.href);
+}
+
+/**
+ * Handle manual entry of the authorization code or redirected callback URL.
+ * Rescues users when browser loopback redirect fails (e.g. Brave Shields, firewalls).
+ */
+export async function handleManualAuthCode(input: string): Promise<boolean> {
+    setRecoil(authLoadingState, true);
+    try {
+        let code = input.trim();
+        let portOverride: number | undefined;
+
+        // Strip quotes if wrapped
+        code = code.replace(/^["']|["']$/g, "").trim();
+
+        if (code.includes("code=") || code.startsWith("http://") || code.startsWith("https://") || code.includes("localhost")) {
+            try {
+                const normalized = code.startsWith("http") ? code : `http://${code}`;
+                const parsedUrl = new URL(normalized);
+                const codeParam = parsedUrl.searchParams.get("code");
+                if (codeParam) {
+                    code = codeParam;
+                }
+                if (parsedUrl.port) {
+                    portOverride = parseInt(parsedUrl.port, 10);
+                }
+            } catch {
+                const codeMatch = code.match(/[?&]code=([^&]+)/);
+                if (codeMatch) {
+                    code = decodeURIComponent(codeMatch[1]);
+                }
+                const portMatch = code.match(/localhost:(\d+)/);
+                if (portMatch) {
+                    portOverride = parseInt(portMatch[1], 10);
+                }
+            }
+        }
+
+        if (!code) {
+            throw new Error("No authorization code found in input");
+        }
+
+        const accessTokenBody = await getAccessToken(code, portOverride);
+        await handleLoadFrom(accessTokenBody);
+        pushNotification("Login Successful");
+        return true;
+    } catch (err) {
+        console.error("Failed to sign in with manual authorization code:", err);
+        setRecoil(authLoadingState, false);
+        setRecoil(messageState, {
+            title: "Authentication Error",
+            body: "Invalid or expired authorization code. Please try again.",
+            type: "error",
+        });
+        throw err;
+    }
 }
 
 // save the auth code to storage
@@ -334,6 +413,9 @@ export async function handleLogout() {
         console.log("handleLogout: error cancelling notifications", e);
       }
       
+      // Cancel any ongoing OAuth session
+      cancelLoginSession();
+
       console.log("handleLogout: complete");
     } catch (e) {
       console.error("handleLogout: error during logout", e);
