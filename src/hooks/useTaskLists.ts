@@ -39,34 +39,37 @@ export function useTaskLists() {
    * Fetch all task lists with offline-first caching
    */
   const fetchTaskLists = useCallback(async (forceRefresh = false) => {
+    // Guest / Offline Mode: isolated strictly to "guest" scope
+    if (!service) {
+      const guestCached = offlineCacheService.loadSnapshot("guest");
+      if (guestCached && guestCached.length > 0) {
+        setTaskLists(guestCached);
+        historyService.syncFromTaskLists(guestCached);
+      } else {
+        const defaultList: AppTaskList = {
+          kind: "tasks#taskList",
+          id: `local_list_${Date.now()}`,
+          etag: "",
+          selfLink: "",
+          title: "My Tasks",
+          updated: new Date().toISOString(),
+          tasks: [],
+          incompleteCount: 0,
+          isVisible: true,
+        };
+        setTaskLists([defaultList]);
+        offlineCacheService.saveSnapshot([defaultList], "guest");
+      }
+      setLoading(false);
+      return;
+    }
+
     // 1. Immediately load from offline cache if state is empty
     const cached = offlineCacheService.loadSnapshot();
     if (cached && taskListsRef.current.length === 0) {
       setTaskLists(cached);
       historyService.syncFromTaskLists(cached);
       setLoading(false);
-    }
-
-    if (!service) {
-      if (taskListsRef.current.length === 0) {
-        if (!cached || cached.length === 0) {
-          const defaultList: AppTaskList = {
-            kind: "tasks#taskList",
-            id: `local_list_${Date.now()}`,
-            etag: "",
-            selfLink: "",
-            title: "My Tasks",
-            updated: new Date().toISOString(),
-            tasks: [],
-            incompleteCount: 0,
-            isVisible: true,
-          };
-          setTaskLists([defaultList]);
-          offlineCacheService.saveSnapshot([defaultList]);
-        }
-      }
-      setLoading(false);
-      return;
     }
 
     // Skip redundant network fetch if already loaded and fetched recently (<30s), unless forced

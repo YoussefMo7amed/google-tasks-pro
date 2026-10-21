@@ -16,6 +16,7 @@ import { taskListsAtom } from "../../store";
 import { useServices } from "../../hooks";
 import { useTranslation } from "../../i18n";
 import { exitGuestMode } from "../../helpers/auth";
+import { offlineCacheService } from "../../services";
 
 interface SyncGuestTasksModalProps {
   open: boolean;
@@ -84,10 +85,12 @@ export default function SyncGuestTasksModal({
         }
       }
 
+      offlineCacheService.clear("guest");
       exitGuestMode();
       onComplete();
     } catch (err) {
       console.error("Error during guest tasks merge:", err);
+      offlineCacheService.clear("guest");
       exitGuestMode();
       onComplete();
     } finally {
@@ -96,6 +99,7 @@ export default function SyncGuestTasksModal({
   };
 
   const handleStartFresh = () => {
+    offlineCacheService.clear("guest");
     exitGuestMode();
     onComplete();
   };

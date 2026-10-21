@@ -293,6 +293,9 @@ export async function deleteAccessToken() {
 
 export async function saveUserProfile(userProfile: UserProfile) {
     try {
+        if (userProfile?.email) {
+            localStorage.setItem("current_user_email", userProfile.email);
+        }
         return await writeTextFile(STORAGE_PATHS.user_profile, JSON.stringify(userProfile), { dir: DEFAULT_DIRECTORY });
     } catch (error) {
         console.error("Error saving user profile:", error);
@@ -312,6 +315,7 @@ export async function getUserProfileFromStorage() {
 
 export async function deleteUserProfile() {
     try {
+        localStorage.removeItem("current_user_email");
         return await removeFile(STORAGE_PATHS.user_profile, { dir: DEFAULT_DIRECTORY });
     } catch (error) {
         // File might not exist, that's okay - fail silently
@@ -417,6 +421,7 @@ export async function handleLogout() {
       // Cancel any ongoing OAuth session
       cancelLoginSession();
       localStorage.removeItem("is_guest_mode");
+      localStorage.removeItem("current_user_email");
       if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, false);
 
       console.log("handleLogout: complete");
@@ -431,6 +436,7 @@ export async function handleLogout() {
 
 export function enterGuestMode() {
   localStorage.setItem("is_guest_mode", "true");
+  localStorage.removeItem("current_user_email");
   setRecoil(authLoadingState, false);
 }
 
@@ -476,6 +482,10 @@ export async function handleInitialLogin() {
 
     if (!profile || !profile.email) {
         throw new Error("No cached profile found. Please connect to the internet to sign in.");
+    }
+
+    if (profile?.email) {
+        localStorage.setItem("current_user_email", profile.email);
     }
 
     setRecoil(userProfileState, profile);

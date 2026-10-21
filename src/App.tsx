@@ -43,6 +43,7 @@ import { useTranslation } from "./i18n";
 import { listen_for_auth_code } from "./helpers/eventlistner";
 import { SettingsStore } from "./helpers/DBStores";
 import settings from "./config/settings";
+import { trashService, historyService, syncQueueService } from "./services";
 
 // disable default context menu on build
 loadContextmenu();
@@ -259,6 +260,10 @@ function App() {
               onContinueAsGuest={() => {
                 enterGuestMode();
                 setIsGuestMode(true);
+                trashService.reloadScope();
+                historyService.reloadScope();
+                syncQueueService.reloadScope();
+                fetchTaskLists(true);
               }}
             />
           )}
@@ -272,12 +277,18 @@ function App() {
           setShowGuestSyncModal(false);
           exitGuestMode();
           setIsGuestMode(false);
+          trashService.reloadScope();
+          historyService.reloadScope();
+          syncQueueService.reloadScope();
           fetchTaskLists(true);
         }}
         onComplete={() => {
           setShowGuestSyncModal(false);
           exitGuestMode();
           setIsGuestMode(false);
+          trashService.reloadScope();
+          historyService.reloadScope();
+          syncQueueService.reloadScope();
           fetchTaskLists(true);
           setToastMessage({
             title: t("common.success"),
