@@ -16,6 +16,17 @@ export interface AIChatSession {
   messages: AICopilotMessage[];
 }
 
+export const isDefaultChatTitle = (title?: string): boolean => {
+  if (!title) return true;
+  const t = title.trim();
+  return (
+    t === "محادثة جديدة" ||
+    t.startsWith("محادثة جديدة") ||
+    t === "New Chat" ||
+    t.startsWith("New Chat")
+  );
+};
+
 const STORAGE_KEY = "google_tasks_ai_chat_sessions_v1";
 const ACTIVE_SESSION_ID_KEY = "google_tasks_ai_active_session_id";
 
@@ -115,12 +126,7 @@ export class AIChatHistoryService {
       session.updatedAt = Date.now();
 
       // If title is default, extract from first user message
-      if (
-        session.title === "محادثة جديدة" ||
-        session.title.startsWith("محادثة جديدة") ||
-        session.title === "New Chat" ||
-        session.title.startsWith("New Chat")
-      ) {
+      if (isDefaultChatTitle(session.title)) {
         const firstUserMsg = messages.find((m) => m.role === "user");
         if (firstUserMsg) {
           session.title =

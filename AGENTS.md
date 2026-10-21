@@ -91,14 +91,18 @@ google-task-desktop/
 * All themes (`darkRtlTheme`, `darkLtrTheme`, `lightRtlTheme`, `lightLtrTheme`) are statically pre-built singletons in [`src/theme.ts`](file:///Users/youssef/Development/projects/google-task-desktop/src/theme.ts).
 * Component uses `getStaticTheme(mode, dir)` which returns the static instance with zero allocations.
 
-### Rule 3: Strict Internationalization & RTL
-* **Never hardcode user-facing strings in JSX.**
-* When adding text:
+### Rule 3: Strict Internationalization & RTL (Zero Hardcoded Strings)
+* **Every new feature and user-facing text MUST strictly go through the i18n system.**
+* **Never hardcode user-facing strings anywhere**: not in JSX, tooltips, dialogs, error messages, toast notifications, default titles, chip labels, or service alerts.
+* **No inline language ternaries in UI components** (e.g. avoid `language === "ar" ? "..." : "..."`). All strings must be registered in the localization dictionaries.
+* **When adding ANY user-facing text or feature:**
   1. Add the key and type definition to [`src/i18n/types.ts`](file:///Users/youssef/Development/projects/google-task-desktop/src/i18n/types.ts).
   2. Add the Arabic translation to [`src/i18n/locales/ar.ts`](file:///Users/youssef/Development/projects/google-task-desktop/src/i18n/locales/ar.ts).
   3. Add the English translation to [`src/i18n/locales/en.ts`](file:///Users/youssef/Development/projects/google-task-desktop/src/i18n/locales/en.ts).
-  4. Use `const { t, isRtl, language } = useTranslation();`.
-  5. Directional layout elements should use `isRtl ? { mr: "auto" } : { ml: "auto" }` or CSS logical properties (`margin-inline-start`, etc.).
+  4. Keep the translation template synchronized in [`src/i18n/locales/template.json`](file:///Users/youssef/Development/projects/google-task-desktop/src/i18n/locales/template.json).
+  5. Use `const { t, isRtl, language } = useTranslation();` and render text with `t("section.key")`.
+  6. Directional layout elements should use `isRtl ? { mr: "auto" } : { ml: "auto" }` or CSS logical properties (`margin-inline-start`, etc.).
+  7. Default entity titles (e.g. "New Chat" / "محادثة جديدة") stored in state or storage must be checked with helper functions (e.g. `isDefaultChatTitle`) and rendered dynamically via `t("...")` so switching languages immediately updates them.
 
 ### Rule 4: Offline-First Data Flow
 * Tasks and Lists are cached in `localStorage` via `offlineCacheService`.
