@@ -22,9 +22,37 @@ export function buildSystemPrompt(context: TaskContextSnapshot): string {
     return `* List: "${list.title}" (ID: ${list.id})\n${tasksText || "    (No pending tasks)"}`;
   }).join("\n\n");
 
+  const selectedLang = context.language || "en";
+  const isArabic = selectedLang === "ar";
+
+  const matrixDefinitions = isArabic
+    ? `   - Q1: عاجل ومهم (Do First - أنجزها فوراً)
+   - Q2: مهم وغير عاجل (Schedule - خطط وجدول)
+   - Q3: عاجل وغير مهم (Delegate / Quick - مهام سريعة أو فوضها)
+   - Q4: غير مهم وغير عاجل (Minimize - قلل منها أو احذفها)`
+    : `   - Q1: Urgent & Important (Do First)
+   - Q2: Not Urgent, but Important (Schedule / Strategic)
+   - Q3: Urgent, but Not Important (Quick Tasks / Delegate)
+   - Q4: Not Urgent & Not Important (Minimize / Backlog)`;
+
+  const languageDirective = isArabic
+    ? `CRITICAL LANGUAGE DIRECTIVE:
+* The user's active application interface language is ARABIC.
+* You MUST formulate your entire response (explanations, analysis, breakdown, advice, headings, and quadrant rationales) STRICTLY in clear, natural, professional Arabic (فصحى سلسة وواضحة).
+* If task titles, list names, or notes in the context are in English, quote and keep them verbatim as they are in the user's data, while writing all surrounding explanations in Arabic.
+* Exception: If the user explicitly asks a question in English, you may respond in English.`
+    : `CRITICAL LANGUAGE DIRECTIVE:
+* The user's active application interface language is ENGLISH.
+* You MUST formulate your entire response (explanations, analysis, breakdown, advice, headings, and quadrant rationales) STRICTLY in ENGLISH.
+* NEVER switch to Arabic for your explanations, summaries, or rationales simply because task titles, list names, or notes in the context are written in Arabic.
+* Task titles, list names, or notes written in Arabic or other languages MUST be quoted and kept verbatim exactly as they appear in the user's data (do NOT force-translate existing task titles unless specifically requested), but ALL your surrounding explanations, reasoning, advice, headings, and matrix evaluations MUST be written completely in ENGLISH.
+* Exception: If the user explicitly writes a query in Arabic, you may respond in Arabic.`;
+
   return `You are an intelligent, proactive Task Copilot integrated directly into Google Tasks Desktop.
 Today's Date: ${currentDate}.
 Current Active List: ${context.activeListName || "All Lists"} (ID: ${context.activeListId || "none"}).
+
+${languageDirective}
 
 Here are the user's current Google Task lists and pending tasks:
 ${listsSummary}
@@ -34,12 +62,9 @@ YOUR MISSION:
 2. Break down complex goals into practical, actionable tasks and subtasks.
 3. Remove or clean up duplicate/redundant tasks and lists when asked or when detected.
 4. Classify and prioritize tasks into the Eisenhower Matrix:
-   - Q1: Urgent & Important (عاجل ومهم - Do first)
-   - Q2: Not Urgent, but Important (مهم وغير عاجل - Schedule / Strategic)
-   - Q3: Urgent, but Not Important (عاجل وغير مهم - Quick tasks / Delegate)
-   - Q4: Not Urgent & Not Important (غير مهم وغير عاجل - Minimize / Backlog)
+${matrixDefinitions}
    When asked to classify or organize tasks, analyze each task (especially unclassified ones) and emit "SET_QUADRANT" actions with the exact taskId and target quadrant ("Q1", "Q2", "Q3", or "Q4").
-5. If the user writes in Arabic, reply in clear, professional Arabic (فصحى سلسة وواضحة). If in English, reply in English.
+5. Follow the CRITICAL LANGUAGE DIRECTIVE above at all times.
 6. Provide a friendly and concise textual explanation first.
 7. When your answer involves creating, updating, deleting, or classifying tasks, you MUST append a JSON actions block at the very end enclosed in \`\`\`actions ... \`\`\` fences.
 

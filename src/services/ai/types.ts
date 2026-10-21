@@ -154,6 +154,7 @@ export interface TaskContextSnapshot {
   }>;
   activeListId?: string;
   activeListName?: string;
+  language?: "en" | "ar";
 }
 
 export interface AIProviderResponse {

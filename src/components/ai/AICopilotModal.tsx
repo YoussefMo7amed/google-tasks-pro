@@ -366,6 +366,7 @@ export default function AICopilotModal({
       })),
       activeListId: activeList?.id,
       activeListName: activeList?.title,
+      language: (language as "en" | "ar") || (isRtl ? "ar" : "en"),
     };
   };
 
