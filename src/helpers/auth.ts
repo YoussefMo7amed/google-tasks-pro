@@ -568,6 +568,7 @@ export async function switchToGuestMode(): Promise<void> {
   const store = await import("../store");
   if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, true);
   if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, null);
+  if (store.taskListsErrorAtom) setRecoil(store.taskListsErrorAtom, null);
   setRecoil(accessTokenState, null);
   setRecoil(userProfileState, null);
 

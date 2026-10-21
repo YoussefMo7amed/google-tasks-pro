@@ -56,6 +56,7 @@ import {
 } from '@mui/icons-material';
 import { trashService, TrashRetention } from '../../services/trash.service';
 import { setCustomCredentials } from '../../config/credentials';
+import { CryptoVaultService } from '../../services/security/crypto-vault.service';
 import { useTranslation } from '../../i18n';
 import {
   loadSettings,
@@ -111,7 +112,10 @@ export default function SettingsDialog({
 
   // Custom Google OAuth Credentials state
   const [customClientId, setCustomClientId] = useState<string>(() => localStorage.getItem('custom_google_client_id') || '');
-  const [customClientSecret, setCustomClientSecret] = useState<string>(() => localStorage.getItem('custom_google_client_secret') || '');
+  const [customClientSecret, setCustomClientSecret] = useState<string>(() => {
+    const stored = localStorage.getItem('custom_google_client_secret');
+    return stored ? CryptoVaultService.decrypt(stored) : '';
+  });
 
   // AI Settings state (stored in Recoil for instant app-wide synchronization)
   const [aiSettings, setAiSettings] = useRecoilState(aiSettingsAtom);

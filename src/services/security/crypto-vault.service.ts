@@ -87,20 +87,26 @@ export class CryptoVaultService {
       return ciphertext;
     }
 
-    try {
-      const rawEncrypted = ciphertext.slice(VAULT_PREFIX.length);
-      const key = this.getMasterKey();
-      const bytes = CryptoJS.AES.decrypt(rawEncrypted, key);
-      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      if (!decrypted) {
-        console.warn("CryptoVault decryption yielded empty string");
-        return "";
+    let current = ciphertext;
+    let iterations = 0;
+    while (typeof current === "string" && current.startsWith(VAULT_PREFIX) && iterations < 5) {
+      iterations++;
+      try {
+        const rawEncrypted = current.slice(VAULT_PREFIX.length);
+        const key = this.getMasterKey();
+        const bytes = CryptoJS.AES.decrypt(rawEncrypted, key);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        if (!decrypted) {
+          console.warn("CryptoVault decryption yielded empty string at iteration", iterations);
+          break;
+        }
+        current = decrypted;
+      } catch (e) {
+        console.error("CryptoVault decryption error:", e);
+        break;
       }
-      return decrypted;
-    } catch (e) {
-      console.error("CryptoVault decryption error:", e);
-      return "";
     }
+    return current;
   }
 
   /**

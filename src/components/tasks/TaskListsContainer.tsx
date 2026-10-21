@@ -11,7 +11,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Box, IconButton, Typography, CircularProgress, Paper, Button, Alert } from "@mui/material";
-import { ChevronLeft, ChevronRight, LockOutlined, Google } from "@mui/icons-material";
+import { ChevronLeft, ChevronRight, LockOutlined, Google, Close } from "@mui/icons-material";
 import { handleLogin } from "../../helpers/auth";
 import {
   DndContext,
@@ -32,8 +32,8 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { useTaskLists, useTasks } from "../../hooks";
-import { useRecoilValue } from "recoil";
-import { viewStateAtom } from "../../store";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { viewStateAtom, isGuestModeAtom, taskListsErrorAtom } from "../../store";
 import { AppTask, AppTaskList } from "../../types/app";
 import TaskListCard from "./TaskListCard";
 import SortableTaskCard from "./SortableTaskCard";
@@ -47,6 +47,8 @@ export default function TaskListsContainer() {
   const { taskLists, loading, error, fetchTaskLists, reorderTaskLists } = useTaskLists();
   const { moveTaskToList, reorderTasksLocally } = useTasks();
   const viewState = useRecoilValue(viewStateAtom);
+  const isGuest = useRecoilValue(isGuestModeAtom);
+  const setListsError = useSetRecoilState(taskListsErrorAtom);
 
   const [activeTask, setActiveTask] = useState<AppTask | null>(null);
   const [activeList, setActiveList] = useState<AppTaskList | null>(null);
@@ -288,20 +290,32 @@ export default function TaskListsContainer() {
       }}
     >
       {/* Banner when viewing cached tasks during session expiration or offline */}
-      {error && (
+      {error && !isGuest && (
         <Box sx={{ position: "absolute", top: 8, left: 60, right: 60, zIndex: 12 }}>
           <Alert
             severity={error.toLowerCase().includes("session") || error.includes("401") ? "warning" : "info"}
+            onClose={() => setListsError(null)}
             action={
-              error.toLowerCase().includes("session") || error.includes("401") ? (
-                <Button color="inherit" size="small" onClick={() => handleLogin(true)}>
-                  {t("auth.signIn")}
-                </Button>
-              ) : (
-                <Button color="inherit" size="small" onClick={() => fetchTaskLists(true)}>
-                  {t("common.retry")}
-                </Button>
-              )
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {error.toLowerCase().includes("session") || error.includes("401") ? (
+                  <Button color="inherit" size="small" onClick={() => handleLogin(true)}>
+                    {t("auth.signIn")}
+                  </Button>
+                ) : (
+                  <Button color="inherit" size="small" onClick={() => fetchTaskLists(true)}>
+                    {t("common.retry")}
+                  </Button>
+                )}
+                <IconButton
+                  size="small"
+                  color="inherit"
+                  aria-label="close"
+                  onClick={() => setListsError(null)}
+                  sx={{ p: 0.5 }}
+                >
+                  <Close fontSize="small" />
+                </IconButton>
+              </Box>
             }
           >
             {error.toLowerCase().includes("session") || error.includes("401")

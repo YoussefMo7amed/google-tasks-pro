@@ -16,7 +16,12 @@ export function getClientId(): string {
 export function getClientSecret(): string {
   if (typeof window !== "undefined" && window.localStorage) {
     const custom = window.localStorage.getItem("custom_google_client_secret");
-    if (custom && custom.trim()) return CryptoVaultService.decrypt(custom.trim());
+    if (custom && custom.trim()) {
+      const decrypted = CryptoVaultService.decrypt(custom.trim());
+      if (decrypted && !decrypted.startsWith("vault:v1:")) {
+        return decrypted;
+      }
+    }
   }
   return DEFAULT_CLIENT_SECRET;
 }
@@ -30,7 +35,8 @@ export function setCustomCredentials(clientId?: string, clientSecret?: string): 
     }
 
     if (clientSecret && clientSecret.trim()) {
-      window.localStorage.setItem("custom_google_client_secret", CryptoVaultService.encrypt(clientSecret.trim()));
+      const plainSecret = CryptoVaultService.decrypt(clientSecret.trim());
+      window.localStorage.setItem("custom_google_client_secret", CryptoVaultService.encrypt(plainSecret));
     } else {
       window.localStorage.removeItem("custom_google_client_secret");
     }
