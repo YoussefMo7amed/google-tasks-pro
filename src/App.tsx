@@ -97,6 +97,13 @@ function App() {
     listen_for_auth_code({
       onSucess: (code) => {
         console.log(code, "code generated");
+        // Bring desktop app to front and focus immediately
+        import("@tauri-apps/api/window").then(({ appWindow }) => {
+          appWindow.show().catch(console.warn);
+          appWindow.unminimize().catch(console.warn);
+          appWindow.setFocus().catch(console.warn);
+        }).catch(console.warn);
+
         if (code) {
           saveAuthCode(code).then(() => {
             console.log("code saved");
