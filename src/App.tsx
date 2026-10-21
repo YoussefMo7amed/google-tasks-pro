@@ -144,11 +144,12 @@ function App() {
         }
       },
       onError: (err) => {
-        console.log(err);
+        console.error("listen_for_auth_code error:", err);
         setLoading(false);
+        const detail = err instanceof Error ? err.message : String(err || "");
         setToastMessage({
           title: "Error",
-          body: "Error signing in",
+          body: detail ? `Error signing in: ${detail}` : "Error signing in",
           type: "error",
         });
       },

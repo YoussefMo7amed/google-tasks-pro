@@ -51,13 +51,8 @@ export class CryptoVaultService {
       }
     }
 
-    // Combine machine fingerprint attributes
-    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "desktop-client";
-    const concurrency = typeof navigator !== "undefined" ? String(navigator.hardwareConcurrency || 4) : "4";
-    const language = typeof navigator !== "undefined" ? navigator.language : "en";
-    const screenDepth = typeof screen !== "undefined" ? String(screen.colorDepth || 24) : "24";
-
-    const entropySource = `${STATIC_PEPPER}::${deviceSeed}::${userAgent}::${concurrency}::${language}::${screenDepth}`;
+    // Stable 256-bit entropy derived from persistent device seed + app pepper
+    const entropySource = `${STATIC_PEPPER}::${deviceSeed}`;
     
     // Hash composite entropy to produce 256-bit AES key
     const masterKey = CryptoJS.SHA256(entropySource).toString(CryptoJS.enc.Hex);

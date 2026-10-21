@@ -345,13 +345,14 @@ export async function handleLogin(forceNew: boolean = false) {
       pushNotification('login required')
       await openAuthWindow();
     } catch (error) {
-      console.log(error);
-      setRecoil(authLoadingState, false)
+      console.error("handleLogin error:", error);
+      setRecoil(authLoadingState, false);
+      const detail = error instanceof Error ? error.message : String(error || "");
       setRecoil(messageState, {
         title: "Error",
-        body: "Error signing in",
+        body: detail ? `Error signing in: ${detail}` : "Error signing in",
         type: "error"
-      })
+      });
     }
 }
   
@@ -371,13 +372,14 @@ export async function handleLoadFrom(accessTokenBody: AccessToken) {
       accountService.saveAccount(userProfile, accessTokenBody);
     }
     catch (err) {
-      console.log(err);
+      console.error("handleLoadFrom error:", err);
       await handleLogout();
+      const detail = err instanceof Error ? err.message : String(err || "");
       setRecoil(messageState, {
         title: "Error",
-        body: "Error signing in",
+        body: detail ? `Error signing in: ${detail}` : "Error signing in",
         type: "error"
-      })
+      });
     }
     finally {
       setRecoil(authLoadingState, false);
