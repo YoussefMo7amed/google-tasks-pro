@@ -76,6 +76,10 @@ jobs:
             ## 🚀 Google Tasks Pro Release
 
             ### ✨ What's New:
+            * **Guest / Offline Mode:** Instant local task workspace without requiring a Google sign-in.
+            * **Multi-Account Switcher:** 1-click switching between multiple saved Google accounts and Guest mode.
+            * **Cloud Sync:** Seamlessly merge and upload local guest tasks to Google Tasks upon signing in.
+            * **Native macOS OAuth Auto-Focus:** Automatically brings Google Tasks Pro to the foreground when authentication completes.
             * **One-Click Eisenhower Matrix:** Prioritize tasks directly in the quick-add bar.
             * **Custom Due Times:** Precise hours and minutes with native system notifications.
             * **Smart Recurring Tasks Engine:** Multi-interval repetition (Daily/Weekly/Monthly) with auto-spawn.
