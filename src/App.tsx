@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/tauri";
 import {
   Box,
   Snackbar,
@@ -107,6 +108,7 @@ function App() {
       onSucess: (code) => {
         console.log(code, "code generated");
         // Bring desktop app to front and focus immediately
+        invoke("bring_to_front").catch(console.warn);
         import("@tauri-apps/api/window").then(({ appWindow }) => {
           appWindow.show().catch(console.warn);
           appWindow.unminimize().catch(console.warn);

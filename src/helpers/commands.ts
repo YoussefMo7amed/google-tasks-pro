@@ -34,6 +34,10 @@ export function loadCode() {
     return invoke()<string>("load_code")
 }
 
+export function bringToFront() {
+    return invoke()<null>("bring_to_front")
+}
+
 export type AccessToken = { access_token: string; expires_in: number; refresh_token: string; scope: string; token_type: string; id_token: string }
 export type GreetResponse = { message: string }
 export type SaveTokenResponse = { message: string; token: string; success: boolean }

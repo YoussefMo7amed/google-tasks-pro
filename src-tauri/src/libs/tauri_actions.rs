@@ -55,3 +55,21 @@ pub fn load_code() -> String {
     dotenv::from_filename(ENV_FILE).ok();
     return Auth::load_auth_code();
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn bring_to_front(window: tauri::Window) {
+    let _ = window.show();
+    let _ = window.unminimize();
+    let _ = window.set_focus();
+
+    #[cfg(target_os = "macos")]
+    {
+        #[allow(deprecated)]
+        unsafe {
+            use cocoa::appkit::NSApplication;
+            let app = cocoa::appkit::NSApp();
+            app.activateIgnoringOtherApps_(cocoa::base::YES);
+        }
+    }
+}
