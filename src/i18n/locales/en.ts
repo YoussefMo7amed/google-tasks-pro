@@ -253,7 +253,12 @@ export const en: TranslationSchema = {
     models: {
       gemini38FlashDesc: "Fast with thinking support, multimodal, 1M context",
       gemini38ProDesc: "Deep reasoning and extensive context for complex planning",
-      gemini25FlashDesc: "Fast hybrid reasoning, multimodal, 1M context",
+      gemini35FlashDesc: "Balanced speed and thinking capability, 1M context",
+      gemini31ProDesc: "Advanced reasoning and complex task structuring",
+      gemini31FlashLiteDesc: "Ultra-fast lightweight execution with thinking support",
+      geminiFlashLatestDesc: "Always tracks the latest Gemini Flash release",
+      gemini25FlashDesc: "Stable 2.5 multimodal release with thinking support",
+      gemini25ProDesc: "Stable 2.5 deep reasoning and analysis model",
       gemini20FlashDesc: "Low latency, fast task planning",
       gemini20FlashLiteDesc: "Maximum throughput, highly resilient against rate limits",
       gemini15FlashDesc: "Stable, long context fallback",

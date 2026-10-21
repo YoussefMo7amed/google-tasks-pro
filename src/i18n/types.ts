@@ -268,7 +268,12 @@ export interface TranslationSchema {
     models: {
       gemini38FlashDesc: string;
       gemini38ProDesc: string;
+      gemini35FlashDesc: string;
+      gemini31ProDesc: string;
+      gemini31FlashLiteDesc: string;
+      geminiFlashLatestDesc: string;
       gemini25FlashDesc: string;
+      gemini25ProDesc: string;
       gemini20FlashDesc: string;
       gemini20FlashLiteDesc: string;
       gemini15FlashDesc: string;

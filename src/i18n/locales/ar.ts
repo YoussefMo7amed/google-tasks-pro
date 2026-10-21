@@ -253,7 +253,12 @@ export const ar: TranslationSchema = {
     models: {
       gemini38FlashDesc: "سريع ويدعم التفكير، متعدد الوسائط، سياق 1 مليون رمز",
       gemini38ProDesc: "تفكير معمق وسياق فائق للمهام والتخطيط المعقد",
-      gemini25FlashDesc: "سرعة فائقة وتفكير هجين، متعدد الوسائط، سياق 1 مليون",
+      gemini35FlashDesc: "توازن متميز بين السرعة ودعم التفكير، سياق 1 مليون",
+      gemini31ProDesc: "استدلال منطقي متقدم لهيكلة المهام المعقدة",
+      gemini31FlashLiteDesc: "سرعة استجابة فائقة وخفيفة مع دعم التفكير",
+      geminiFlashLatestDesc: "يتتبع دائماً أحدث إصدار معتمد من Gemini Flash",
+      gemini25FlashDesc: "إصدار 2.5 المستقر متعدد الوسائط مع دعم التفكير",
+      gemini25ProDesc: "إصدار 2.5 المستقر للاستدلال والتفكير المعمق",
       gemini20FlashDesc: "استجابة سريعة جداً لتخطيط المهام",
       gemini20FlashLiteDesc: "أقصى قدرة معالجة ومقاومة لحدود الاستخدام",
       gemini15FlashDesc: "نموذج مستقر ذو سياق طويل كخيار احتياطي موثوق",
