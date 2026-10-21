@@ -257,26 +257,30 @@ export interface TranslationSchema {
     switchModel: string;
     quickSwitchToBackup: string;
     highDemandNotice: string;
+    connectionSuccessWithModel: string;
     modelTags: {
-      recommended: string;
+      thinking: string;
+      deepThinking: string;
+      noThinking: string;
       fast: string;
-      reasoning: string;
-      pro: string;
-      quotaSaver: string;
       custom: string;
     };
     models: {
+      gemini38FlashDesc: string;
+      gemini38ProDesc: string;
       gemini25FlashDesc: string;
       gemini20FlashDesc: string;
       gemini20FlashLiteDesc: string;
       gemini15FlashDesc: string;
       gemini15ProDesc: string;
+      claude37SonnetDesc: string;
       claudeSonnetDesc: string;
       claudeHaikuDesc: string;
       claudeOpusDesc: string;
+      o3MiniDesc: string;
+      o1Desc: string;
       gpt4oMiniDesc: string;
       gpt4oDesc: string;
-      o3MiniDesc: string;
       llama70bGroqDesc: string;
       llama32Desc: string;
       llama31Desc: string;

@@ -73,6 +73,7 @@ import {
   ALL_PROVIDERS,
   AISettingsService,
   getProviderModels,
+  MODEL_TAG_KEYS,
 } from '../../services/ai';
 import { aiService } from '../../services/ai/ai.service';
 
@@ -694,7 +695,13 @@ export default function SettingsDialog({
                         <MenuItem key={m.id} value={m.id}>
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
                             <Typography variant="body2" fontWeight={500}>{m.label}</Typography>
-                            <Chip size="small" label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)} sx={{ height: 18, fontSize: '0.65rem' }} />
+                            <Chip
+                              size="small"
+                              label={t(`ai.modelTags.${MODEL_TAG_KEYS[m.tag] || "custom"}`)}
+                              color={m.tag === "thinking" ? "primary" : m.tag === "deep_thinking" ? "secondary" : "default"}
+                              variant={m.tag === "no_thinking" || m.tag === "fast" ? "outlined" : "filled"}
+                              sx={{ height: 18, fontSize: '0.65rem' }}
+                            />
                           </Box>
                         </MenuItem>
                       ))}
@@ -788,7 +795,13 @@ export default function SettingsDialog({
                         <MenuItem key={m.id} value={m.id}>
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
                             <Typography variant="body2" fontWeight={500}>{m.label}</Typography>
-                            <Chip size="small" label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)} sx={{ height: 18, fontSize: '0.65rem' }} />
+                            <Chip
+                              size="small"
+                              label={t(`ai.modelTags.${MODEL_TAG_KEYS[m.tag] || "custom"}`)}
+                              color={m.tag === "thinking" ? "primary" : m.tag === "deep_thinking" ? "secondary" : "default"}
+                              variant={m.tag === "no_thinking" || m.tag === "fast" ? "outlined" : "filled"}
+                              sx={{ height: 18, fontSize: '0.65rem' }}
+                            />
                           </Box>
                         </MenuItem>
                       ))}
@@ -898,62 +911,69 @@ export default function SettingsDialog({
 
                 {/* Sub-Model Picker with Curated Catalog & Custom Option */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="provider-model-select-label">{t("settings.selectModel")}</InputLabel>
-                    <Select
-                      labelId="provider-model-select-label"
-                      label={t("settings.selectModel")}
-                      value={
-                        getProviderModels(selectedProviderTab).some((m) => m.id === (currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab]))
-                          ? (currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab])
-                          : "__custom__"
-                      }
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === "__custom__") {
-                          if (getProviderModels(selectedProviderTab).some((m) => m.id === currentProviderConfig.model)) {
-                            updateProviderConfig(selectedProviderTab, { model: "" });
-                          }
-                        } else {
-                          updateProviderConfig(selectedProviderTab, { model: val });
-                        }
-                      }}
-                    >
-                      {getProviderModels(selectedProviderTab).map((m) => (
-                        <MenuItem key={m.id} value={m.id}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                              <Typography variant="body2" fontWeight={500}>{m.label}</Typography>
-                              <Typography variant="caption" color="text.secondary">{m.id}</Typography>
-                            </Box>
-                            <Chip
-                              size="small"
-                              label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)}
-                              sx={{ height: 18, fontSize: '0.65rem' }}
-                            />
-                          </Box>
-                        </MenuItem>
-                      ))}
-                      <MenuItem value="__custom__">
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
-                          <Typography variant="body2" fontStyle="italic">{t("settings.customModelOption")}</Typography>
-                          <Chip size="small" label={t("ai.modelTags.custom")} sx={{ height: 18, fontSize: '0.65rem' }} />
-                        </Box>
-                      </MenuItem>
-                    </Select>
-                  </FormControl>
+                  {(() => {
+                    const presetList = getProviderModels(selectedProviderTab);
+                    const effectiveModel = currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab];
+                    const isKnownPreset = presetList.some((m) => m.id === effectiveModel && currentProviderConfig.model !== "__custom__");
+                    const isCustomModel = !isKnownPreset || currentProviderConfig.model === "__custom__";
 
-                  {(!getProviderModels(selectedProviderTab).some((m) => m.id === currentProviderConfig.model)) && (
-                    <TextField
-                      label={t("settings.customModelOption")}
-                      placeholder={t("settings.customModelPlaceholder")}
-                      size="small"
-                      fullWidth
-                      value={currentProviderConfig.model || ""}
-                      onChange={(e) => updateProviderConfig(selectedProviderTab, { model: e.target.value })}
-                      helperText={t("settings.suggestedDefault", { defaultModel: DEFAULT_MODELS[selectedProviderTab] })}
-                    />
-                  )}
+                    return (
+                      <>
+                        <FormControl fullWidth size="small">
+                          <InputLabel id="provider-model-select-label">{t("settings.selectModel")}</InputLabel>
+                          <Select
+                            labelId="provider-model-select-label"
+                            label={t("settings.selectModel")}
+                            value={isKnownPreset ? effectiveModel : "__custom__"}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "__custom__") {
+                                updateProviderConfig(selectedProviderTab, { model: "__custom__" });
+                              } else {
+                                updateProviderConfig(selectedProviderTab, { model: val });
+                              }
+                            }}
+                          >
+                            {presetList.map((m) => (
+                              <MenuItem key={m.id} value={m.id}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                    <Typography variant="body2" fontWeight={500}>{m.label}</Typography>
+                                    <Typography variant="caption" color="text.secondary">{m.id}</Typography>
+                                  </Box>
+                                  <Chip
+                                    size="small"
+                                    label={t(`ai.modelTags.${MODEL_TAG_KEYS[m.tag] || "custom"}`)}
+                                    color={m.tag === "thinking" ? "primary" : m.tag === "deep_thinking" ? "secondary" : "default"}
+                                    variant={m.tag === "no_thinking" || m.tag === "fast" ? "outlined" : "filled"}
+                                    sx={{ height: 18, fontSize: '0.65rem' }}
+                                  />
+                                </Box>
+                              </MenuItem>
+                            ))}
+                            <MenuItem value="__custom__">
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                                <Typography variant="body2" fontStyle="italic">{t("settings.customModelOption")}</Typography>
+                                <Chip size="small" label={t("ai.modelTags.custom")} sx={{ height: 18, fontSize: '0.65rem' }} />
+                              </Box>
+                            </MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        {isCustomModel && (
+                          <TextField
+                            label={t("settings.customModelOption")}
+                            placeholder={t("settings.customModelPlaceholder")}
+                            size="small"
+                            fullWidth
+                            value={currentProviderConfig.model === "__custom__" ? "" : (currentProviderConfig.model || "")}
+                            onChange={(e) => updateProviderConfig(selectedProviderTab, { model: e.target.value })}
+                            helperText={t("settings.suggestedDefault", { defaultModel: DEFAULT_MODELS[selectedProviderTab] })}
+                          />
+                        )}
+                      </>
+                    );
+                  })()}
                 </Box>
 
                 {/* Multiple API Keys Manager for this specific provider */}
@@ -1044,7 +1064,12 @@ export default function SettingsDialog({
 
                 {testResult && (
                   <Alert severity={testResult.success ? "success" : "error"} sx={{ mt: 1 }}>
-                    {testResult.message}
+                    {testResult.success
+                      ? t("ai.connectionSuccessWithModel", {
+                          provider: providerLabels[selectedProviderTab],
+                          model: currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab],
+                        })
+                      : testResult.message}
                   </Alert>
                 )}
 

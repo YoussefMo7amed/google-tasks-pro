@@ -61,6 +61,7 @@ import {
   AISettingsService,
   getProviderModels,
   getModelOption,
+  MODEL_TAG_KEYS,
   DEFAULT_MODELS,
   DEFAULT_BASE_URLS,
 } from "../../services/ai";
@@ -810,7 +811,9 @@ export default function AICopilotModal({
                     {activeModelOption && (
                       <Chip
                         size="small"
-                        label={t(`ai.modelTags.${activeModelOption.tag === "quota_saver" ? "quotaSaver" : activeModelOption.tag}`)}
+                        label={t(`ai.modelTags.${MODEL_TAG_KEYS[activeModelOption.tag] || "custom"}`)}
+                        color={activeModelOption.tag === "thinking" ? "primary" : activeModelOption.tag === "deep_thinking" ? "secondary" : "default"}
+                        variant={activeModelOption.tag === "no_thinking" || activeModelOption.tag === "fast" ? "outlined" : "filled"}
                         sx={{ height: 16, fontSize: '0.6rem', ml: 0.3 }}
                       />
                     )}
@@ -922,7 +925,9 @@ export default function AICopilotModal({
               </Box>
               <Chip
                 size="small"
-                label={t(`ai.modelTags.${m.tag === "quota_saver" ? "quotaSaver" : m.tag}`)}
+                label={t(`ai.modelTags.${MODEL_TAG_KEYS[m.tag] || "custom"}`)}
+                color={m.tag === "thinking" ? "primary" : m.tag === "deep_thinking" ? "secondary" : "default"}
+                variant={m.tag === "no_thinking" || m.tag === "fast" ? "outlined" : "filled"}
                 sx={{ height: 18, fontSize: '0.65rem' }}
               />
             </MenuItem>

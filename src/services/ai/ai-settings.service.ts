@@ -18,7 +18,7 @@ export const ALL_PROVIDERS: AIProviderType[] = [
 ];
 
 export const DEFAULT_MODELS: Record<AIProviderType, string> = {
-  gemini: "gemini-2.5-flash",
+  gemini: "gemini-3.8-flash",
   claude: "claude-3-5-sonnet-20241022",
   openai_compatible: "gpt-4o-mini",
   ollama: "llama3.2",
@@ -153,10 +153,24 @@ export class AISettingsService {
         }
       }
 
+      // Upgrade legacy or deprecated gemini models (e.g. gemini-2.5-flash which returns 404) to gemini-3.8-flash
+      if (providers.gemini && (providers.gemini.model === "gemini-2.5-flash" || !providers.gemini.model)) {
+        providers.gemini.model = "gemini-3.8-flash";
+      }
+
       const activePrimary = providers[primaryProv];
+      if (primaryProv === "gemini" && (activePrimary.model === "gemini-2.5-flash" || parsed.model === "gemini-2.5-flash" || !activePrimary.model)) {
+        activePrimary.model = "gemini-3.8-flash";
+        parsed.model = "gemini-3.8-flash";
+      }
+
       const backupProv: AIProviderType = parsed.backupProvider || "openai_compatible";
       const activeBackup = providers[backupProv];
-      const backupModel = parsed.backupModel || activeBackup.model || DEFAULT_MODELS[backupProv];
+      let backupModel = parsed.backupModel || activeBackup.model || DEFAULT_MODELS[backupProv];
+      if (backupProv === "gemini" && (backupModel === "gemini-2.5-flash" || !backupModel)) {
+        backupModel = "gemini-3.8-flash";
+        parsed.backupModel = "gemini-3.8-flash";
+      }
 
       return {
         ...DEFAULT_SETTINGS,
