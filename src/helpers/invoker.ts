@@ -33,10 +33,6 @@ export async function get_access_token() : Promise<AccessToken> {
     return await AuthStore.get<AccessToken>(storeConstant.access_token) ?? {} as AccessToken;
 }
 
-export async function test_command() {
-    return await commands.testCommand();
-}
-
 export async function greet(name: string) {
     return await commands.greet(name);
 }

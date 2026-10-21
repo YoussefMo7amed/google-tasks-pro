@@ -22,10 +22,6 @@ export function greet(name: string) {
     return invoke()<GreetResponse>("greet", { name })
 }
 
-export function testCommand() {
-    return invoke()<string>("test_command")
-}
-
 export function saveCode(code: string) {
     return invoke()<SaveTokenResponse>("save_code", { code })
 }

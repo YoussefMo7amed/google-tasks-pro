@@ -4,7 +4,7 @@
     "beforeBuildCommand": "npm run build",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
-    "withGlobalTauri": true
+    "withGlobalTauri": false
   },
   "package": {
     "productName": "Google Tasks Pro",
@@ -23,7 +23,18 @@
       "http": {
         "all": true,
         "request": true,
-        "scope": ["http://**", "https://**"]
+        "scope": [
+          "https://tasks.googleapis.com/**",
+          "https://oauth2.googleapis.com/**",
+          "https://www.googleapis.com/**",
+          "https://generativelanguage.googleapis.com/**",
+          "https://api.openai.com/**",
+          "https://api.anthropic.com/**",
+          "https://api.groq.com/**",
+          "https://openrouter.ai/**",
+          "http://localhost/**",
+          "http://127.0.0.1/**"
+        ]
       },
       "shell": {
         "all": false,
@@ -49,21 +60,9 @@
           "$APPDATA/codad5.google.task/**",
           "$APPDATA/codad5.google.task/*",
           "$APPDATA/codad5.google.task",
-          "$APPDATA/**",
-          "$APPDATA/*",
-          "$APPDATA",
-          "$DOWNLOAD/codad5.google.task/**",
-          "$DOWNLOAD/codad5.google.task/*",
-          "$DOWNLOAD/codad5.google.task",
-          "$DOWNLOAD/**",
-          "$DOWNLOAD/*",
-          "$DOWNLOAD",
           "$APPLOCALDATA/codad5.google.task/**",
           "$APPLOCALDATA/codad5.google.task/*",
-          "$APPLOCALDATA/codad5.google.task",
-          "$APPLOCALDATA/**",
-          "$APPLOCALDATA/*",
-          "$APPLOCALDATA"
+          "$APPLOCALDATA/codad5.google.task"
         ]
       }
     },
@@ -102,7 +101,7 @@
       "externalBin": []
     },
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://tasks.googleapis.com https://oauth2.googleapis.com https://www.googleapis.com https://generativelanguage.googleapis.com https://api.openai.com https://api.anthropic.com https://api.groq.com https://openrouter.ai http://localhost:* http://127.0.0.1:*;"
     },
     "windows": [
       {

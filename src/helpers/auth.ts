@@ -63,9 +63,7 @@ export async function getAccessToken(code: string, portOverride?: number): Promi
             redirect_uri: getLocalHostUrl(port),
             grant_type: "authorization_code",
         };
-        console.log(data, "data for token exchange");
         const response = await axios.post("https://oauth2.googleapis.com/token", data, { timeout: 8000 });
-        console.log(response, "response from getAccessToken");
         return response.data;
     }
     catch (error) {
@@ -132,7 +130,6 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
       },
       timeout: 8000,
     });
-    console.log(response.data, "response from fetchUserProfile");
     return response.data;
   }catch (error) {
     console.error("Error fetching user profile:", error);
@@ -249,7 +246,6 @@ export async function saveAccessToken(accessToken: string|AccessToken) {
 export async function getAccessTokenFromStorage() {
     try {
         let accessToken = await get_access_token();
-        console.log('getAccessTokenFromStorage: retrieved', accessToken);
         if (!accessToken || !accessToken.access_token) {
             console.log("getAccessTokenFromStorage: no valid access token found");
             return null;

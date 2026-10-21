@@ -5,6 +5,7 @@
  */
 
 import { AISettings, AIProviderType, ProviderConfig } from "./types";
+import { CryptoVaultService } from "../security/crypto-vault.service";
 export type { AISettings, AIProviderType, ProviderConfig };
 
 const STORAGE_KEY = "google_tasks_ai_settings";
@@ -114,7 +115,13 @@ export class AISettingsService {
           providers: defaultProviders,
         };
       }
-      const parsed = JSON.parse(stored);
+      const parsed = CryptoVaultService.decryptJson<any>(stored, null);
+      if (!parsed) {
+        return {
+          ...DEFAULT_SETTINGS,
+          providers: defaultProviders,
+        };
+      }
 
       // Merge saved providers with defaults
       const providers: Record<AIProviderType, ProviderConfig> = {
@@ -244,7 +251,8 @@ export class AISettingsService {
       }
 
       settings.providers = providers;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      const encrypted = CryptoVaultService.encryptJson(settings);
+      localStorage.setItem(STORAGE_KEY, encrypted);
     } catch (e) {
       console.error("Failed to save AI settings:", e);
     }

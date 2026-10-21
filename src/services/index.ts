@@ -6,4 +6,5 @@ export { historyService } from "./history.service";
 export { recurrenceService } from "./recurrence.service";
 export { trashService } from "./trash.service";
 export { accountService } from "./account.service";
+export * from "./security";
 export * from "./ai";

@@ -15,7 +15,6 @@ use libs::notifications::{
 };
 use libs::tauri_actions::{
     bring_to_front, greet, load_access_token, load_code, save_access_token, save_code,
-    test_command,
 };
 use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
@@ -30,7 +29,6 @@ fn run_specta() {
             save_access_token,
             load_access_token,
             greet,
-            test_command,
             save_code,
             load_code,
             bring_to_front,
@@ -154,7 +152,6 @@ fn main() {
             save_access_token,
             load_access_token,
             greet,
-            test_command,
             save_code,
             load_code,
             bring_to_front,

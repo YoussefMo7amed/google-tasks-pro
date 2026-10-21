@@ -7,6 +7,7 @@
 
 import { UserProfile } from "../types/googleapis";
 import { AccessToken } from "../helpers/commands";
+import { CryptoVaultService } from "./security/crypto-vault.service";
 
 export interface StoredAccount {
   id: string; // unique identifier (email)
@@ -32,7 +33,7 @@ class AccountService {
     try {
       const data = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
       if (data) {
-        const parsed: StoredAccount[] = JSON.parse(data);
+        const parsed: StoredAccount[] = CryptoVaultService.decryptJson<StoredAccount[]>(data, []);
         if (Array.isArray(parsed)) {
           this.accounts.clear();
           for (const acc of parsed) {
@@ -53,7 +54,8 @@ class AccountService {
   private save() {
     try {
       const list = Array.from(this.accounts.values());
-      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(list));
+      const encrypted = CryptoVaultService.encryptJson(list);
+      localStorage.setItem(ACCOUNTS_STORAGE_KEY, encrypted);
     } catch (e) {
       console.warn("Failed to persist saved accounts:", e);
     }
