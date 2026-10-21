@@ -89,14 +89,24 @@ export interface TranslationSchema {
     taskUncheckedToast: string;
     taskDeletedToast: string;
     taskAddedOfflineToast: string;
+    taskUpdatedOfflineToast: string;
+    taskMovedToast: string;
+    taskMovedOfflineToast: string;
     taskSavedLocallyNotice: string;
     subtasks: string;
     addSubtask: string;
     addSubtaskPlaceholder: string;
     addNewSubtaskPlaceholder: string;
+    subtaskAddedOfflineToast: string;
+    subtaskCreatedToast: string;
     openDetails: string;
     indent: string;
     unindent: string;
+    taskIndentedToast: string;
+    taskUnindentedToast: string;
+    cannotIndentToast: string;
+    noTaskAboveToIndent: string;
+    completedClearedToast: string;
     subtaskOf: string;
     moveToList: string;
     noOtherLists: string;
@@ -191,6 +201,16 @@ export interface TranslationSchema {
     apiKeyRequiredTitle: string;
     apiKeyRequiredBody: string;
     configureKeyBtn: string;
+    noActionsSelected: string;
+    selectAtLeastOneAction: string;
+    actionsApplied: string;
+    actionsAppliedCount: string;
+    singleActionApplied: string;
+    actionAppliedBody: string;
+    actionDismissed: string;
+    actionDismissedBody: string;
+    actionsDismissedAll: string;
+    actionsDismissedBody: string;
   };
   settings: {
     title: string;
@@ -294,6 +314,8 @@ export interface TranslationSchema {
     recentLogTitle: string;
     noCompletedTasks: string;
     atTime: string;
+    resetAnalyticsTooltip: string;
+    resetAnalyticsTitle: string;
   };
   shortcuts: {
     modalTitle: string;

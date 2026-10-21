@@ -33,8 +33,8 @@ import {
   CompletedHistoryItem,
 } from "../../services/history.service";
 import { useTranslation } from "../../i18n";
-import { useRecoilValue } from "recoil";
-import { taskListsAtom } from "../../store";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { taskListsAtom, toastAtom } from "../../store";
 
 interface AnalyticsViewProps {
   isVisible?: boolean;
@@ -43,6 +43,7 @@ interface AnalyticsViewProps {
 export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) {
   const { t, language } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
+  const setToast = useSetRecoilState(toastAtom);
 
   const [stats, setStats] = useState<StreakStats>({
     currentStreak: 0,
@@ -145,12 +146,13 @@ export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) 
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Tooltip title={language === "ar" ? "تصفير وإعادة ضبط السجل" : "Reset analytics history"}>
+          <Tooltip title={t("analytics.resetAnalyticsTooltip")}>
             <IconButton
               size="small"
               onClick={() => {
                 historyService.clearHistory();
                 refreshStats();
+                setToast({ title: t("analytics.resetAnalyticsTitle"), type: "info" });
               }}
               sx={{
                 color: "text.secondary",
@@ -183,7 +185,10 @@ export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) 
             bgcolor: "background.paper",
             border: "1px solid",
             borderColor: "warning.dark",
-            background: "linear-gradient(135deg, rgba(251, 140, 0, 0.12) 0%, rgba(30, 31, 32, 1) 100%)",
+            background: (theme) =>
+              theme.palette.mode === "dark"
+                ? "linear-gradient(135deg, rgba(251, 140, 0, 0.15) 0%, rgba(30, 31, 32, 0.95) 100%)"
+                : "linear-gradient(135deg, rgba(251, 140, 0, 0.12) 0%, rgba(255, 255, 255, 0.95) 100%)",
             display: "flex",
             alignItems: "center",
             gap: 2.5,
@@ -210,7 +215,7 @@ export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) 
               variant="h4"
               sx={{
                 fontWeight: 800,
-                color: "#ffb74d",
+                color: (theme) => (theme.palette.mode === "dark" ? "#ffb74d" : "#e65100"),
                 display: "flex",
                 alignItems: "baseline",
                 gap: 1,
@@ -219,7 +224,11 @@ export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) 
               <span>{stats.currentStreak}</span>
               <Typography
                 component="span"
-                sx={{ fontSize: "1.25rem", fontWeight: 700, color: "#ffb74d" }}
+                sx={{
+                  fontSize: "1.25rem",
+                  fontWeight: 700,
+                  color: (theme) => (theme.palette.mode === "dark" ? "#ffb74d" : "#e65100"),
+                }}
               >
                 {stats.currentStreak === 1 ? t("analytics.daySingular") : t("analytics.daysPlural")}
               </Typography>
@@ -381,14 +390,21 @@ export default function AnalyticsView({ isVisible = true }: AnalyticsViewProps) 
                       width: "100%",
                       maxWidth: 36,
                       height: `${heightPercent}%`,
-                      bgcolor:
+                      bgcolor: (theme) =>
                         day.count > 0
                           ? "primary.main"
-                          : "rgba(255, 255, 255, 0.05)",
+                          : theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.06)"
+                          : "rgba(0, 0, 0, 0.06)",
                       borderRadius: "6px 6px 0 0",
                       transition: "height 0.3s ease, background-color 0.2s",
                       "&:hover": {
-                        bgcolor: day.count > 0 ? "primary.light" : "rgba(255, 255, 255, 0.1)",
+                        bgcolor: (theme) =>
+                          day.count > 0
+                            ? "primary.light"
+                            : theme.palette.mode === "dark"
+                            ? "rgba(255, 255, 255, 0.12)"
+                            : "rgba(0, 0, 0, 0.12)",
                       },
                     }}
                   />

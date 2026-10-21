@@ -20,8 +20,10 @@ import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
 import { undoRedoService } from "../services/undo-redo.service";
 import { trashService } from "../services/trash.service";
+import { useTranslation } from "../i18n";
 
 export function useTasks() {
+  const { t } = useTranslation();
   const { tasks: service, starred } = useServices();
   const [taskLists, setTaskLists] = useRecoilState(taskListsAtom);
   const [starredIds, setStarredIds] = useRecoilState(starredTaskIdsAtom);
@@ -35,22 +37,107 @@ export function useTasks() {
   const updateTaskRef = useRef<((listId: string, taskId: string, title: string, notes?: string, due?: Date, exactTime?: string, recurrence?: RecurrenceRule, isUndo?: boolean) => Promise<boolean>) | null>(null);
 
   /**
-   * Helper to update a task in the local state
+   * Helper to update a task in local state and persist snapshot
    */
   const updateTaskInState = useCallback((listId: string, taskId: string, updater: (task: AppTask) => AppTask) => {
-    setTaskLists(prev => prev.map(list => {
-      if (list.id !== listId) return list;
-      
-      const updatedTasks = list.tasks.map(task => 
-        task.id === taskId ? updater(task) : task
-      );
-      
-      return {
-        ...list,
-        tasks: updatedTasks,
-        incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
-      };
-    }));
+    setTaskLists(prev => {
+      const next = prev.map(list => {
+        if (list.id !== listId) return list;
+        
+        const updatedTasks = list.tasks.map(task => 
+          task.id === taskId ? updater(task) : task
+        );
+        
+        return {
+          ...list,
+          tasks: updatedTasks,
+          incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
+        };
+      });
+      offlineCacheService.saveSnapshot(next);
+      return next;
+    });
+  }, [setTaskLists]);
+
+  /**
+   * Helper to remove a task from local state, unstar, and cancel notifications
+   */
+  const removeTaskFromLocalState = useCallback((listId: string, taskId: string) => {
+    setTaskLists(prev => {
+      const next = prev.map(list => {
+        if (list.id !== listId) return list;
+        const updatedTasks = list.tasks.filter(t => t.id !== taskId);
+        return {
+          ...list,
+          tasks: updatedTasks,
+          incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
+        };
+      });
+      offlineCacheService.saveSnapshot(next);
+      return next;
+    });
+
+    setStarredIds(prev => {
+      const next = new Set(prev);
+      next.delete(taskId);
+      return next;
+    });
+    starred.unstar(taskId).catch(console.warn);
+    cancelTaskNotification(taskId);
+  }, [setTaskLists, setStarredIds, starred]);
+
+  /**
+   * Helper to add a new task to local state and persist snapshot
+   */
+  const addTaskToLocalState = useCallback((listId: string, task: AppTask) => {
+    setTaskLists(prev => {
+      const next = prev.map(list => {
+        if (list.id !== listId) return list;
+        return {
+          ...list,
+          tasks: [task, ...list.tasks],
+          incompleteCount: list.incompleteCount + 1,
+        };
+      });
+      offlineCacheService.saveSnapshot(next);
+      return next;
+    });
+
+    if (task.due) {
+      scheduleTaskNotification(task).catch(console.warn);
+    }
+  }, [setTaskLists]);
+
+  /**
+   * Helper to move a task between lists in local state
+   */
+  const moveTaskInLocalState = useCallback((fromListId: string, taskId: string, toListId: string, movedTaskData?: AppTask) => {
+    setTaskLists(prev => {
+      const targetTask = movedTaskData || prev.find(l => l.id === fromListId)?.tasks.find(t => t.id === taskId);
+      if (!targetTask) return prev;
+      const movedTask: AppTask = { ...targetTask, listId: toListId };
+
+      const next = prev.map(list => {
+        if (list.id === fromListId) {
+          const updatedTasks = list.tasks.filter(t => t.id !== taskId);
+          return {
+            ...list,
+            tasks: updatedTasks,
+            incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
+          };
+        }
+        if (list.id === toListId) {
+          return {
+            ...list,
+            tasks: [movedTask, ...list.tasks],
+            incompleteCount: list.incompleteCount + (movedTask.status === "needsAction" ? 1 : 0),
+          };
+        }
+        return list;
+      });
+      offlineCacheService.saveSnapshot(next);
+      return next;
+    });
   }, [setTaskLists]);
 
   /**
@@ -149,18 +236,7 @@ export function useTasks() {
         tempId
       );
 
-      setTaskLists(prev => {
-        const next = prev.map(list => {
-          if (list.id !== input.listId) return list;
-          return {
-            ...list,
-            tasks: [offlineTask, ...list.tasks],
-            incompleteCount: list.incompleteCount + 1,
-          };
-        });
-        offlineCacheService.saveSnapshot(next);
-        return next;
-      });
+      addTaskToLocalState(input.listId, offlineTask);
 
       if (!isUndoRedoAction) {
         const created = { ...offlineTask };
@@ -179,12 +255,7 @@ export function useTasks() {
         });
       }
 
-      // Schedule notification for offline task if has due date
-      if (offlineTask.due) {
-        scheduleTaskNotification(offlineTask);
-      }
-
-      setToast({ title: "Task added (saved offline 💾)", type: "info" });
+      setToast({ title: t("tasks.taskAddedOfflineToast"), type: "info" });
       return offlineTask;
     };
 
@@ -204,24 +275,7 @@ export function useTasks() {
         recurrenceService.saveRule(newTask.id, input.recurrence);
       }
       
-      // Add to local state
-      setTaskLists(prev => {
-        const next = prev.map(list => {
-          if (list.id !== input.listId) return list;
-          return {
-            ...list,
-            tasks: [newTask, ...list.tasks],
-            incompleteCount: list.incompleteCount + 1,
-          };
-        });
-        offlineCacheService.saveSnapshot(next);
-        return next;
-      });
-
-      // Schedule notification if has due date
-      if (newTask.due) {
-        await scheduleTaskNotification(newTask);
-      }
+      addTaskToLocalState(input.listId, newTask);
 
       if (!isUndoRedoAction) {
         const created = { ...newTask };
@@ -245,7 +299,8 @@ export function useTasks() {
       console.warn("Failed to create task online, falling back to offline creation:", err);
       return createLocallyOffline();
     }
-  }, [service, setTaskLists, setToast]);
+  }, [service, addTaskToLocalState, setToast, t]);
+  createTaskRef.current = createTask;
   createTaskRef.current = createTask;
 
   /**
@@ -305,7 +360,7 @@ export function useTasks() {
         return prev;
       });
       setToast({ 
-        title: newStatus === "completed" ? "Task completed (offline 💾)" : "Task unchecked", 
+        title: newStatus === "completed" ? `${t("tasks.taskCompletedToast")} (offline 💾)` : t("tasks.taskUncheckedToast"), 
         type: newStatus === "completed" ? "success" : "info" 
       });
       return true;
@@ -329,7 +384,7 @@ export function useTasks() {
       });
       
       setToast({ 
-        title: newStatus === "completed" ? "Task completed 🎉" : "Task unchecked", 
+        title: newStatus === "completed" ? `${t("tasks.taskCompletedToast")} 🎉` : t("tasks.taskUncheckedToast"), 
         type: newStatus === "completed" ? "success" : "info" 
       });
       return true;
@@ -341,12 +396,12 @@ export function useTasks() {
         return prev;
       });
       setToast({ 
-        title: newStatus === "completed" ? "Task completed (saved offline 💾)" : "Task unchecked", 
+        title: newStatus === "completed" ? `${t("tasks.taskCompletedToast")} (offline 💾)` : t("tasks.taskUncheckedToast"), 
         type: newStatus === "completed" ? "success" : "info" 
       });
       return true;
     }
-  }, [service, taskLists, updateTaskInState, setTaskLists, setToast]);
+  }, [service, taskLists, updateTaskInState, setTaskLists, setToast, t]);
   toggleCompleteRef.current = toggleTaskComplete;
 
   /**
@@ -426,29 +481,9 @@ export function useTasks() {
     }
 
     const performLocalDelete = () => {
-      setTaskLists(prev => {
-        const next = prev.map(list => {
-          if (list.id !== listId) return list;
-          const updatedTasks = list.tasks.filter(t => t.id !== taskId);
-          return {
-            ...list,
-            tasks: updatedTasks,
-            incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
-          };
-        });
-        offlineCacheService.saveSnapshot(next);
-        return next;
-      });
-
-      setStarredIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(taskId);
-        return newSet;
-      });
-      starred.unstar(taskId).catch(console.warn);
-
+      removeTaskFromLocalState(listId, taskId);
       syncQueueService.enqueue("DELETE_TASK", listId, {}, taskId);
-      setToast({ title: "Task moved to trash (offline 💾)", type: "warning" });
+      setToast({ title: t("tasks.taskDeletedToast"), type: "warning" });
       return true;
     };
 
@@ -459,40 +494,14 @@ export function useTasks() {
 
     try {
       await service.deleteTask(listId, taskId);
-      
-      // Remove from local state
-      setTaskLists(prev => {
-        const next = prev.map(list => {
-          if (list.id !== listId) return list;
-          const updatedTasks = list.tasks.filter(t => t.id !== taskId);
-          return {
-            ...list,
-            tasks: updatedTasks,
-            incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
-          };
-        });
-        offlineCacheService.saveSnapshot(next);
-        return next;
-      });
-
-      // Remove from starred
-      setStarredIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(taskId);
-        return newSet;
-      });
-      starred.unstar(taskId).catch(console.warn);
-
-      // Cancel any scheduled notification
-      await cancelTaskNotification(taskId);
-
-      setToast({ title: "Task moved to trash", type: "warning" });
+      removeTaskFromLocalState(listId, taskId);
+      setToast({ title: t("tasks.taskDeletedToast"), type: "warning" });
       return true;
     } catch (err) {
       console.warn("Failed to delete task online, falling back to local delete:", err);
       return performLocalDelete();
     }
-  }, [service, starred, taskLists, setTaskLists, setStarredIds, setToast]);
+  }, [service, taskLists, removeTaskFromLocalState, setToast, t]);
   deleteTaskRef.current = deleteTask;
 
   /**
@@ -504,34 +513,9 @@ export function useTasks() {
     toListId: string
   ): Promise<boolean> => {
     const performLocalMove = () => {
-      setTaskLists(prev => {
-        const targetTask = prev.find(l => l.id === fromListId)?.tasks.find(t => t.id === taskId);
-        if (!targetTask) return prev;
-        const movedTask: AppTask = { ...targetTask, listId: toListId };
-        const next = prev.map(list => {
-          if (list.id === fromListId) {
-            const updatedTasks = list.tasks.filter(t => t.id !== taskId);
-            return {
-              ...list,
-              tasks: updatedTasks,
-              incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
-            };
-          }
-          if (list.id === toListId) {
-            return {
-              ...list,
-              tasks: [movedTask, ...list.tasks],
-              incompleteCount: list.incompleteCount + (movedTask.status === "needsAction" ? 1 : 0),
-            };
-          }
-          return list;
-        });
-        offlineCacheService.saveSnapshot(next);
-        return next;
-      });
-
+      moveTaskInLocalState(fromListId, taskId, toListId);
       syncQueueService.enqueue("MOVE_TASK", fromListId, { toListId }, taskId);
-      setToast({ title: "Task moved (offline 💾)", type: "info" });
+      setToast({ title: t("tasks.taskMovedOfflineToast"), type: "info" });
       return true;
     };
 
@@ -542,40 +526,14 @@ export function useTasks() {
 
     try {
       const movedTask = await service.moveToList(fromListId, taskId, toListId);
-      
-      // Update local state
-      setTaskLists(prev => {
-        const next = prev.map(list => {
-          if (list.id === fromListId) {
-            // Remove from source list
-            const updatedTasks = list.tasks.filter(t => t.id !== taskId);
-            return {
-              ...list,
-              tasks: updatedTasks,
-              incompleteCount: updatedTasks.filter(t => t.status === "needsAction").length,
-            };
-          }
-          if (list.id === toListId) {
-            // Add to destination list
-            return {
-              ...list,
-              tasks: [movedTask, ...list.tasks],
-              incompleteCount: list.incompleteCount + (movedTask.status === "needsAction" ? 1 : 0),
-            };
-          }
-          return list;
-        });
-        offlineCacheService.saveSnapshot(next);
-        return next;
-      });
-
-      setToast({ title: "Task moved", type: "success" });
+      moveTaskInLocalState(fromListId, taskId, toListId, movedTask);
+      setToast({ title: t("tasks.taskMovedToast"), type: "success" });
       return true;
     } catch (err) {
       console.warn("Failed to move task online, falling back to local move:", err);
       return performLocalMove();
     }
-  }, [service, setTaskLists, setToast]);
+  }, [service, moveTaskInLocalState, setToast, t]);
 
   /**
    * Clear completed tasks in a list
@@ -595,14 +553,14 @@ export function useTasks() {
         };
       }));
 
-      setToast({ title: "Completed tasks cleared", type: "success" });
+      setToast({ title: t("tasks.completedClearedToast"), type: "success" });
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to clear tasks";
       setToast({ title: "Error", body: message, type: "error" });
       return false;
     }
-  }, [service, setTaskLists, setToast]);
+  }, [service, setTaskLists, setToast, t]);
 
   /**
    * Get all starred tasks across all lists
@@ -658,7 +616,7 @@ export function useTasks() {
       });
 
       syncQueueService.enqueue("CREATE_SUBTASK", listId, { title, tempId }, parentTaskId);
-      setToast({ title: "Subtask added (offline 💾)", type: "info" });
+      setToast({ title: t("tasks.subtaskAddedOfflineToast"), type: "info" });
       return newSubtask;
     };
 
@@ -699,13 +657,13 @@ export function useTasks() {
         return next;
       });
 
-      setToast({ title: "Subtask created", type: "success" });
+      setToast({ title: t("tasks.subtaskCreatedToast"), type: "success" });
       return newTask;
     } catch (err) {
       console.warn("Failed to create subtask online, falling back to offline creation:", err);
       return createSubtaskOffline();
     }
-  }, [service, setTaskLists, setToast]);
+  }, [service, setTaskLists, setToast, t]);
 
   /**
    * Unindent a subtask (remove its parent, making it a top-level task)
@@ -720,14 +678,14 @@ export function useTasks() {
       // Update local state
       updateTaskInState(listId, taskId, task => ({ ...task, parent: undefined }));
 
-      setToast({ title: "Task unindented", type: "info" });
+      setToast({ title: t("tasks.taskUnindentedToast"), type: "info" });
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to unindent task";
       setToast({ title: "Error", body: message, type: "error" });
       return false;
     }
-  }, [service, updateTaskInState, setToast]);
+  }, [service, updateTaskInState, setToast, t]);
 
   /**
    * Indent a task (make it a subtask of the previous task)
@@ -741,7 +699,7 @@ export function useTasks() {
 
     const taskIndex = list.tasks.findIndex(t => t.id === taskId);
     if (taskIndex <= 0) {
-      setToast({ title: "Cannot indent", body: "No task above to indent under", type: "warning" });
+      setToast({ title: t("tasks.cannotIndentToast"), body: t("tasks.noTaskAboveToIndent"), type: "warning" });
       return false;
     }
 
@@ -753,14 +711,14 @@ export function useTasks() {
       // Update local state
       updateTaskInState(listId, taskId, task => ({ ...task, parent: previousTask.id }));
 
-      setToast({ title: "Task indented", type: "info" });
+      setToast({ title: t("tasks.taskIndentedToast"), type: "info" });
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to indent task";
       setToast({ title: "Error", body: message, type: "error" });
       return false;
     }
-  }, [service, taskLists, updateTaskInState, setToast]);
+  }, [service, taskLists, updateTaskInState, setToast, t]);
 
   /**
    * Update a task's title, notes, and/or due date
@@ -851,7 +809,7 @@ export function useTasks() {
         cancelTaskNotification(taskId);
       }
 
-      setToast({ title: "Task updated (offline 💾)", type: "info" });
+      setToast({ title: t("tasks.taskUpdatedOfflineToast"), type: "info" });
       return true;
     };
 
@@ -890,7 +848,7 @@ export function useTasks() {
       console.warn("Failed to update task online, falling back to local update:", err);
       return updateLocallyOffline();
     }
-  }, [service, taskLists, updateTaskInState, setTaskLists, setToast]);
+  }, [service, taskLists, updateTaskInState, setTaskLists, setToast, t]);
   updateTaskRef.current = updateTask;
 
   /**

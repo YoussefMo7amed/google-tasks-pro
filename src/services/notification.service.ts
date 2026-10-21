@@ -36,12 +36,42 @@ export async function ensureNotificationPermission(): Promise<boolean> {
 }
 
 /**
+ * Parse calendar date (YYYY-MM-DD) from either ISO RFC3339 string or date string.
+ * Returns local calendar parts: { year, month (0-11), day (1-31) }
+ */
+export function parseDueDateParts(due: string | Date): { year: number; month: number; day: number } | null {
+  if (!due) return null;
+  const dueStr = typeof due === "string" ? due : due.toISOString();
+  // Extract YYYY-MM-DD prefix from string
+  const match = dueStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return {
+      year: parseInt(match[1], 10),
+      month: parseInt(match[2], 10) - 1,
+      day: parseInt(match[3], 10),
+    };
+  }
+  const parsed = new Date(due);
+  if (isNaN(parsed.getTime())) return null;
+  return {
+    year: parsed.getFullYear(),
+    month: parsed.getMonth(),
+    day: parsed.getDate(),
+  };
+}
+
+/**
  * Schedule a notification for a task
  * Schedules for the configured hour on the due date
  */
 export async function scheduleTaskNotification(task: AppTask): Promise<boolean> {
   // Skip if no due date or already completed
   if (!task.due || task.status === 'completed') {
+    return false;
+  }
+
+  const parts = parseDueDateParts(task.due);
+  if (!parts) {
     return false;
   }
 
@@ -58,13 +88,7 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
 
   // Parse calendar date accurately in local timezone
   const notifyAt = new Date();
-  if (typeof task.due === "string" && /^\d{4}-\d{2}-\d{2}$/.test(task.due)) {
-    const [y, m, d] = task.due.split('-').map(Number);
-    notifyAt.setFullYear(y, m - 1, d);
-  } else {
-    const parsed = new Date(task.due);
-    notifyAt.setFullYear(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-  }
+  notifyAt.setFullYear(parts.year, parts.month, parts.day);
 
   // Set notification for configured hour or exact time on the due date
   if (task.exactTime) {
@@ -140,11 +164,20 @@ export async function cancelAllNotifications(): Promise<void> {
  * Called on initial load / data refresh
  */
 export async function scheduleAllTaskNotifications(tasks: AppTask[]): Promise<number> {
-  const eligibleTasks = tasks.filter(t => 
-    t.due && 
-    t.status !== 'completed' &&
-    new Date(t.due) >= new Date()
-  );
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  // Filter tasks whose calendar due date is today or in the future
+  const eligibleTasks = tasks.filter(t => {
+    if (!t.due || t.status === 'completed') return false;
+    const parts = parseDueDateParts(t.due);
+    if (!parts) return false;
+    const taskDayTime = new Date(parts.year, parts.month, parts.day).getTime();
+    return taskDayTime >= todayStart;
+  });
+
+  // Ensure notification permission once for the entire batch
+  await ensureNotificationPermission();
 
   let scheduled = 0;
   for (const task of eligibleTasks) {

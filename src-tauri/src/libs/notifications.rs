@@ -57,48 +57,72 @@ impl NotificationScheduler {
     #[allow(dead_code)]
     pub fn check_and_notify(&self, app: &AppHandle) {
         let now = Utc::now();
-        let mut scheduled = self.scheduled.lock().unwrap();
+        
+        // 1. Collect due notifications and release mutex lock immediately
+        let due_notifications: Vec<ScheduledNotification> = {
+            let mut scheduled = self.scheduled.lock().unwrap();
+            let mut due = Vec::new();
+            for n in scheduled.values_mut() {
+                if !n.shown && n.notify_at <= now {
+                    n.shown = true;
+                    due.push(n.clone());
+                }
+            }
+            scheduled.retain(|_, n| !n.shown);
+            due
+        };
 
-        for notification in scheduled.values_mut() {
-            if !notification.shown && notification.notify_at <= now {
-                println!(
-                    "[NotificationScheduler] 🔔 Firing notification for '{}': {}",
-                    notification.title, notification.body
-                );
+        // 2. Dispatch notifications outside the lock
+        for notification in due_notifications {
+            println!(
+                "[NotificationScheduler] 🔔 Firing notification for '{}': {}",
+                notification.title, notification.body
+            );
 
-                // Show OS notification via Tauri
-                let _ = tauri::api::notification::Notification::new(
-                    &app.config().tauri.bundle.identifier,
-                )
-                .title(&notification.title)
-                .body(&notification.body)
-                .show();
+            // Primary OS notification via Tauri
+            let mut shown_via_tauri = false;
+            if let Ok(()) = tauri::api::notification::Notification::new(
+                &app.config().tauri.bundle.identifier,
+            )
+            .title(&notification.title)
+            .body(&notification.body)
+            .show()
+            {
+                shown_via_tauri = true;
+            }
 
-                // On macOS, osascript displays notification and afplay guarantees the system sound plays
-                #[cfg(target_os = "macos")]
-                {
+            // On macOS, fallback to osascript only if unbundled (e.g. in `tauri dev`), and play alert sound
+            #[cfg(target_os = "macos")]
+            {
+                if !shown_via_tauri {
+                    let clean_title = notification
+                        .title
+                        .replace('\\', "\\\\")
+                        .replace('"', "\\\"")
+                        .replace('\n', " ")
+                        .replace('\r', " ");
+                    let clean_body = notification
+                        .body
+                        .replace('\\', "\\\\")
+                        .replace('"', "\\\"")
+                        .replace('\n', " ")
+                        .replace('\r', " ");
                     let script = format!(
-                        "display notification \"{}\" with title \"{}\" sound name \"Glass\"",
-                        notification.body.replace('\\', "\\\\").replace('"', "\\\""),
-                        notification.title.replace('\\', "\\\\").replace('"', "\\\"")
+                        "display notification \"{}\" with title \"{}\"",
+                        clean_body, clean_title
                     );
                     let _ = std::process::Command::new("osascript")
                         .arg("-e")
                         .arg(script)
                         .spawn();
-
-                    // Play macOS system chime sound directly so it's always audible
-                    let _ = std::process::Command::new("afplay")
-                        .arg("/System/Library/Sounds/Glass.aiff")
-                        .spawn();
                 }
 
-                notification.shown = true;
+                // Play macOS system chime sound directly so it's always audible
+                let _ = std::process::Command::new("afplay")
+                    .arg("/System/Library/Sounds/Glass.aiff")
+                    .spawn();
             }
         }
-
-        // Remove shown notifications
-        scheduled.retain(|_, n| !n.shown);
     }
 }
 

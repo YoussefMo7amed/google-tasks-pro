@@ -55,7 +55,7 @@ import {
   AIChatHistoryService,
   AIChatSession,
 } from "../../services/ai/ai-chat-history.service";
-import { applyQuadrantToTitle, extractQuadrant } from "../../services/history.service";
+import { applyQuadrantToTitle, extractQuadrant, cleanTitleFromQuadrant } from "../../services/history.service";
 import MarkdownViewer from "../ui/MarkdownViewer";
 
 interface AICopilotModalProps {
@@ -138,7 +138,14 @@ export default function AICopilotModal({
   const [dismissedActionKeys, setDismissedActionKeys] = useState<Set<string>>(new Set());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const currentSettings = AISettingsService.load();
+  const [currentSettings, setCurrentSettings] = useState(() => AISettingsService.load());
+
+  useEffect(() => {
+    if (open) {
+      setCurrentSettings(AISettingsService.load());
+    }
+  }, [open]);
+
   const isLocalProvider = currentSettings.provider === "ollama" || currentSettings.provider === "lm_studio";
   const hasKey = Boolean(currentSettings.apiKey && currentSettings.apiKey.trim().length > 0);
   const isMissingKey = !isLocalProvider && !hasKey;
@@ -396,6 +403,7 @@ export default function AICopilotModal({
 
           if (created?.id) {
             createdTaskMap.set(action.title.toLowerCase().trim(), created.id);
+            createdTaskMap.set(cleanTitleFromQuadrant(action.title).toLowerCase().trim(), created.id);
           }
           return !!created;
         }
@@ -405,18 +413,18 @@ export default function AICopilotModal({
           let listId = action.listId || fallbackListId;
 
           if (!parentId && action.parentTaskTitle) {
-            const lookup = createdTaskMap.get(
-              action.parentTaskTitle.toLowerCase().trim()
-            );
+            const rawTitle = action.parentTaskTitle.toLowerCase().trim();
+            const cleanTitle = cleanTitleFromQuadrant(action.parentTaskTitle).toLowerCase().trim();
+            const lookup = createdTaskMap.get(cleanTitle) || createdTaskMap.get(rawTitle);
             if (lookup) {
               parentId = lookup;
             } else {
               for (const l of taskLists) {
-                const found = (l.tasks || []).find(
-                  (t) =>
-                    t.title.toLowerCase().trim() ===
-                    action.parentTaskTitle!.toLowerCase().trim()
-                );
+                const found = (l.tasks || []).find((t) => {
+                  const tClean = cleanTitleFromQuadrant(t.title).toLowerCase().trim();
+                  const tRaw = t.title.toLowerCase().trim();
+                  return tClean === cleanTitle || tRaw === rawTitle || tClean === rawTitle || tRaw === cleanTitle;
+                });
                 if (found) {
                   parentId = found.id;
                   listId = l.id;
@@ -546,8 +554,8 @@ export default function AICopilotModal({
 
     if (toApplyIndices.length === 0) {
       setToast({
-        title: "لا توجد تعديلات محددة",
-        body: "يرجى تحديد عملية واحدة على الأقل للتطبيق.",
+        title: t("ai.noActionsSelected"),
+        body: t("ai.selectAtLeastOneAction"),
         type: "warning",
       });
       return;
@@ -567,8 +575,8 @@ export default function AICopilotModal({
 
     setAppliedActionKeys(newAppliedKeys);
     setToast({
-      title: "تم تطبيق التعديلات المحددة",
-      body: `تم تطبيق ${appliedCount} عملية بنجاح على مهامك!`,
+      title: t("ai.actionsApplied"),
+      body: t("ai.actionsAppliedCount", { count: appliedCount.toString() }),
       type: "success",
     });
   };
@@ -590,8 +598,8 @@ export default function AICopilotModal({
     if (success) {
       setAppliedActionKeys((prev) => new Set(prev).add(key));
       setToast({
-        title: "تم تطبيق التعديل",
-        body: "تم تنفيذ العملية بنجاح في Google Tasks.",
+        title: t("ai.singleActionApplied"),
+        body: t("ai.actionAppliedBody"),
         type: "success",
       });
     }
@@ -602,8 +610,8 @@ export default function AICopilotModal({
     const key = `${messageId}_${index}`;
     setDismissedActionKeys((prev) => new Set(prev).add(key));
     setToast({
-      title: "تم استبعاد التعديل",
-      body: "تم تجاهل هذه العملية بنجاح.",
+      title: t("ai.actionDismissed"),
+      body: t("ai.actionDismissedBody"),
       type: "info",
     });
   };
@@ -621,8 +629,8 @@ export default function AICopilotModal({
     });
     setDismissedActionKeys(newDismissed);
     setToast({
-      title: "تم رفض التعديلات المقترحة",
-      body: `تم استبعاد ${count} عملية مقترحة.`,
+      title: t("ai.actionsDismissedAll"),
+      body: t("ai.actionsDismissedBody", { count: count.toString() }),
       type: "info",
     });
   };
