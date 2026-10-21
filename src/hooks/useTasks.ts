@@ -14,7 +14,7 @@ import {
   scheduleTaskNotification, 
   cancelTaskNotification 
 } from "../services/notification.service";
-import { historyService } from "../services/history.service";
+import { historyService, cleanTitleFromQuadrant } from "../services/history.service";
 import { recurrenceService } from "../services/recurrence.service";
 import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
@@ -579,6 +579,50 @@ export function useTasks() {
     parentTaskId: string, 
     title: string
   ): Promise<AppTask | null> => {
+    // 1. Resolve which list actually contains parentTaskId
+    let targetListId = listId;
+    let actualParent = taskLists.flatMap(l => l.tasks || []).find(t => t.id === parentTaskId);
+
+    // If not found by ID, attempt lookup by normalized title
+    if (!actualParent) {
+      const normInput = cleanTitleFromQuadrant(parentTaskId)
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+        .replace(/[أإآ]/g, "ا")
+        .replace(/ة/g, "ه")
+        .replace(/ى/g, "ي")
+        .trim()
+        .toLowerCase();
+
+      for (const l of taskLists) {
+        const found = (l.tasks || []).find(t => {
+          const normT = cleanTitleFromQuadrant(t.title)
+            .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+            .replace(/[أإآ]/g, "ا")
+            .replace(/ة/g, "ه")
+            .replace(/ى/g, "ي")
+            .trim()
+            .toLowerCase();
+          return normT === normInput || (normInput.length >= 4 && normT.includes(normInput));
+        });
+        if (found) {
+          actualParent = found;
+          break;
+        }
+      }
+    }
+
+    if (actualParent) {
+      const parentList = taskLists.find(l => (l.tasks || []).some(t => t.id === actualParent!.id));
+      if (parentList) {
+        targetListId = parentList.id;
+        parentTaskId = actualParent.id;
+      }
+    } else {
+      // If parent task is truly not found anywhere, safely fall back to creating a regular task
+      console.warn("Parent task not found for subtask. Creating as regular task to avoid orphan subtask:", parentTaskId, title);
+      return createTask({ listId: targetListId, title });
+    }
+
     const createSubtaskOffline = () => {
       const tempId = `temp_subtask_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const newSubtask: AppTask = {
@@ -590,20 +634,20 @@ export function useTasks() {
         title,
         status: "needsAction",
         isStarred: false,
-        listId,
+        listId: targetListId,
         parent: parentTaskId,
         updated: new Date().toISOString(),
       };
 
       setTaskLists(prev => {
         const next = prev.map(list => {
-          if (list.id !== listId) return list;
+          if (list.id !== targetListId) return list;
           const parentIndex = list.tasks.findIndex(t => t.id === parentTaskId);
           const tasks = [...list.tasks];
           if (parentIndex !== -1) {
             tasks.splice(parentIndex + 1, 0, newSubtask);
           } else {
-            tasks.unshift(newSubtask);
+            tasks.push(newSubtask);
           }
           return {
             ...list,
@@ -615,7 +659,7 @@ export function useTasks() {
         return next;
       });
 
-      syncQueueService.enqueue("CREATE_SUBTASK", listId, { title, tempId }, parentTaskId);
+      syncQueueService.enqueue("CREATE_SUBTASK", targetListId, { title, tempId }, parentTaskId);
       setToast({ title: t("tasks.subtaskAddedOfflineToast"), type: "info" });
       return newSubtask;
     };
@@ -627,7 +671,7 @@ export function useTasks() {
 
     try {
       const input: CreateTaskInput = {
-        listId,
+        listId: targetListId,
         title,
         parentId: parentTaskId,
       };
@@ -636,15 +680,14 @@ export function useTasks() {
       // Add to local state after the parent
       setTaskLists(prev => {
         const next = prev.map(list => {
-          if (list.id !== listId) return list;
+          if (list.id !== targetListId) return list;
           
-          // Find parent task index and insert after it
           const parentIndex = list.tasks.findIndex(t => t.id === parentTaskId);
           const tasks = [...list.tasks];
           if (parentIndex !== -1) {
             tasks.splice(parentIndex + 1, 0, newTask);
           } else {
-            tasks.unshift(newTask);
+            tasks.push(newTask);
           }
           
           return {
@@ -663,7 +706,7 @@ export function useTasks() {
       console.warn("Failed to create subtask online, falling back to offline creation:", err);
       return createSubtaskOffline();
     }
-  }, [service, setTaskLists, setToast, t]);
+  }, [service, taskLists, createTask, setTaskLists, setToast, t]);
 
   /**
    * Unindent a subtask (remove its parent, making it a top-level task)

@@ -19,7 +19,26 @@ import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
 import { historyService } from "../services/history.service";
 import { useServices } from "./useServices";
-import { AppTaskList } from "../types/app";
+import { AppTaskList, AppTask } from "../types/app";
+
+/**
+ * Defensive sanitizer: cleans up orphan subtasks whose parents do not exist in the list
+ */
+function sanitizeSubtasks(lists: AppTaskList[]): AppTaskList[] {
+  return lists.map((list) => {
+    const listTaskIds = new Set((list.tasks || []).map((t) => t.id));
+    let modified = false;
+    const sanitizedTasks = (list.tasks || []).map((task) => {
+      if (task.parent && !listTaskIds.has(task.parent)) {
+        modified = true;
+        const { parent, ...rest } = task;
+        return rest as AppTask;
+      }
+      return task;
+    });
+    return modified ? { ...list, tasks: sanitizedTasks } : list;
+  });
+}
 
 export function useTaskLists() {
   const { taskLists: service, tasks: taskService, starred } = useServices();
@@ -67,8 +86,9 @@ export function useTaskLists() {
     // 1. Immediately load from offline cache if state is empty
     const cached = offlineCacheService.loadSnapshot();
     if (cached && taskListsRef.current.length === 0) {
-      setTaskLists(cached);
-      historyService.syncFromTaskLists(cached);
+      const cleanCached = sanitizeSubtasks(cached);
+      setTaskLists(cleanCached);
+      historyService.syncFromTaskLists(cleanCached);
       setLoading(false);
     }
 
@@ -118,14 +138,15 @@ export function useTaskLists() {
 
       // 3. Fetch fresh data from Google Tasks API
       const lists = await service.getAll(forceRefresh);
-      setTaskLists(lists);
-      historyService.syncFromTaskLists(lists);
+      const cleanLists = sanitizeSubtasks(lists);
+      setTaskLists(cleanLists);
+      historyService.syncFromTaskLists(cleanLists);
       lastFetchTimeRef.current = Date.now();
       setIsOnline(true);
       setError(null);
 
       // Save fresh snapshot to cache
-      offlineCacheService.saveSnapshot(lists);
+      offlineCacheService.saveSnapshot(cleanLists);
 
       // Update starred IDs in background and prune any orphaned IDs
       starred.getAll().then((rawStarred) => {

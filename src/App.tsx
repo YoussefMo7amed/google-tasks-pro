@@ -105,8 +105,8 @@ function App() {
   // Generate port and listen for auth code
   useEffect(() => {
     listen_for_auth_code({
-      onSucess: (code) => {
-        console.log(code, "code generated");
+      onSucess: ({ code, port }) => {
+        console.log(code, "code generated", "port:", port);
         // Bring desktop app to front and focus immediately
         invoke("bring_to_front").catch(console.warn);
         import("@tauri-apps/api/window").then(({ appWindow }) => {
@@ -119,7 +119,7 @@ function App() {
           saveAuthCode(code).then(() => {
             console.log("code saved");
           });
-          getAccessToken(code)
+          getAccessToken(code, port)
             .then(async (accessTokenBody) => {
               const wasInGuest = localStorage.getItem("is_guest_mode") === "true";
               await handleLoadFrom(accessTokenBody);
@@ -135,9 +135,10 @@ function App() {
             .catch((err) => {
               console.error("Failed to get access token from code:", err);
               setLoading(false);
+              const detail = err instanceof Error ? err.message : String(err || "");
               setToastMessage({
                 title: "Error",
-                body: "Could not retrieve access token. Please try again.",
+                body: detail ? `Could not retrieve access token: ${detail}` : "Could not retrieve access token. Please try again.",
                 type: "error",
               });
             });

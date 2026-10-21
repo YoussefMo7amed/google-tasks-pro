@@ -53,8 +53,8 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, aiCopilotMinimizedAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom } from "../../store";
-import { useTaskLists, useTrash } from "../../hooks";
+import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, aiCopilotMinimizedAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom, toastAtom } from "../../store";
+import { useTaskLists, useTrash, useServices } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
 import { useTranslation } from "../../i18n";
@@ -78,7 +78,10 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const isGuest = useRecoilValue(isGuestModeAtom);
   const [taskViewMode, setTaskViewMode] = useRecoilState(taskViewModeAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
-  const { taskLists, toggleListVisibility, fetchTaskLists, renameTaskList, deleteTaskList } = useTaskLists();
+  const { taskLists: taskListService } = useServices();
+  const { taskLists, toggleListVisibility, fetchTaskLists, renameTaskList, deleteTaskList, error } = useTaskLists();
+  const [isManualSyncing, setIsManualSyncing] = useState(false);
+  const setToast = useSetRecoilState(toastAtom);
 
   // List management menu and dialog state
   const [listMenuAnchor, setListMenuAnchor] = useState<null | HTMLElement>(null);
@@ -770,11 +773,24 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
         >
           {/* Offline & Sync Status Indicator */}
           <Box
-            onClick={() => {
-              if (isGuest) {
+            onClick={async () => {
+              const isDisconnected = isGuest || !taskListService || (!!error && error.toLowerCase().includes("session expired"));
+              if (isDisconnected) {
                 handleLogin(true);
               } else if (isOnline) {
-                fetchTaskLists(true);
+                setIsManualSyncing(true);
+                try {
+                  await fetchTaskLists(true);
+                  setToast({
+                    title: t("common.sync"),
+                    body: t("sync.syncedWithGoogle"),
+                    type: "success",
+                  });
+                } catch (syncErr) {
+                  console.warn("Manual sync error:", syncErr);
+                } finally {
+                  setIsManualSyncing(false);
+                }
               }
             }}
             sx={{
@@ -783,19 +799,19 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               py: 0.75,
               px: isCollapsed ? 0.5 : 1.5,
               borderRadius: "12px",
-              bgcolor: isGuest
+              bgcolor: isGuest || !taskListService
                 ? "rgba(138, 180, 248, 0.08)"
                 : !isOnline
                 ? "rgba(251, 140, 0, 0.12)"
-                : pendingCount > 0
+                : pendingCount > 0 || isManualSyncing
                 ? "rgba(138, 180, 248, 0.12)"
                 : "rgba(255, 255, 255, 0.03)",
               border: "1px solid",
-              borderColor: isGuest
+              borderColor: isGuest || !taskListService
                 ? "primary.main"
                 : !isOnline
                 ? "warning.main"
-                : pendingCount > 0
+                : pendingCount > 0 || isManualSyncing
                 ? "primary.main"
                 : "divider",
               display: "flex",
@@ -811,23 +827,23 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
             {isCollapsed ? (
               <Tooltip
                 title={
-                  isGuest
+                  isGuest || !taskListService
                     ? `${t("auth.guestBadge")} — ${t("auth.connectGoogleToSync")}`
                     : !isOnline
                     ? `${t("sync.offlineMode")} (${t("sync.pendingChanges", { count: pendingCount })})`
-                    : pendingCount > 0
+                    : isSyncing || isManualSyncing || pendingCount > 0
                     ? `${t("sync.syncing")} (${t("sync.pendingChanges", { count: pendingCount })}) - ${t("sync.clickToSync")}`
                     : `${t("sync.online")} - ${t("sync.allChangesSynced")}`
                 }
                 placement="right"
               >
                 <IconButton size="small" sx={{ p: 0.5 }}>
-                  {isGuest ? (
+                  {isGuest || !taskListService ? (
                     <CloudOff fontSize="small" sx={{ color: "primary.main", fontSize: 18 }} />
                   ) : !isOnline ? (
                     <CloudOff fontSize="small" sx={{ color: "warning.main", fontSize: 18 }} />
-                  ) : isSyncing || pendingCount > 0 ? (
-                    <Sync fontSize="small" sx={{ color: "primary.main", fontSize: 18 }} />
+                  ) : isSyncing || isManualSyncing || pendingCount > 0 ? (
+                    <Sync fontSize="small" sx={{ color: "primary.main", fontSize: 18, animation: "spin 1s linear infinite", "@keyframes spin": { "0%": { transform: "rotate(0deg)" }, "100%": { transform: "rotate(360deg)" } } }} />
                   ) : (
                     <CloudDone fontSize="small" sx={{ color: "success.main", fontSize: 18 }} />
                   )}
@@ -836,17 +852,17 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
             ) : (
               <>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  {isGuest ? (
+                  {isGuest || !taskListService ? (
                     <CloudOff fontSize="small" sx={{ color: "primary.main", fontSize: 18 }} />
                   ) : !isOnline ? (
                     <CloudOff fontSize="small" sx={{ color: "warning.main", fontSize: 18 }} />
-                  ) : isSyncing || pendingCount > 0 ? (
+                  ) : isSyncing || isManualSyncing || pendingCount > 0 ? (
                     <Sync
                       fontSize="small"
                       sx={{
                         color: "primary.main",
                         fontSize: 18,
-                        animation: isSyncing ? "spin 1s linear infinite" : "none",
+                        animation: isSyncing || isManualSyncing ? "spin 1s linear infinite" : "none",
                         "@keyframes spin": {
                           "0%": { transform: "rotate(0deg)" },
                           "100%": { transform: "rotate(360deg)" },
@@ -863,26 +879,32 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                         fontWeight: 600,
                         display: "block",
                         lineHeight: 1.2,
-                        color: isGuest ? "primary.main" : !isOnline ? "warning.main" : "text.primary",
+                        color: isGuest || !taskListService ? "primary.main" : !isOnline ? "warning.main" : "text.primary",
                       }}
                     >
-                      {isGuest ? t("auth.guestBadge") : !isOnline ? t("sync.offlineMode") : isSyncing ? t("sync.syncing") : t("sync.online")}
+                      {isGuest || !taskListService ? t("auth.guestBadge") : !isOnline ? t("sync.offlineMode") : (isSyncing || isManualSyncing) ? t("sync.syncing") : t("sync.online")}
                     </Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.68rem", color: isGuest ? "text.primary" : "text.secondary" }}>
-                      {isGuest
+                    <Typography variant="caption" sx={{ fontSize: "0.68rem", color: isGuest || !taskListService ? "text.primary" : "text.secondary" }}>
+                      {isGuest || !taskListService
                         ? t("auth.connectGoogleToSync")
                         : !isOnline
                         ? t("sync.queuedChanges", { count: pendingCount })
-                        : pendingCount > 0
+                        : pendingCount > 0 || isManualSyncing
                         ? t("sync.pendingChanges", { count: pendingCount })
                         : t("sync.syncedWithGoogle")}
                     </Typography>
                   </Box>
                 </Box>
-                {!isGuest && isOnline && pendingCount > 0 && (
-                  <Chip label={t("common.sync")} size="small" color="primary" sx={{ height: 20, fontSize: "0.65rem" }} />
+                {!isGuest && taskListService && isOnline && (
+                  <Chip
+                    label={t("common.sync")}
+                    size="small"
+                    color="primary"
+                    variant={isSyncing || isManualSyncing ? "filled" : "outlined"}
+                    sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer" }}
+                  />
                 )}
-                {isGuest && (
+                {(isGuest || !taskListService) && (
                   <Chip label={t("common.sync")} size="small" variant="outlined" color="primary" sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer" }} />
                 )}
               </>

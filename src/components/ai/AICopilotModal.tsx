@@ -75,6 +75,7 @@ import {
   isDefaultChatTitle,
 } from "../../services/ai/ai-chat-history.service";
 import { applyQuadrantToTitle, extractQuadrant, cleanTitleFromQuadrant } from "../../services/history.service";
+import { AppTask } from "../../types/app";
 import MarkdownViewer from "../ui/MarkdownViewer";
 
 interface AICopilotModalProps {
@@ -554,15 +555,52 @@ export default function AICopilotModal({
 
         case "CREATE_SUBTASK": {
           let parentId = action.parentTaskId;
-          let listId = action.listId || fallbackListId;
+          let listId = action.listId;
 
-          if (!parentId && action.parentTaskTitle) {
-            const rawTitle = action.parentTaskTitle.toLowerCase().trim();
-            const cleanTitle = cleanTitleFromQuadrant(action.parentTaskTitle).toLowerCase().trim();
-            const lookup = createdTaskMap.get(cleanTitle) || createdTaskMap.get(rawTitle);
-            if (lookup) {
-              parentId = lookup;
+          // Helper to normalize strings for robust Arabic & Latin search
+          const norm = (s: string) =>
+            cleanTitleFromQuadrant(s || "")
+              .replace(/[\u064B-\u065F\u0670\u0640]/g, "") // strip diacritics & tatweel
+              .replace(/[أإآ]/g, "ا") // normalize alef
+              .replace(/ة/g, "ه") // normalize teh marbuta
+              .replace(/ى/g, "ي") // normalize alef maqsura
+              .replace(/\s+/g, " ")
+              .toLowerCase()
+              .trim();
+
+          // 1. If parentId was provided, verify if it actually exists in any list
+          let parentTask: AppTask | undefined;
+          if (parentId) {
+            for (const l of taskLists) {
+              const found = (l.tasks || []).find((t) => t.id === parentId);
+              if (found) {
+                parentTask = found;
+                listId = l.id;
+                break;
+              }
+            }
+          }
+
+          // 2. If not found by parentId, match by action.parentTaskTitle (or parentId if it was actually a title)
+          const targetTitle = action.parentTaskTitle || (!parentTask ? parentId : undefined);
+          if (!parentTask && targetTitle) {
+            const rawTitle = targetTitle.toLowerCase().trim();
+            const cleanTitle = cleanTitleFromQuadrant(targetTitle).toLowerCase().trim();
+            const normTarget = norm(targetTitle);
+
+            // First check tasks created in the current batch
+            const lookupId = createdTaskMap.get(cleanTitle) || createdTaskMap.get(rawTitle) || createdTaskMap.get(normTarget);
+            if (lookupId) {
+              parentId = lookupId;
+              for (const l of taskLists) {
+                if ((l.tasks || []).some((t) => t.id === lookupId)) {
+                  listId = l.id;
+                  break;
+                }
+              }
             } else {
+              // Search across ALL lists for the parent task
+              // Stage A: Exact clean or raw title
               for (const l of taskLists) {
                 const found = (l.tasks || []).find((t) => {
                   const tClean = cleanTitleFromQuadrant(t.title).toLowerCase().trim();
@@ -570,19 +608,57 @@ export default function AICopilotModal({
                   return tClean === cleanTitle || tRaw === rawTitle || tClean === rawTitle || tRaw === cleanTitle;
                 });
                 if (found) {
+                  parentTask = found;
                   parentId = found.id;
                   listId = l.id;
                   break;
                 }
               }
+
+              // Stage B: Normalized Arabic / English title equality
+              if (!parentTask && normTarget) {
+                for (const l of taskLists) {
+                  const found = (l.tasks || []).find((t) => norm(t.title) === normTarget);
+                  if (found) {
+                    parentTask = found;
+                    parentId = found.id;
+                    listId = l.id;
+                    break;
+                  }
+                }
+              }
+
+              // Stage C: Substring containment (e.g. "[Q1] مراجعة وتسميع جزء تبارك في حلقة الجمعة")
+              if (!parentTask && normTarget && normTarget.length >= 4) {
+                for (const l of taskLists) {
+                  const found = (l.tasks || []).find((t) => {
+                    const normT = norm(t.title);
+                    return normT.includes(normTarget) || normTarget.includes(normT);
+                  });
+                  if (found) {
+                    parentTask = found;
+                    parentId = found.id;
+                    listId = l.id;
+                    break;
+                  }
+                }
+              }
             }
           }
 
+          const targetListId = listId || fallbackListId;
+
           if (parentId) {
-            const sub = await createSubtask(listId, parentId, action.title);
+            const sub = await createSubtask(targetListId, parentId, action.title);
             return !!sub;
+          } else {
+            // Avoid creating orphan subtasks: create as top-level task in targetListId
+            const created = await createTask({
+              listId: targetListId,
+              title: action.title,
+            });
+            return !!created;
           }
-          return false;
         }
 
         case "UPDATE_TASK": {

@@ -66,9 +66,11 @@ export async function getAccessToken(code: string, portOverride?: number): Promi
         const response = await axios.post("https://oauth2.googleapis.com/token", data, { timeout: 8000 });
         return response.data;
     }
-    catch (error) {
-        console.error("Error getting access token:", error);
-        throw new Error("Error getting access token");
+    catch (error: any) {
+        const errorData = error?.response?.data;
+        console.error("Error getting access token:", errorData || error?.message || error);
+        const description = errorData?.error_description || errorData?.error || error?.message || "Error getting access token";
+        throw new Error(description);
     }
 }
 
@@ -581,7 +583,7 @@ export async function removeSavedAccount(email: string): Promise<void> {
 }
 
 function getLocalHostUrl(port: number) {
-  return `http://127.0.0.1:${port}`;
+  return `http://localhost:${port}`;
 }
 
 
