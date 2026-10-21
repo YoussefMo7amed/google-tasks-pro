@@ -243,6 +243,14 @@ export const ar: TranslationSchema = {
     quickSwitchToBackup: "التبديل إلى الاحتياطي ({model})",
     highDemandNotice: "النموذج يواجه ضغطاً كبيراً حالياً. انقر أدناه للمتابعة بالوكيل الاحتياطي:",
     connectionSuccessWithModel: "تم الاتصال بنجاح بـ {provider} ({model})!",
+    enableThinking: "تفعيل التفكير المنطقي (Thinking)",
+    enableThinkingDesc: "قم بالتعطيل للحصول على استجابة فورية فائقة السرعة، أو قم بالتفعيل للحصول على تحليل وتفكير أعمق",
+    errors: {
+      quotaExceeded: "تم استنفاد الحصة المجانية لهذا النموذج. يمكنك التبديل إلى نموذج آخر (مثل Gemini 3.8 Flash) أو المحاولة لاحقاً.",
+      modelNotFound: "النموذج المحدد لم يعد متاحاً أو تم استبداله. يرجى اختيار نموذج أحدث من القائمة.",
+      authFailed: "مفتاح API غير صالح أو تم رفض الإذن. يرجى التحقق من المفتاح.",
+      genericError: "فشل الاتصال: {error}",
+    },
     modelTags: {
       thinking: "يدعم التفكير",
       deepThinking: "تفكير معمق",

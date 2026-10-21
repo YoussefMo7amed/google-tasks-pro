@@ -43,14 +43,23 @@ export class GeminiProvider implements IAIProvider {
       parts: [{ text: m.content }],
     }));
 
+    const generationConfig: Record<string, unknown> = {
+      temperature: settings.temperature ?? 0.7,
+    };
+
+    // If user disabled thinking, explicitly set thinkingBudget to 0 for instant responses
+    if (settings.enableThinking === false) {
+      generationConfig.thinkingConfig = {
+        thinkingBudget: 0,
+      };
+    }
+
     const requestBody = {
       system_instruction: {
         parts: [{ text: systemPrompt }],
       },
       contents,
-      generationConfig: {
-        temperature: settings.temperature ?? 0.7,
-      },
+      generationConfig,
     };
 
     const response = await aiFetch(url, {
@@ -95,12 +104,21 @@ export class GeminiProvider implements IAIProvider {
       const baseUrl = settings.baseUrl?.trim() || "https://generativelanguage.googleapis.com";
       const url = `${baseUrl.replace(/\/+$/, "")}/v1beta/models/${model}:generateContent?key=${settings.apiKey.trim()}`;
 
+      const testGenerationConfig: Record<string, unknown> = {
+        maxOutputTokens: 5,
+      };
+      if (settings.enableThinking === false) {
+        testGenerationConfig.thinkingConfig = {
+          thinkingBudget: 0,
+        };
+      }
+
       const res = await aiFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: {
           contents: [{ role: "user", parts: [{ text: "ping" }] }],
-          generationConfig: { maxOutputTokens: 5 },
+          generationConfig: testGenerationConfig,
         },
       });
 

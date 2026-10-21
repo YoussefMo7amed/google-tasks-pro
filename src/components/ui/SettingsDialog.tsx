@@ -52,6 +52,7 @@ import {
   Star,
   Translate,
   DeleteOutline,
+  Psychology,
 } from '@mui/icons-material';
 import { trashService, TrashRetention } from '../../services/trash.service';
 import { setCustomCredentials } from '../../config/credentials';
@@ -74,6 +75,8 @@ import {
   AISettingsService,
   getProviderModels,
   MODEL_TAG_KEYS,
+  modelSupportsThinking,
+  parseAIError,
 } from '../../services/ai';
 import { aiService } from '../../services/ai/ai.service';
 
@@ -189,6 +192,7 @@ export default function SettingsDialog({
               model: updated.model,
               baseUrl: updated.baseUrl,
               temperature: updated.temperature,
+              enableThinking: updated.enableThinking,
             }
           : {}),
         ...(isBackup
@@ -198,6 +202,7 @@ export default function SettingsDialog({
               // Only overwrite backupModel if primary is different provider, preserving intra-provider backup model
               backupModel: isPrimary ? prev.backupModel || updated.model : updated.model,
               backupBaseUrl: updated.baseUrl,
+              backupEnableThinking: isPrimary ? prev.backupEnableThinking ?? updated.enableThinking : updated.enableThinking,
             }
           : {}),
       };
@@ -976,6 +981,38 @@ export default function SettingsDialog({
                   })()}
                 </Box>
 
+                {/* Thinking Mode Switch (only visible if the model supports thinking) */}
+                {modelSupportsThinking(selectedProviderTab, currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab]) && (
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: 'action.hover',
+                      border: 1,
+                      borderColor: 'divider',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 2,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body2" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                        <Psychology sx={{ fontSize: 18, color: currentProviderConfig.enableThinking !== false ? 'primary.main' : 'text.disabled' }} />
+                        {t("ai.enableThinking")}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {t("ai.enableThinkingDesc")}
+                      </Typography>
+                    </Box>
+                    <Switch
+                      checked={currentProviderConfig.enableThinking !== false}
+                      onChange={(e) => updateProviderConfig(selectedProviderTab, { enableThinking: e.target.checked })}
+                      color="primary"
+                    />
+                  </Box>
+                )}
+
                 {/* Multiple API Keys Manager for this specific provider */}
                 {!isCurrentLocal && (
                   <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover', border: 1, borderColor: 'divider' }}>
@@ -1064,12 +1101,25 @@ export default function SettingsDialog({
 
                 {testResult && (
                   <Alert severity={testResult.success ? "success" : "error"} sx={{ mt: 1 }}>
-                    {testResult.success
-                      ? t("ai.connectionSuccessWithModel", {
+                    {(() => {
+                      if (testResult.success) {
+                        return t("ai.connectionSuccessWithModel", {
                           provider: providerLabels[selectedProviderTab],
                           model: currentProviderConfig.model || DEFAULT_MODELS[selectedProviderTab],
-                        })
-                      : testResult.message}
+                        });
+                      }
+                      const parsed = parseAIError(0, null, testResult.message);
+                      if (parsed.type === "quota_exceeded") {
+                        return `${t("ai.errors.quotaExceeded")}${parsed.retryAfter ? ` (${parsed.retryAfter})` : ""}`;
+                      }
+                      if (parsed.type === "model_not_found") {
+                        return t("ai.errors.modelNotFound");
+                      }
+                      if (parsed.type === "auth_failed") {
+                        return t("ai.errors.authFailed");
+                      }
+                      return parsed.cleanMessage || testResult.message;
+                    })()}
                   </Alert>
                 )}
 

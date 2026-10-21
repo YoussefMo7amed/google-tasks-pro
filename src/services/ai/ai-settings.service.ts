@@ -181,12 +181,14 @@ export class AISettingsService {
         model: activePrimary.model,
         baseUrl: activePrimary.baseUrl,
         temperature: activePrimary.temperature,
+        enableThinking: parsed.enableThinking ?? activePrimary.enableThinking ?? true,
         backupEnabled: parsed.backupEnabled ?? false,
         backupProvider: backupProv,
         backupApiKey: activeBackup.apiKey,
         backupApiKeys: activeBackup.apiKeys,
         backupModel,
         backupBaseUrl: activeBackup.baseUrl,
+        backupEnableThinking: parsed.backupEnableThinking ?? activeBackup.enableThinking ?? true,
         providers,
       };
     } catch (e) {
@@ -217,6 +219,7 @@ export class AISettingsService {
           model: settings.model,
           baseUrl: settings.baseUrl,
           temperature: settings.temperature,
+          enableThinking: settings.enableThinking ?? primary.enableThinking ?? true,
         };
       }
 
@@ -235,6 +238,7 @@ export class AISettingsService {
             // DO NOT overwrite provider's primary model if backup is the same provider
             model: isSameProvider ? backup.model : (settings.backupModel || backup.model),
             baseUrl: settings.backupBaseUrl || backup.baseUrl,
+            enableThinking: isSameProvider ? (backup.enableThinking ?? true) : (settings.backupEnableThinking ?? backup.enableThinking ?? true),
           };
         }
       }

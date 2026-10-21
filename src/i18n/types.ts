@@ -258,6 +258,14 @@ export interface TranslationSchema {
     quickSwitchToBackup: string;
     highDemandNotice: string;
     connectionSuccessWithModel: string;
+    enableThinking: string;
+    enableThinkingDesc: string;
+    errors: {
+      quotaExceeded: string;
+      modelNotFound: string;
+      authFailed: string;
+      genericError: string;
+    };
     modelTags: {
       thinking: string;
       deepThinking: string;

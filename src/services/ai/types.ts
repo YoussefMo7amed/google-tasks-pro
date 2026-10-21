@@ -19,6 +19,7 @@ export interface ProviderConfig {
   model: string;
   baseUrl?: string;
   temperature?: number;
+  enableThinking?: boolean;
 }
 
 export interface AISettings {
@@ -28,6 +29,7 @@ export interface AISettings {
   model: string;
   baseUrl?: string;
   temperature?: number;
+  enableThinking?: boolean;
 
   // Backup Agent configuration
   backupEnabled?: boolean;
@@ -37,6 +39,7 @@ export interface AISettings {
   backupModel?: string;
   backupBaseUrl?: string;
   backupTemperature?: number;
+  backupEnableThinking?: boolean;
 
   // Saved configs for each provider so keys and models are never lost
   providers?: Partial<Record<AIProviderType, ProviderConfig>>;

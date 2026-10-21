@@ -208,6 +208,7 @@ class AIService {
       model: settings.backupModel || rawBackup?.model || DEFAULT_MODELS[backupProviderType],
       baseUrl: settings.backupBaseUrl || rawBackup?.baseUrl || DEFAULT_BASE_URLS[backupProviderType],
       temperature: settings.backupTemperature ?? rawBackup?.temperature ?? 0.7,
+      enableThinking: settings.backupEnableThinking ?? rawBackup?.enableThinking ?? true,
     };
     return this.testProvider(backupProviderType, backupConfig);
   }

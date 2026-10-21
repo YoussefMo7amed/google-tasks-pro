@@ -25,6 +25,7 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  Switch,
 } from "@mui/material";
 import {
   Close,
@@ -46,6 +47,7 @@ import {
   PlaylistRemove,
   KeyboardArrowDown,
   ShieldOutlined,
+  Psychology,
 } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
 import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom, aiCopilotMinimizedAtom, aiSettingsAtom } from "../../store";
@@ -62,6 +64,8 @@ import {
   getProviderModels,
   getModelOption,
   MODEL_TAG_KEYS,
+  modelSupportsThinking,
+  parseAIError,
   DEFAULT_MODELS,
   DEFAULT_BASE_URLS,
 } from "../../services/ai";
@@ -228,6 +232,34 @@ export default function AICopilotModal({
     setToast({
       title: t("ai.switchModel"),
       body: `${backupProv.toUpperCase()} (${backupMod})`,
+      type: "info",
+    });
+  };
+
+  const handleToggleThinking = () => {
+    const newThinkingState = currentSettings.enableThinking === false;
+    const updated = {
+      ...currentSettings,
+      enableThinking: newThinkingState,
+      providers: {
+        ...currentSettings.providers,
+        [currentSettings.provider]: {
+          ...currentSettings.providers?.[currentSettings.provider],
+          provider: currentSettings.provider,
+          apiKey: currentSettings.apiKey,
+          apiKeys: currentSettings.apiKeys,
+          baseUrl: currentSettings.baseUrl,
+          temperature: currentSettings.temperature,
+          model: currentSettings.model,
+          enableThinking: newThinkingState,
+        },
+      },
+    };
+    setCurrentSettings(updated);
+    AISettingsService.save(updated);
+    setToast({
+      title: t("ai.enableThinking"),
+      body: newThinkingState ? t("ai.modelTags.thinking") : t("ai.modelTags.fast"),
       type: "info",
     });
   };
@@ -400,19 +432,32 @@ export default function AICopilotModal({
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
+      const parsed = parseAIError(0, null, errMsg);
+
+      let friendlyError = errMsg;
+      if (parsed.type === "quota_exceeded") {
+        friendlyError = `${t("ai.errors.quotaExceeded")}${parsed.retryAfter ? ` (${parsed.retryAfter})` : ""}`;
+      } else if (parsed.type === "model_not_found") {
+        friendlyError = t("ai.errors.modelNotFound");
+      } else if (parsed.type === "auth_failed") {
+        friendlyError = t("ai.errors.authFailed");
+      } else if (parsed.cleanMessage) {
+        friendlyError = parsed.cleanMessage;
+      }
+
       const isCapacityError =
+        parsed.type === "capacity_spikes" ||
+        parsed.type === "quota_exceeded" ||
         errMsg.includes("503") ||
-        errMsg.includes("429") ||
-        errMsg.toLowerCase().includes("overloaded") ||
-        errMsg.toLowerCase().includes("capacity");
+        errMsg.includes("429");
 
       const errorMessage: AICopilotMessage = {
         id: `error_${Date.now()}`,
         role: "assistant",
         content:
           isCapacityError && currentSettings.backupEnabled && currentSettings.backupModel
-            ? `${t("ai.connectionError", { error: errMsg })}\n\n💡 *${t("ai.highDemandNotice")}*`
-            : t("ai.connectionError", { error: errMsg }),
+            ? `⚠️ ${friendlyError}\n\n💡 *${t("ai.highDemandNotice")}*`
+            : `⚠️ ${friendlyError}`,
         timestamp: Date.now(),
       };
       const finalMessages = [...newMessages, errorMessage];
@@ -811,9 +856,13 @@ export default function AICopilotModal({
                     {activeModelOption && (
                       <Chip
                         size="small"
-                        label={t(`ai.modelTags.${MODEL_TAG_KEYS[activeModelOption.tag] || "custom"}`)}
-                        color={activeModelOption.tag === "thinking" ? "primary" : activeModelOption.tag === "deep_thinking" ? "secondary" : "default"}
-                        variant={activeModelOption.tag === "no_thinking" || activeModelOption.tag === "fast" ? "outlined" : "filled"}
+                        label={
+                          currentSettings.enableThinking === false && (activeModelOption.tag === "thinking" || activeModelOption.tag === "deep_thinking")
+                            ? t("ai.modelTags.fast")
+                            : t(`ai.modelTags.${MODEL_TAG_KEYS[activeModelOption.tag] || "custom"}`)
+                        }
+                        color={currentSettings.enableThinking !== false && (activeModelOption.tag === "thinking" || activeModelOption.tag === "deep_thinking") ? "primary" : "default"}
+                        variant={currentSettings.enableThinking === false ? "outlined" : "filled"}
                         sx={{ height: 16, fontSize: '0.6rem', ml: 0.3 }}
                       />
                     )}
@@ -974,6 +1023,34 @@ export default function AICopilotModal({
                   {(currentSettings.backupProvider || "").toUpperCase()} • {currentSettings.backupModel}
                 </Typography>
               </Box>
+            </MenuItem>
+          </>
+        )}
+
+        {modelSupportsThinking(currentSettings.provider, currentSettings.model) && (
+          <>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem
+              onClick={handleToggleThinking}
+              sx={{ py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Psychology sx={{ fontSize: 18, color: currentSettings.enableThinking !== false ? 'primary.main' : 'text.disabled' }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <Typography variant="body2" fontWeight={500}>
+                    {t("ai.enableThinking")}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {currentSettings.enableThinking !== false ? t("ai.modelTags.thinking") : t("ai.modelTags.fast")}
+                  </Typography>
+                </Box>
+              </Box>
+              <Switch
+                size="small"
+                checked={currentSettings.enableThinking !== false}
+                onChange={handleToggleThinking}
+                color="primary"
+              />
             </MenuItem>
           </>
         )}

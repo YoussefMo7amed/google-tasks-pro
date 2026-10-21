@@ -243,6 +243,14 @@ export const en: TranslationSchema = {
     quickSwitchToBackup: "Switch to Backup ({model})",
     highDemandNotice: "Model is currently experiencing high demand. Click below to retry with backup agent:",
     connectionSuccessWithModel: "Connected to {provider} ({model}) successfully!",
+    enableThinking: "Enable Reasoning (Thinking)",
+    enableThinkingDesc: "Disable for near-instant responses, or enable for deeper, structured reasoning",
+    errors: {
+      quotaExceeded: "Quota exceeded for this model. Switch to another model (such as Gemini 3.8 Flash) or try again later.",
+      modelNotFound: "This model is no longer available or not supported. Please select a newer model from the catalog.",
+      authFailed: "Invalid API key or permission denied. Please verify your API key.",
+      genericError: "Connection failed: {error}",
+    },
     modelTags: {
       thinking: "Supports Thinking",
       deepThinking: "Deep Reasoning",

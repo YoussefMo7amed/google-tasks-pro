@@ -63,20 +63,6 @@ export const PROVIDER_MODELS: Record<AIProviderType, ModelOption[]> = {
       contextWindow: "1M tokens",
       descriptionKey: "ai.models.geminiFlashLatestDesc",
     },
-    {
-      id: "gemini-2.5-flash",
-      label: "Gemini 2.5 Flash",
-      tag: "thinking",
-      contextWindow: "1M tokens",
-      descriptionKey: "ai.models.gemini25FlashDesc",
-    },
-    {
-      id: "gemini-2.5-pro",
-      label: "Gemini 2.5 Pro",
-      tag: "deep_thinking",
-      contextWindow: "1M tokens",
-      descriptionKey: "ai.models.gemini25ProDesc",
-    },
   ],
 
   claude: [
@@ -213,4 +199,12 @@ export function getModelOption(provider: AIProviderType, modelId: string): Model
     label: modelId,
     tag: "custom",
   };
+}
+
+/**
+ * Checks whether a given model supports reasoning / thinking.
+ */
+export function modelSupportsThinking(provider: AIProviderType, modelId: string): boolean {
+  const model = getModelOption(provider, modelId);
+  return model.tag === "thinking" || model.tag === "deep_thinking";
 }
