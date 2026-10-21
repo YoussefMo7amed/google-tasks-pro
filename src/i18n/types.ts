@@ -125,7 +125,12 @@ export interface TranslationSchema {
     createListTitle: string;
     listName: string;
     renameList: string;
+    renameListTitle: string;
     deleteList: string;
+    deleteListTitle: string;
+    deleteListConfirm: string;
+    hideFromBoard: string;
+    showInBoard: string;
     moveListToFirst: string;
     deleteAllCompleted: string;
     cleanupOld: string;

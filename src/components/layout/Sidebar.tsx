@@ -19,8 +19,15 @@ import {
   IconButton,
   Tooltip,
   Chip,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from "@mui/material";
-import { SidebarView } from "../../types/app";
+import { AppTaskList, SidebarView } from "../../types/app";
 import {
   Add,
   TaskAlt,
@@ -40,6 +47,10 @@ import {
   AutoAwesome,
   KeyboardAltOutlined,
   DeleteOutline,
+  MoreVert,
+  Edit,
+  Visibility,
+  VisibilityOff,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom } from "../../store";
@@ -66,7 +77,62 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const isGuest = useRecoilValue(isGuestModeAtom);
   const [taskViewMode, setTaskViewMode] = useRecoilState(taskViewModeAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
-  const { taskLists, toggleListVisibility, fetchTaskLists } = useTaskLists();
+  const { taskLists, toggleListVisibility, fetchTaskLists, renameTaskList, deleteTaskList } = useTaskLists();
+
+  // List management menu and dialog state
+  const [listMenuAnchor, setListMenuAnchor] = useState<null | HTMLElement>(null);
+  const [activeMenuList, setActiveMenuList] = useState<AppTaskList | null>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+
+  const handleOpenListMenu = (e: React.MouseEvent<HTMLElement>, list: AppTaskList) => {
+    e.stopPropagation();
+    setActiveMenuList(list);
+    setListMenuAnchor(e.currentTarget);
+  };
+
+  const handleCloseListMenu = () => {
+    setListMenuAnchor(null);
+  };
+
+  const handleOpenRename = () => {
+    if (!activeMenuList) return;
+    setEditTitle(activeMenuList.title);
+    setRenameDialogOpen(true);
+    handleCloseListMenu();
+  };
+
+  const handleSaveRename = async () => {
+    if (!activeMenuList || !editTitle.trim()) return;
+    const trimmed = editTitle.trim();
+    if (trimmed !== activeMenuList.title) {
+      await renameTaskList(activeMenuList.id, trimmed);
+    }
+    setRenameDialogOpen(false);
+  };
+
+  const handleOpenDelete = () => {
+    if (!activeMenuList) return;
+    setDeleteDialogOpen(true);
+    handleCloseListMenu();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!activeMenuList) return;
+    const deletedId = activeMenuList.id;
+    await deleteTaskList(deletedId);
+    setDeleteDialogOpen(false);
+    if (viewState.activeListId === deletedId) {
+      handleViewAll();
+    }
+  };
+
+  const handleToggleVisibilityFromMenu = () => {
+    if (!activeMenuList) return;
+    toggleListVisibility(activeMenuList.id);
+    handleCloseListMenu();
+  };
 
   const [pendingCount, setPendingCount] = useState(syncQueueService.getPendingCount());
   const [isSyncing, setIsSyncing] = useState(syncQueueService.getIsSyncing());
@@ -522,26 +588,57 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               <Divider sx={{ my: 1 }} />
 
               {/* Lists Section Header */}
-              <ListItemButton
-                onClick={() => setListsExpanded(!listsExpanded)}
-                sx={{ height: "40px", flexGrow: 0, px: 2 }}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  px: 2,
+                  py: 0.5,
+                  height: "36px",
+                }}
               >
-                <ListItemText
-                  primary={t("navigation.lists")}
-                  primaryTypographyProps={{
-                    variant: "caption",
-                    color: "text.secondary",
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
                     fontWeight: 600,
                     letterSpacing: 0.5,
+                    cursor: "pointer",
+                    flex: 1,
+                    textTransform: "uppercase",
                     textAlign: isRtl ? "right" : "left",
                   }}
-                />
-                {listsExpanded ? (
-                  <ExpandLess fontSize="small" />
-                ) : (
-                  <ExpandMore fontSize="small" />
-                )}
-              </ListItemButton>
+                  onClick={() => setListsExpanded(!listsExpanded)}
+                >
+                  {t("navigation.lists")}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+                  <Tooltip title={t("tasks.createListTitle")}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAddCategory(true);
+                      }}
+                      sx={{ p: 0.4, color: "text.secondary", "&:hover": { color: "primary.main" } }}
+                    >
+                      <Add sx={{ fontSize: 17 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <IconButton
+                    size="small"
+                    onClick={() => setListsExpanded(!listsExpanded)}
+                    sx={{ p: 0.4, color: "text.secondary" }}
+                  >
+                    {listsExpanded ? (
+                      <ExpandLess fontSize="small" />
+                    ) : (
+                      <ExpandMore fontSize="small" />
+                    )}
+                  </IconButton>
+                </Box>
+              </Box>
 
               {/* Task Lists */}
               <Collapse in={listsExpanded} timeout="auto">
@@ -557,6 +654,8 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                         py: 0.75,
                         px: 1.5,
                         opacity: list.isVisible ? 1 : 0.5,
+                        "& .list-item-actions": { opacity: 0, transition: "opacity 0.15s ease-in-out" },
+                        "&:hover .list-item-actions": { opacity: 1 },
                         "&.Mui-selected": {
                           bgcolor: "action.selected",
                           "&:hover": { bgcolor: "action.selected" },
@@ -606,6 +705,20 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                           {list.incompleteCount}
                         </Typography>
                       )}
+                      <IconButton
+                        size="small"
+                        className="list-item-actions"
+                        onClick={(e) => handleOpenListMenu(e, list)}
+                        sx={{
+                          p: 0.25,
+                          ml: isRtl ? 0 : 0.5,
+                          mr: isRtl ? 0.5 : 0,
+                          color: "text.secondary",
+                          "&:hover": { color: "primary.main" },
+                        }}
+                      >
+                        <MoreVert sx={{ fontSize: 18 }} />
+                      </IconButton>
                     </ListItemButton>
                   ))}
 
@@ -841,6 +954,125 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
         open={showAddCategory}
         onClose={() => setShowAddCategory(false)}
       />
+
+      {/* List Options Menu */}
+      <Menu
+        anchorEl={listMenuAnchor}
+        open={Boolean(listMenuAnchor)}
+        onClose={handleCloseListMenu}
+        PaperProps={{
+          elevation: 4,
+          sx: {
+            minWidth: 170,
+            borderRadius: 2,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+          },
+        }}
+        transformOrigin={{ horizontal: isRtl ? "right" : "left", vertical: "top" }}
+        anchorOrigin={{ horizontal: isRtl ? "right" : "left", vertical: "bottom" }}
+      >
+        <MenuItem onClick={handleOpenRename}>
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <Edit fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary={t("tasks.renameList")} primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+        <MenuItem onClick={handleToggleVisibilityFromMenu}>
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            {activeMenuList?.isVisible ? (
+              <VisibilityOff fontSize="small" />
+            ) : (
+              <Visibility fontSize="small" />
+            )}
+          </ListItemIcon>
+          <ListItemText
+            primary={activeMenuList?.isVisible ? t("tasks.hideFromBoard") : t("tasks.showInBoard")}
+            primaryTypographyProps={{ variant: "body2" }}
+          />
+        </MenuItem>
+        <Divider sx={{ my: 0.5 }} />
+        <MenuItem onClick={handleOpenDelete} sx={{ color: "error.main" }}>
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <DeleteOutline fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primary={t("tasks.deleteList")} primaryTypographyProps={{ variant: "body2", color: "error.main" }} />
+        </MenuItem>
+      </Menu>
+
+      {/* Rename List Dialog */}
+      <Dialog
+        open={renameDialogOpen}
+        onClose={() => setRenameDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2.5 } }}
+      >
+        <DialogTitle>{t("tasks.renameListTitle")}</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            margin="dense"
+            label={t("tasks.listName")}
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && editTitle.trim()) {
+                handleSaveRename();
+              }
+            }}
+            inputProps={{ dir: "auto" }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setRenameDialogOpen(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveRename}
+            disabled={!editTitle.trim() || editTitle.trim() === activeMenuList?.title}
+          >
+            {t("common.save")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete List Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2.5 } }}
+      >
+        <DialogTitle sx={{ color: "error.main", display: "flex", alignItems: "center", gap: 1 }}>
+          <DeleteOutline />
+          <span>{t("tasks.deleteListTitle")}</span>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {t("tasks.deleteListConfirm")}
+          </Typography>
+          {activeMenuList && (
+            <Typography variant="subtitle2" sx={{ mt: 1.5, fontWeight: 700 }}>
+              "{activeMenuList.title}" ({activeMenuList.tasks?.length || 0} {t("common.tasks")})
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleConfirmDelete}
+          >
+            {t("tasks.deleteList")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

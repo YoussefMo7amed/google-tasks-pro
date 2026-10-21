@@ -7,12 +7,79 @@
  */
 
 import React from "react";
-import { Box, Typography, Divider, Chip } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Divider,
+  Chip,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Paper,
+} from "@mui/material";
 
 interface MarkdownViewerProps {
   content: string;
   isUser?: boolean;
 }
+
+/**
+ * Replace common LaTeX symbols and math constructs with standard Unicode equivalents.
+ */
+function preprocessLatexAndMath(text: string): string {
+  return text
+    // LaTeX arrows
+    .replace(/\$\\rightarrow\$/g, "→")
+    .replace(/\$\\to\$/g, "→")
+    .replace(/\$\\Rightarrow\$/g, "⇒")
+    .replace(/\$\\leftarrow\$/g, "←")
+    .replace(/\$\\Leftarrow\$/g, "⇐")
+    .replace(/\$\\leftrightarrow\$/g, "↔")
+    .replace(/\\rightarrow\b/g, "→")
+    .replace(/\\Rightarrow\b/g, "⇒")
+    .replace(/\\to\b/g, "→")
+    // Mathematical comparisons & operators
+    .replace(/\$\\le\$/g, "≤")
+    .replace(/\$\\ge\$/g, "≥")
+    .replace(/\$\\ne\$/g, "≠")
+    .replace(/\$\\approx\$/g, "≈")
+    .replace(/\$\\times\$/g, "×")
+    .replace(/\$\\div\$/g, "÷")
+    .replace(/\$\\pm\$/g, "±")
+    .replace(/\\le\b/g, "≤")
+    .replace(/\\ge\b/g, "≥")
+    .replace(/\\ne\b/g, "≠")
+    .replace(/\\approx\b/g, "≈")
+    .replace(/\\times\b/g, "×")
+    .replace(/\\div\b/g, "÷")
+    .replace(/\\pm\b/g, "±");
+}
+
+const isTableSeparator = (line: string): boolean => {
+  return /^\s*\|?(\s*:?-{2,}:?\s*\|)+\s*:?-{2,}:?\s*\|?\s*$/.test(line);
+};
+
+const parseTableRow = (line: string): string[] => {
+  let trimmed = line.trim();
+  if (trimmed.startsWith("|")) trimmed = trimmed.substring(1);
+  if (trimmed.endsWith("|")) trimmed = trimmed.substring(0, trimmed.length - 1);
+  return trimmed.split("|").map((cell) => cell.trim());
+};
+
+const parseAlignments = (sepLine: string): ("left" | "center" | "right")[] => {
+  const parts = parseTableRow(sepLine);
+  return parts.map((part) => {
+    const trimmed = part.trim();
+    const startsColon = trimmed.startsWith(":");
+    const endsColon = trimmed.endsWith(":");
+    if (startsColon && endsColon) return "center";
+    if (endsColon) return "right";
+    return "left";
+  });
+};
 
 export default function MarkdownViewer({ content, isUser = false }: MarkdownViewerProps) {
   // If user message, render as simple formatted text
@@ -34,8 +101,11 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
     );
   }
 
+  // Pre-process LaTeX symbols to Unicode
+  const processedContent = preprocessLatexAndMath(content);
+
   // Parse lines into blocks
-  const lines = content.split("\n");
+  const lines = processedContent.split("\n");
   const blocks: React.ReactNode[] = [];
 
   let inList = false;
@@ -113,6 +183,103 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const line = rawLine.trim();
+
+    // Table parsing: Detect start of markdown table
+    if (line.includes("|") && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      flushList();
+      const headerLine = line;
+      const separatorLine = lines[i + 1].trim();
+      const alignments = parseAlignments(separatorLine);
+      const headers = parseTableRow(headerLine);
+      const rows: string[][] = [];
+
+      let j = i + 2;
+      while (j < lines.length) {
+        const rowLine = lines[j].trim();
+        if (rowLine.includes("|") && rowLine.length > 0 && !isTableSeparator(rowLine)) {
+          rows.push(parseTableRow(rowLine));
+          j++;
+        } else {
+          break;
+        }
+      }
+
+      i = j - 1; // Advance loop to end of table
+
+      blocks.push(
+        <TableContainer
+          key={`table_${i}`}
+          component={Paper}
+          elevation={0}
+          sx={{
+            my: 2,
+            border: 1,
+            borderColor: "divider",
+            borderRadius: 2,
+            overflowX: "auto",
+            bgcolor: "background.paper",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+          }}
+        >
+          <Table size="small" sx={{ minWidth: 350 }}>
+            <TableHead sx={{ bgcolor: "action.hover" }}>
+              <TableRow>
+                {headers.map((h, hIdx) => (
+                  <TableCell
+                    key={`th_${hIdx}`}
+                    align={alignments[hIdx] || "left"}
+                    sx={{
+                      fontWeight: 700,
+                      fontFamily: "Cairo, sans-serif",
+                      fontSize: "0.85rem",
+                      color: "primary.main",
+                      borderBottom: 2,
+                      borderColor: "divider",
+                      py: 1.25,
+                      px: 1.5,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {renderInlineFormatted(h)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row, rIdx) => (
+                <TableRow
+                  key={`tr_${rIdx}`}
+                  sx={{
+                    "&:nth-of-type(even)": { bgcolor: "action.hover" },
+                    "&:hover": { bgcolor: "action.selected" },
+                  }}
+                >
+                  {row.map((cell, cIdx) => (
+                    <TableCell
+                      key={`td_${rIdx}_${cIdx}`}
+                      align={alignments[cIdx] || "left"}
+                      sx={{
+                        fontFamily: "Cairo, sans-serif",
+                        fontSize: "0.85rem",
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        py: 1,
+                        px: 1.5,
+                        lineHeight: 1.5,
+                        color: "text.primary",
+                      }}
+                    >
+                      {renderInlineFormatted(cell)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      );
+      continue;
+    }
 
     // Horizontal Rule (--- or ***)
     if (line === "---" || line === "***") {

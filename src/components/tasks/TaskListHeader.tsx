@@ -30,6 +30,7 @@ import {
   CleaningServices,
   SwapVert,
   Check,
+  DeleteOutline,
 } from "@mui/icons-material";
 import { useTaskLists, useTasks } from "../../hooks";
 import { useTranslation } from "../../i18n";
@@ -53,10 +54,14 @@ export default function TaskListHeader({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [sortAnchorEl, setSortAnchorEl] = useState<null | HTMLElement>(null);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
 
-  const { renameTaskList, deleteTaskList } = useTaskLists();
+  const { taskLists, renameTaskList, deleteTaskList } = useTaskLists();
   const { clearCompletedTasks } = useTasks();
+
+  const currentList = taskLists.find((l) => l.id === listId);
+  const taskCount = currentList?.tasks?.length || 0;
 
   const open = Boolean(anchorEl);
   const sortOpen = Boolean(sortAnchorEl);
@@ -88,9 +93,14 @@ export default function TaskListHeader({
     handleClose();
   };
 
-  const handleDelete = async () => {
-    await deleteTaskList(listId);
+  const handleDelete = () => {
+    setDeleteDialogOpen(true);
     handleClose();
+  };
+
+  const handleConfirmDelete = async () => {
+    await deleteTaskList(listId);
+    setDeleteDialogOpen(false);
   };
 
   const handleClearCompleted = async () => {
@@ -239,22 +249,45 @@ export default function TaskListHeader({
       </Box>
 
       {/* Rename Dialog */}
-      <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)}>
+      <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2.5 } }}>
         <DialogTitle>{t("tasks.renameList")}</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: 1 }}>
           <TextField
             autoFocus
             margin="dense"
             fullWidth
+            label={t("tasks.listName")}
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleRename()}
             inputProps={{ dir: "auto" }}
           />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setRenameDialogOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleRename} variant="contained">{t("common.rename")}</Button>
+          <Button onClick={handleRename} variant="contained">{t("common.save")}</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete List Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2.5 } }}>
+        <DialogTitle sx={{ color: "error.main", display: "flex", alignItems: "center", gap: 1 }}>
+          <DeleteOutline />
+          <span>{t("tasks.deleteListTitle")}</span>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {t("tasks.deleteListConfirm")}
+          </Typography>
+          <Typography variant="subtitle2" sx={{ mt: 1.5, fontWeight: 700 }}>
+            "{title}" ({taskCount} {t("common.tasks")})
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t("common.cancel")}</Button>
+          <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+            {t("tasks.deleteList")}
+          </Button>
         </DialogActions>
       </Dialog>
     </>
