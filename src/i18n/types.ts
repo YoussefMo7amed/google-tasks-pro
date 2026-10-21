@@ -290,6 +290,10 @@ export interface TranslationSchema {
     syncReplaceBtn: string;
     syncReplaceDesc: string;
     syncSuccessToast: string;
+    switchAccount: string;
+    addAccount: string;
+    activeAccountBadge: string;
+    removeAccountTooltip: string;
   };
   calendar: {
     today: string;

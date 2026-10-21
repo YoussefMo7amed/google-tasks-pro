@@ -275,6 +275,10 @@ export const en: TranslationSchema = {
     syncReplaceBtn: "Start Fresh from Google",
     syncReplaceDesc: "Keep your existing Google Tasks and replace the local guest tasks.",
     syncSuccessToast: "Local tasks successfully synced to Google Tasks!",
+    switchAccount: "Switch Account",
+    addAccount: "Add another Google account",
+    activeAccountBadge: "Active",
+    removeAccountTooltip: "Remove account from this device",
   },
   calendar: {
     today: "Today",

@@ -275,6 +275,10 @@ export const ar: TranslationSchema = {
     syncReplaceBtn: "البدء بحساب Google فقط",
     syncReplaceDesc: "استبدال المهام المحلية والاحتفاظ فقط بالمهام الموجودة في حساب Google.",
     syncSuccessToast: "تمت مزامنة ورفع المهام المحلية بنجاح إلى Google Tasks!",
+    switchAccount: "تبديل الحساب",
+    addAccount: "إضافة حساب Google آخر",
+    activeAccountBadge: "النشط",
+    removeAccountTooltip: "إزالة الحساب من هذا الجهاز",
   },
   calendar: {
     today: "اليوم",

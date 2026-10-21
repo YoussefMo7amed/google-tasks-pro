@@ -148,7 +148,7 @@ export async function openAuthWindow() {
     const url = new URL(GOOGLE_OAUTH_ENDPOINT);
     url.searchParams.append("scope", SCOPE);
     url.searchParams.append("access_type", "offline");
-    url.searchParams.append("prompt", "consent");
+    url.searchParams.append("prompt", "select_account consent");
     url.searchParams.append("response_type", "code");
     url.searchParams.append("client_id", getClientId());
     url.searchParams.append("redirect_uri", getLocalHostUrl(port));
@@ -369,6 +369,10 @@ export async function handleLoadFrom(accessTokenBody: AccessToken) {
       const userProfile = await fetchUserProfile(accessTokenBody.access_token);
       await saveUserProfile(userProfile)
       setRecoil(userProfileState, userProfile);
+
+      // Save to accounts vault for instant account switching
+      const { accountService } = await import("../services");
+      accountService.saveAccount(userProfile, accessTokenBody);
     }
     catch (err) {
       console.log(err);
@@ -492,15 +496,94 @@ export async function handleInitialLogin() {
     setRecoil(accessTokenState, accessToken.access_token);
     const store = await import("../store");
     if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, accessToken.access_token);
+
+    // Save to accounts vault for instant account switching
+    const { accountService, trashService, historyService, syncQueueService } = await import("../services");
+    accountService.saveAccount(profile, accessToken);
+    trashService.reloadScope();
+    historyService.reloadScope();
+    syncQueueService.reloadScope();
+
     pushNotification(`Welcome back ${profile.name}`);
   }
 
+export async function switchToGoogleAccount(email: string): Promise<boolean> {
+  const { accountService, trashService, historyService, syncQueueService } = await import("../services");
+  const account = accountService.getAccount(email);
+  if (!account) return false;
 
+  setRecoil(authLoadingState, true);
+  try {
+    let token = account.accessToken;
+    // Attempt token refresh if expired and online
+    if (token.refresh_token && navigator.onLine) {
+      try {
+        const refreshed = await refreshAccessToken(token.refresh_token);
+        if (refreshed && refreshed.access_token) {
+          token = { ...token, access_token: refreshed.access_token };
+          accountService.saveAccount(
+            { email: account.email, name: account.name, picture: account.picture || null },
+            token
+          );
+        }
+      } catch (refreshErr) {
+        console.warn("Could not refresh token on account switch:", refreshErr);
+      }
+    }
 
+    // Set active email & scope
+    localStorage.removeItem("is_guest_mode");
+    localStorage.setItem("current_user_email", account.email);
 
+    await saveAccessToken(JSON.stringify(token, null, 2));
+    const profile: UserProfile = {
+      email: account.email,
+      name: account.name,
+      picture: account.picture || null,
+    };
+    await saveUserProfile(profile);
+
+    const store = await import("../store");
+    if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, false);
+    if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, token.access_token);
+    setRecoil(accessTokenState, token.access_token);
+    setRecoil(userProfileState, profile);
+
+    // Reload scoped services to the new account's data
+    trashService.reloadScope();
+    historyService.reloadScope();
+    syncQueueService.reloadScope();
+
+    return true;
+  } catch (err) {
+    console.error("Failed to switch account:", err);
+    return false;
+  } finally {
+    setRecoil(authLoadingState, false);
+  }
+}
+
+export async function switchToGuestMode(): Promise<void> {
+  enterGuestMode();
+  const store = await import("../store");
+  if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, true);
+  if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, null);
+  setRecoil(accessTokenState, null);
+  setRecoil(userProfileState, null);
+
+  const { trashService, historyService, syncQueueService } = await import("../services");
+  trashService.reloadScope();
+  historyService.reloadScope();
+  syncQueueService.reloadScope();
+}
+
+export async function removeSavedAccount(email: string): Promise<void> {
+  const { accountService } = await import("../services");
+  accountService.removeAccount(email);
+}
 
 function getLocalHostUrl(port: number) {
-  return `http://localhost:${port}`;
+  return `http://127.0.0.1:${port}`;
 }
 
 
