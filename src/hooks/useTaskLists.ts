@@ -48,6 +48,23 @@ export function useTaskLists() {
     }
 
     if (!service) {
+      if (taskListsRef.current.length === 0) {
+        if (!cached || cached.length === 0) {
+          const defaultList: AppTaskList = {
+            kind: "tasks#taskList",
+            id: `local_list_${Date.now()}`,
+            etag: "",
+            selfLink: "",
+            title: "My Tasks",
+            updated: new Date().toISOString(),
+            tasks: [],
+            incompleteCount: 0,
+            isVisible: true,
+          };
+          setTaskLists([defaultList]);
+          offlineCacheService.saveSnapshot([defaultList]);
+        }
+      }
       setLoading(false);
       return;
     }

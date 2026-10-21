@@ -14,21 +14,24 @@ import {
   Button,
   Tooltip,
 } from "@mui/material";
-import { Logout, AutoAwesome, Translate, Check, Undo, Redo, KeyboardAltOutlined } from "@mui/icons-material";
+import { Logout, AutoAwesome, Translate, Check, Undo, Redo, KeyboardAltOutlined, Google, CloudOffOutlined, PersonOutline } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
   attemptLogoutState,
   loggedInSelector,
   userProfileSelector,
 } from "../../config/states";
-import { aiCopilotOpenAtom, shortcutsModalOpenAtom } from "../../store";
+import { aiCopilotOpenAtom, shortcutsModalOpenAtom, isGuestModeAtom } from "../../store";
 import ViewSwitcher from "./ViewSwitcher";
 import { useTranslation } from "../../i18n";
 import { useUndoRedo } from "../../hooks/useUndoRedo";
+import { handleLogin, exitGuestMode } from "../../helpers/auth";
 
 export default function Header() {
   const loggedIn = useRecoilValue(loggedInSelector);
   const profile = useRecoilValue(userProfileSelector);
+  const isGuest = useRecoilValue(isGuestModeAtom);
+  const setIsGuest = useSetRecoilState(isGuestModeAtom);
   const setAttemptLogout = useSetRecoilState(attemptLogoutState);
   const setAiCopilotOpen = useSetRecoilState(aiCopilotOpenAtom);
   const setShortcutsOpen = useSetRecoilState(shortcutsModalOpenAtom);
@@ -233,13 +236,48 @@ export default function Header() {
             </Box>
           </Button>
 
+          {/* Connect Google Account button if in Guest Mode */}
+          {isGuest && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Google sx={{ color: "#4285F4" }} />}
+              onClick={() => handleLogin(true)}
+              sx={{
+                borderRadius: "18px",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.78rem",
+                borderColor: "primary.main",
+                color: "primary.main",
+                py: 0.3,
+                px: 1.25,
+                "&:hover": {
+                  bgcolor: "action.hover",
+                  borderColor: "primary.dark",
+                },
+              }}
+            >
+              {t("auth.connectGoogleToSync")}
+            </Button>
+          )}
+
           <IconButton onClick={handleMenuOpen} size="small">
             <Avatar
-              sx={{ width: 28, height: 28 }}
-              src={profile?.picture ?? ""}
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: isGuest ? "action.selected" : "primary.main",
+                color: isGuest ? "text.primary" : "primary.contrastText",
+              }}
+              src={!isGuest ? profile?.picture ?? "" : ""}
               alt={profile?.name ?? "User"}
             >
-              {profile?.name?.charAt(0) ?? "U"}
+              {isGuest ? (
+                <PersonOutline sx={{ fontSize: 18 }} />
+              ) : (
+                profile?.name?.charAt(0) ?? "U"
+              )}
             </Avatar>
           </IconButton>
 
@@ -254,31 +292,78 @@ export default function Header() {
                 overflow: "visible",
                 filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
                 mt: 1.5,
-                minWidth: 200,
+                minWidth: 220,
               },
             }}
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
-            <MenuItem disabled>
-              <Avatar
-                src={profile?.picture ?? ""}
-                sx={{ width: 32, height: 32, mr: 1.5 }}
-              />
-              <ListItemText
-                primary={profile?.name}
-                secondary={profile?.email}
-                primaryTypographyProps={{ variant: "body2" }}
-                secondaryTypographyProps={{ variant: "caption" }}
-              />
-            </MenuItem>
+            {isGuest ? (
+              <MenuItem disabled>
+                <Avatar sx={{ width: 32, height: 32, mr: 1.5, bgcolor: "action.selected" }}>
+                  <CloudOffOutlined sx={{ fontSize: 18, color: "text.secondary" }} />
+                </Avatar>
+                <ListItemText
+                  primary={t("auth.guestBadge")}
+                  secondary={t("auth.guestModeDesc")}
+                  primaryTypographyProps={{ variant: "body2", fontWeight: 600 }}
+                  secondaryTypographyProps={{
+                    variant: "caption",
+                    sx: {
+                      whiteSpace: "normal",
+                      maxWidth: 200,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    },
+                  }}
+                />
+              </MenuItem>
+            ) : (
+              <MenuItem disabled>
+                <Avatar
+                  src={profile?.picture ?? ""}
+                  sx={{ width: 32, height: 32, mr: 1.5 }}
+                />
+                <ListItemText
+                  primary={profile?.name}
+                  secondary={profile?.email}
+                  primaryTypographyProps={{ variant: "body2" }}
+                  secondaryTypographyProps={{ variant: "caption" }}
+                />
+              </MenuItem>
+            )}
             <Divider />
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <Logout fontSize="small" />
-              </ListItemIcon>
-              <ListItemText primary={t("auth.signOut")} />
-            </MenuItem>
+            {isGuest ? (
+              <>
+                <MenuItem onClick={() => handleLogin(true)}>
+                  <ListItemIcon>
+                    <Google fontSize="small" sx={{ color: "#4285F4" }} />
+                  </ListItemIcon>
+                  <ListItemText primary={t("auth.connectGoogleToSync")} />
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    exitGuestMode();
+                    setIsGuest(false);
+                    setAttemptLogout(true);
+                  }}
+                >
+                  <ListItemIcon>
+                    <Logout fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary={t("auth.exitGuestMode")} />
+                </MenuItem>
+              </>
+            ) : (
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary={t("auth.signOut")} />
+              </MenuItem>
+            )}
           </Menu>
         </Box>
       </Toolbar>

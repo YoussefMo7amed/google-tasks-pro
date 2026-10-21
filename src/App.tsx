@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Snackbar,
@@ -13,6 +13,8 @@ import {
   handleLogout,
   cancelLoginSession,
   handleManualAuthCode,
+  enterGuestMode,
+  exitGuestMode,
 } from "./helpers/auth";
 import { loadContextmenu } from "./helpers/windowhelper";
 import TaskPage from "./components/TaskPage";
@@ -30,12 +32,14 @@ import Header from "./components/ui/Header";
 import SplashScreen from "./components/ui/SplashScreen";
 import LoginChoice from "./components/ui/LoginChoice";
 import { Sidebar } from "./components/layout";
-import { aiCopilotOpenAtom, settingsOpenAtom, shortcutsModalOpenAtom } from "./store";
+import { aiCopilotOpenAtom, settingsOpenAtom, shortcutsModalOpenAtom, isGuestModeAtom, taskListsAtom } from "./store";
 import AICopilotModal from "./components/ai/AICopilotModal";
 import SettingsDialog from "./components/ui/SettingsDialog";
 import KeyboardShortcutsModal from "./components/ui/KeyboardShortcutsModal";
 import QuickCreateTaskDialog from "./components/ui/QuickCreateTaskDialog";
+import SyncGuestTasksModal from "./components/ui/SyncGuestTasksModal";
 import { useGlobalKeyboardShortcuts, useTaskLists } from "./hooks";
+import { useTranslation } from "./i18n";
 import { listen_for_auth_code } from "./helpers/eventlistner";
 import { SettingsStore } from "./helpers/DBStores";
 import settings from "./config/settings";
@@ -44,6 +48,7 @@ import settings from "./config/settings";
 loadContextmenu();
 
 function App() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useRecoilState<boolean>(authLoadingState);
   const activeCategoryValue = useRecoilValue(activeTaskCategoryState);
   const loggedIn = useRecoilValue(loggedInSelector);
@@ -55,6 +60,9 @@ function App() {
   const [aiCopilotOpen, setAiCopilotOpen] = useRecoilState(aiCopilotOpenAtom);
   const [settingsOpen, setSettingsOpen] = useRecoilState(settingsOpenAtom);
   const [shortcutsOpen, setShortcutsOpen] = useRecoilState(shortcutsModalOpenAtom);
+  const [showGuestSyncModal, setShowGuestSyncModal] = useState(false);
+  const taskLists = useRecoilValue(taskListsAtom);
+  const setIsGuestMode = useSetRecoilState(isGuestModeAtom);
   const setIsOnline = useSetRecoilState(isOnlineSelector);
   const refreshIsOnline = () => setIsOnline(() => navigator.onLine);
   const { fetchTaskLists } = useTaskLists();
@@ -109,8 +117,17 @@ function App() {
             console.log("code saved");
           });
           getAccessToken(code)
-            .then((accessTokenBody) => {
-              handleLoadFrom(accessTokenBody);
+            .then(async (accessTokenBody) => {
+              const wasInGuest = localStorage.getItem("is_guest_mode") === "true";
+              await handleLoadFrom(accessTokenBody);
+              const totalTasks = taskLists.reduce((sum, list) => sum + (list.tasks?.length || 0), 0);
+              if (wasInGuest && totalTasks > 0) {
+                setShowGuestSyncModal(true);
+              } else {
+                exitGuestMode();
+                setIsGuestMode(false);
+                fetchTaskLists(true);
+              }
             })
             .catch((err) => {
               console.error("Failed to get access token from code:", err);
@@ -219,16 +236,56 @@ function App() {
                 cancelLoginSession();
                 setLoading(false);
               }}
-              onManualCode={handleManualAuthCode}
+              onManualCode={async (code) => {
+                const wasInGuest = localStorage.getItem("is_guest_mode") === "true";
+                const success = await handleManualAuthCode(code);
+                if (success) {
+                  const totalTasks = taskLists.reduce((sum, list) => sum + (list.tasks?.length || 0), 0);
+                  if (wasInGuest && totalTasks > 0) {
+                    setShowGuestSyncModal(true);
+                  } else {
+                    exitGuestMode();
+                    setIsGuestMode(false);
+                    fetchTaskLists(true);
+                  }
+                }
+                return success;
+              }}
             />
           ) : (
             <LoginChoice
               onContinueAsUser={() => setAttemptedLogin(true)}
               onSignInAnother={() => handleLogin(true)}
+              onContinueAsGuest={() => {
+                enterGuestMode();
+                setIsGuestMode(true);
+              }}
             />
           )}
         </Box>
       </Box>
+
+      {/* Guest Mode Tasks Sync Modal */}
+      <SyncGuestTasksModal
+        open={showGuestSyncModal}
+        onClose={() => {
+          setShowGuestSyncModal(false);
+          exitGuestMode();
+          setIsGuestMode(false);
+          fetchTaskLists(true);
+        }}
+        onComplete={() => {
+          setShowGuestSyncModal(false);
+          exitGuestMode();
+          setIsGuestMode(false);
+          fetchTaskLists(true);
+          setToastMessage({
+            title: t("common.success"),
+            body: t("auth.syncSuccessToast"),
+            type: "success",
+          });
+        }}
+      />
 
       {/* Toast Messages */}
       <Snackbar

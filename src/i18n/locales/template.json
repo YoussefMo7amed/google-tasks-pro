@@ -228,7 +228,22 @@
     "sessionExpiredDescription": "Your Google Tasks session has expired. Please sign in again to sync tasks.",
     "signInWithGoogle": "Sign in with Google",
     "cachedModeOfflineBanner": "Viewing cached tasks (Offline). Tasks you add or edit will sync automatically when online.",
-    "cachedModeSessionBanner": "Viewing cached tasks (Session Expired). You can keep working, and changes will sync once you sign in."
+    "cachedModeSessionBanner": "Viewing cached tasks (Session Expired). You can keep working, and changes will sync once you sign in.",
+    "continueAsGuest": "Continue as Guest (Offline Mode)",
+    "guestModeDesc": "Use without an account. All tasks are saved securely on this device and can be synced with Google later.",
+    "welcomeBack": "Welcome back!",
+    "continueAs": "Continue as",
+    "signInAnotherAccount": "Sign in with another account",
+    "guestBadge": "Guest (Offline)",
+    "connectGoogleToSync": "Connect Google Account to Sync",
+    "exitGuestMode": "Exit Guest Mode",
+    "syncModalTitle": "Sync Local Tasks to Google?",
+    "syncModalDesc": "You have local tasks created in Guest Mode. Would you like to upload them to your Google Tasks account?",
+    "syncMergeBtn": "Merge & Upload to Google",
+    "syncMergeDesc": "Upload your local tasks to Google Tasks so you can access them anywhere.",
+    "syncReplaceBtn": "Start Fresh from Google",
+    "syncReplaceDesc": "Keep your existing Google Tasks and replace the local guest tasks.",
+    "syncSuccessToast": "Local tasks successfully synced to Google Tasks!"
   },
   "calendar": {
     "today": "Today",

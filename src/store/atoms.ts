@@ -27,6 +27,18 @@ export const authLoadingAtom = atom<boolean>({
   default: true,
 });
 
+export const isGuestModeAtom = atom<boolean>({
+  key: "isGuestMode",
+  default: typeof window !== "undefined" ? localStorage.getItem("is_guest_mode") === "true" : false,
+});
+
+export const GUEST_USER_PROFILE: UserProfile = {
+  id: "guest",
+  name: "Guest User",
+  email: "local@offline",
+  picture: "",
+};
+
 // =============================================================================
 // Task Lists State
 // =============================================================================

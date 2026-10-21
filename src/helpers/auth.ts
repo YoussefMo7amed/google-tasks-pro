@@ -360,7 +360,8 @@ export async function handleLoadFrom(accessTokenBody: AccessToken) {
     try {
       await saveAccessToken(JSON.stringify(accessTokenBody, null, 2))
       setRecoil(accessTokenState, accessTokenBody.access_token);
-        //   setAccessToken(accessTokenBody.access_token);
+      const store = await import("../store");
+      if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, accessTokenBody.access_token);
       const userProfile = await fetchUserProfile(accessTokenBody.access_token);
       await saveUserProfile(userProfile)
       setRecoil(userProfileState, userProfile);
@@ -415,6 +416,8 @@ export async function handleLogout() {
       
       // Cancel any ongoing OAuth session
       cancelLoginSession();
+      localStorage.removeItem("is_guest_mode");
+      if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, false);
 
       console.log("handleLogout: complete");
     } catch (e) {
@@ -426,8 +429,24 @@ export async function handleLogout() {
     }
   }
 
+export function enterGuestMode() {
+  localStorage.setItem("is_guest_mode", "true");
+  setRecoil(authLoadingState, false);
+}
+
+export function exitGuestMode() {
+  localStorage.removeItem("is_guest_mode");
+  setRecoil(authLoadingState, false);
+}
 
 export async function handleInitialLogin() {
+    // Check if user is in guest mode
+    if (typeof window !== "undefined" && localStorage.getItem("is_guest_mode") === "true") {
+      const store = await import("../store");
+      if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, true);
+      return;
+    }
+
     // get access token from storage
     const accessToken = await getAccessTokenFromStorage();
     if (!accessToken || !accessToken.access_token) throw new Error("Signin required");
@@ -461,6 +480,8 @@ export async function handleInitialLogin() {
 
     setRecoil(userProfileState, profile);
     setRecoil(accessTokenState, accessToken.access_token);
+    const store = await import("../store");
+    if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, accessToken.access_token);
     pushNotification(`Welcome back ${profile.name}`);
   }
 
