@@ -10,7 +10,7 @@ import { Box, CircularProgress, Typography, Button, Paper } from "@mui/material"
 import { LockOutlined, Google } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { accessTokenSelector } from "../config/states";
-import { accessTokenAtom, viewStateAtom, taskViewModeAtom } from "../store";
+import { accessTokenAtom, viewStateAtom, taskViewModeAtom, isGuestModeAtom } from "../store";
 import { useTaskLists } from "../hooks";
 import { handleLogin } from "../helpers/auth";
 import {
@@ -25,6 +25,7 @@ import {
 export default function TaskPage() {
   // Get access token from OLD auth system
   const access_token = useRecoilValue(accessTokenSelector);
+  const isGuestMode = useRecoilValue(isGuestModeAtom);
   
   // Set access token in NEW store system
   const setNewAccessToken = useSetRecoilState(accessTokenAtom);
@@ -44,16 +45,16 @@ export default function TaskPage() {
     }
   }, [access_token, setNewAccessToken]);
 
-  // Fetch task lists when access token is available
+  // Fetch task lists when access token is available or in guest mode
   useEffect(() => {
-    if (access_token) {
+    if (access_token || isGuestMode) {
       console.log("TaskPage: fetching task lists");
       fetchTaskLists();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [access_token]);
+  }, [access_token, isGuestMode]);
 
-  if (!access_token) {
+  if (!access_token && !isGuestMode) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
         <Typography>Not logged in</Typography>

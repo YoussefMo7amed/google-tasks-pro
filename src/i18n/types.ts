@@ -40,6 +40,7 @@ export interface TranslationSchema {
     details: string;
     clear: string;
     add: string;
+    or: string;
   };
   navigation: {
     allTasks: string;

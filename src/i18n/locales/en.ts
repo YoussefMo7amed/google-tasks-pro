@@ -25,6 +25,7 @@ export const en: TranslationSchema = {
     details: "Details",
     clear: "Clear",
     add: "Add",
+    or: "or",
   },
   navigation: {
     allTasks: "All tasks",

@@ -235,7 +235,15 @@ export function useTaskLists() {
    * Rename a task list
    */
   const renameTaskList = useCallback(async (id: string, newTitle: string): Promise<boolean> => {
-    if (!service) return false;
+    if (!service) {
+      setTaskLists(prev => {
+        const next = prev.map(list => list.id === id ? { ...list, title: newTitle } : list);
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
+      setToast({ title: "List renamed", type: "success" });
+      return true;
+    }
 
     try {
       const updated = await service.rename(id, newTitle);
@@ -253,7 +261,15 @@ export function useTaskLists() {
    * Delete a task list
    */
   const deleteTaskList = useCallback(async (id: string): Promise<boolean> => {
-    if (!service) return false;
+    if (!service) {
+      setTaskLists(prev => {
+        const next = prev.filter(list => list.id !== id);
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
+      setToast({ title: "List deleted", type: "warning" });
+      return true;
+    }
 
     try {
       await service.delete(id);
@@ -271,7 +287,16 @@ export function useTaskLists() {
    * Reorder task lists (local only)
    */
   const reorderTaskLists = useCallback((fromIndex: number, toIndex: number) => {
-    if (!service) return;
+    if (!service) {
+      setTaskLists(prev => {
+        const next = [...prev];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
+      return;
+    }
 
     const reordered = service.reorderLists(fromIndex, toIndex);
     setTaskLists(reordered);

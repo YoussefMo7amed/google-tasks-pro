@@ -22,7 +22,8 @@
     "sync": "Sync",
     "tasks": "Tasks",
     "details": "Details",
-    "clear": "Clear"
+    "clear": "Clear",
+    "or": "or"
   },
   "navigation": {
     "allTasks": "All tasks",

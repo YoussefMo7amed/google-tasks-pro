@@ -42,11 +42,12 @@ import {
   DeleteOutline,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom } from "../../store";
+import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom } from "../../store";
 import { useTaskLists, useTrash } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
 import { useTranslation } from "../../i18n";
+import { handleLogin } from "../../helpers/auth";
 
 interface SidebarProps {
   onViewChange?: (view: SidebarView, listId?: string) => void;
@@ -62,6 +63,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const [, setShowAiCopilot] = useRecoilState(aiCopilotOpenAtom);
   const [, setShowShortcuts] = useRecoilState(shortcutsModalOpenAtom);
   const [viewState, setViewState] = useRecoilState(viewStateAtom);
+  const isGuest = useRecoilValue(isGuestModeAtom);
   const [taskViewMode, setTaskViewMode] = useRecoilState(taskViewModeAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
   const { taskLists, toggleListVisibility, fetchTaskLists } = useTaskLists();
@@ -649,7 +651,9 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
           {/* Offline & Sync Status Indicator */}
           <Box
             onClick={() => {
-              if (isOnline) {
+              if (isGuest) {
+                handleLogin(true);
+              } else if (isOnline) {
                 fetchTaskLists(true);
               }
             }}
@@ -659,13 +663,17 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               py: 0.75,
               px: isCollapsed ? 0.5 : 1.5,
               borderRadius: "12px",
-              bgcolor: !isOnline
+              bgcolor: isGuest
+                ? "rgba(138, 180, 248, 0.08)"
+                : !isOnline
                 ? "rgba(251, 140, 0, 0.12)"
                 : pendingCount > 0
                 ? "rgba(138, 180, 248, 0.12)"
                 : "rgba(255, 255, 255, 0.03)",
               border: "1px solid",
-              borderColor: !isOnline
+              borderColor: isGuest
+                ? "primary.main"
+                : !isOnline
                 ? "warning.main"
                 : pendingCount > 0
                 ? "primary.main"
@@ -673,19 +681,19 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: isCollapsed ? "center" : "space-between",
-              cursor: isOnline ? "pointer" : "default",
+              cursor: "pointer",
               transition: "all 0.2s ease",
-              "&:hover": isOnline
-                ? {
-                    bgcolor: "action.hover",
-                  }
-                : {},
+              "&:hover": {
+                bgcolor: "action.hover",
+              },
             }}
           >
             {isCollapsed ? (
               <Tooltip
                 title={
-                  !isOnline
+                  isGuest
+                    ? `${t("auth.guestBadge")} — ${t("auth.connectGoogleToSync")}`
+                    : !isOnline
                     ? `${t("sync.offlineMode")} (${t("sync.pendingChanges", { count: pendingCount })})`
                     : pendingCount > 0
                     ? `${t("sync.syncing")} (${t("sync.pendingChanges", { count: pendingCount })}) - ${t("sync.clickToSync")}`
@@ -694,7 +702,9 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                 placement="right"
               >
                 <IconButton size="small" sx={{ p: 0.5 }}>
-                  {!isOnline ? (
+                  {isGuest ? (
+                    <CloudOff fontSize="small" sx={{ color: "primary.main", fontSize: 18 }} />
+                  ) : !isOnline ? (
                     <CloudOff fontSize="small" sx={{ color: "warning.main", fontSize: 18 }} />
                   ) : isSyncing || pendingCount > 0 ? (
                     <Sync fontSize="small" sx={{ color: "primary.main", fontSize: 18 }} />
@@ -706,7 +716,9 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
             ) : (
               <>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  {!isOnline ? (
+                  {isGuest ? (
+                    <CloudOff fontSize="small" sx={{ color: "primary.main", fontSize: 18 }} />
+                  ) : !isOnline ? (
                     <CloudOff fontSize="small" sx={{ color: "warning.main", fontSize: 18 }} />
                   ) : isSyncing || pendingCount > 0 ? (
                     <Sync
@@ -731,13 +743,15 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                         fontWeight: 600,
                         display: "block",
                         lineHeight: 1.2,
-                        color: !isOnline ? "warning.main" : "text.primary",
+                        color: isGuest ? "primary.main" : !isOnline ? "warning.main" : "text.primary",
                       }}
                     >
-                      {!isOnline ? t("sync.offlineMode") : isSyncing ? t("sync.syncing") : t("sync.online")}
+                      {isGuest ? t("auth.guestBadge") : !isOnline ? t("sync.offlineMode") : isSyncing ? t("sync.syncing") : t("sync.online")}
                     </Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.68rem", color: "text.secondary" }}>
-                      {!isOnline
+                    <Typography variant="caption" sx={{ fontSize: "0.68rem", color: isGuest ? "text.primary" : "text.secondary" }}>
+                      {isGuest
+                        ? t("auth.connectGoogleToSync")
+                        : !isOnline
                         ? t("sync.queuedChanges", { count: pendingCount })
                         : pendingCount > 0
                         ? t("sync.pendingChanges", { count: pendingCount })
@@ -745,8 +759,11 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                     </Typography>
                   </Box>
                 </Box>
-                {isOnline && pendingCount > 0 && (
+                {!isGuest && isOnline && pendingCount > 0 && (
                   <Chip label={t("common.sync")} size="small" color="primary" sx={{ height: 20, fontSize: "0.65rem" }} />
+                )}
+                {isGuest && (
+                  <Chip label={t("common.sync")} size="small" variant="outlined" color="primary" sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer" }} />
                 )}
               </>
             )}

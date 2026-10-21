@@ -25,6 +25,7 @@ export const ar: TranslationSchema = {
     details: "التفاصيل",
     clear: "مسح",
     add: "إضافة",
+    or: "أو",
   },
   navigation: {
     allTasks: "كافة المهام",

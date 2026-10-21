@@ -236,50 +236,26 @@ export default function Header() {
             </Box>
           </Button>
 
-          {/* Connect Google Account button if in Guest Mode */}
-          {isGuest && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Google sx={{ color: "#4285F4" }} />}
-              onClick={() => handleLogin(true)}
-              sx={{
-                borderRadius: "18px",
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.78rem",
-                borderColor: "primary.main",
-                color: "primary.main",
-                py: 0.3,
-                px: 1.25,
-                "&:hover": {
-                  bgcolor: "action.hover",
-                  borderColor: "primary.dark",
-                },
-              }}
-            >
-              {t("auth.connectGoogleToSync")}
-            </Button>
-          )}
-
-          <IconButton onClick={handleMenuOpen} size="small">
-            <Avatar
-              sx={{
-                width: 28,
-                height: 28,
-                bgcolor: isGuest ? "action.selected" : "primary.main",
-                color: isGuest ? "text.primary" : "primary.contrastText",
-              }}
-              src={!isGuest ? profile?.picture ?? "" : ""}
-              alt={profile?.name ?? "User"}
-            >
-              {isGuest ? (
-                <PersonOutline sx={{ fontSize: 18 }} />
-              ) : (
-                profile?.name?.charAt(0) ?? "U"
-              )}
-            </Avatar>
-          </IconButton>
+          <Tooltip title={isGuest ? `${t("auth.guestBadge")} — ${t("auth.connectGoogleToSync")}` : (profile?.name ?? "User")}>
+            <IconButton onClick={handleMenuOpen} size="small">
+              <Avatar
+                sx={{
+                  width: 28,
+                  height: 28,
+                  bgcolor: isGuest ? "action.selected" : "primary.main",
+                  color: isGuest ? "text.primary" : "primary.contrastText",
+                }}
+                src={!isGuest ? profile?.picture ?? "" : ""}
+                alt={profile?.name ?? "User"}
+              >
+                {isGuest ? (
+                  <PersonOutline sx={{ fontSize: 18 }} />
+                ) : (
+                  profile?.name?.charAt(0) ?? "U"
+                )}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
 
           <Menu
             anchorEl={anchorEl}
