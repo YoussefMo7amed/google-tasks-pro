@@ -1,5 +1,6 @@
 import { atom, selector } from "recoil";
 import { UserProfile } from "../types/googleapis";
+import { isGuestModeAtom, GUEST_USER_PROFILE } from "../store/atoms";
 import { Task } from "../helpers/task";
 import { task, taskCategory } from "../types/taskapi";
 import { SettingsStore } from "../helpers/DBStores";
@@ -90,9 +91,11 @@ const authLoadingSelector = selector({
 const loggedInSelector = selector({
   key: "loggedInSelector",
   get: ({ get }) => {
+    const isGuest = get(isGuestModeAtom);
+    if (isGuest) return true;
     const loggedIn = get(userProfileState);
     const accessToken = get(accessTokenState);
-    return (
+    return Boolean(
       loggedIn && loggedIn.email != null && loggedIn.email != "" && accessToken
     );
   },
@@ -117,6 +120,8 @@ const attemptLogoutSelector = selector({
 const userProfileSelector = selector({
   key: "userProfileSelector",
   get: ({ get }) => {
+    const isGuest = get(isGuestModeAtom);
+    if (isGuest) return GUEST_USER_PROFILE;
     const loggedIn = get(loggedInSelector);
     const user = get(userProfileState);
     return loggedIn && user;

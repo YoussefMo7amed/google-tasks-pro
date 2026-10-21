@@ -40,6 +40,7 @@ export interface TranslationSchema {
     details: string;
     clear: string;
     add: string;
+    or: string;
   };
   navigation: {
     allTasks: string;
@@ -274,6 +275,25 @@ export interface TranslationSchema {
     signInWithGoogle: string;
     cachedModeOfflineBanner: string;
     cachedModeSessionBanner: string;
+    continueAsGuest: string;
+    guestModeDesc: string;
+    welcomeBack: string;
+    continueAs: string;
+    signInAnotherAccount: string;
+    guestBadge: string;
+    connectGoogleToSync: string;
+    exitGuestMode: string;
+    syncModalTitle: string;
+    syncModalDesc: string;
+    syncMergeBtn: string;
+    syncMergeDesc: string;
+    syncReplaceBtn: string;
+    syncReplaceDesc: string;
+    syncSuccessToast: string;
+    switchAccount: string;
+    addAccount: string;
+    activeAccountBadge: string;
+    removeAccountTooltip: string;
   };
   calendar: {
     today: string;

@@ -7,6 +7,7 @@
  */
 
 import { TaskService } from "./task.service";
+import { getActiveStorageScope } from "../helpers/storage-scope";
 
 export type MutationType =
   | "CREATE_TASK"
@@ -38,11 +39,32 @@ class SyncQueueService {
     this.loadQueue();
   }
 
+  private getQueueKey(): string {
+    return `google_tasks_sync_queue_${getActiveStorageScope()}`;
+  }
+
+  public reloadScope(): void {
+    this.loadQueue();
+    this.notifyListeners();
+  }
+
   private loadQueue(): void {
     try {
-      const data = localStorage.getItem(QUEUE_STORAGE_KEY);
+      const scope = getActiveStorageScope();
+      const key = this.getQueueKey();
+
+      if (scope !== "guest") {
+        if (!localStorage.getItem(key) && localStorage.getItem(QUEUE_STORAGE_KEY)) {
+          localStorage.setItem(key, localStorage.getItem(QUEUE_STORAGE_KEY)!);
+          localStorage.removeItem(QUEUE_STORAGE_KEY);
+        }
+      }
+
+      const data = localStorage.getItem(key);
       if (data) {
         this.queue = JSON.parse(data);
+      } else {
+        this.queue = [];
       }
     } catch (e) {
       console.warn("Failed to load sync queue from localStorage:", e);
@@ -52,7 +74,7 @@ class SyncQueueService {
 
   private saveQueue(): void {
     try {
-      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(this.queue));
+      localStorage.setItem(this.getQueueKey(), JSON.stringify(this.queue));
       this.notifyListeners();
     } catch (e) {
       console.warn("Failed to save sync queue to localStorage:", e);

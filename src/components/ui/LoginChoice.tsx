@@ -13,16 +13,23 @@ import {
   Paper,
   Divider,
 } from "@mui/material";
-import { Google } from "@mui/icons-material";
+import { Google, CloudOffOutlined } from "@mui/icons-material";
 import { getUserProfileFromStorage, deleteAccessToken } from "../../helpers/auth";
 import { UserProfile } from "../../types/googleapis";
+import { useTranslation } from "../../i18n";
 
 interface LoginChoiceProps {
   onContinueAsUser: () => void;
   onSignInAnother: () => void;
+  onContinueAsGuest: () => void;
 }
 
-export default function LoginChoice({ onContinueAsUser, onSignInAnother }: LoginChoiceProps) {
+export default function LoginChoice({
+  onContinueAsUser,
+  onSignInAnother,
+  onContinueAsGuest,
+}: LoginChoiceProps) {
+  const { t } = useTranslation();
   const [cachedUser, setCachedUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +59,7 @@ export default function LoginChoice({ onContinueAsUser, onSignInAnother }: Login
   if (loading) {
     return (
       <Box display="flex" alignItems="center" justifyContent="center" flex={1}>
-        <Typography color="text.secondary">Loading...</Typography>
+        <Typography color="text.secondary">{t("common.loading")}</Typography>
       </Box>
     );
   }
@@ -67,9 +74,10 @@ export default function LoginChoice({ onContinueAsUser, onSignInAnother }: Login
         justifyContent="center"
         flex={1}
         gap={2}
+        p={3}
       >
         <Typography variant="h6" color="text.primary" gutterBottom>
-          Welcome back!
+          {t("auth.welcomeBack")}
         </Typography>
 
         {/* Continue as user card */}
@@ -77,7 +85,7 @@ export default function LoginChoice({ onContinueAsUser, onSignInAnother }: Login
           elevation={2}
           sx={{
             p: 2,
-            width: 280,
+            width: 320,
             cursor: "pointer",
             transition: "all 0.2s",
             border: 2,
@@ -96,10 +104,10 @@ export default function LoginChoice({ onContinueAsUser, onSignInAnother }: Login
               sx={{ width: 48, height: 48 }}
             />
             <Box flex={1} minWidth={0}>
-              <Typography variant="subtitle2" noWrap>
-                Continue as
+              <Typography variant="subtitle2" color="text.secondary" noWrap>
+                {t("auth.continueAs")}
               </Typography>
-              <Typography variant="body1" fontWeight="500" noWrap>
+              <Typography variant="body1" fontWeight="600" noWrap>
                 {cachedUser.name}
               </Typography>
               <Typography variant="caption" color="text.secondary" noWrap>
@@ -109,9 +117,9 @@ export default function LoginChoice({ onContinueAsUser, onSignInAnother }: Login
           </Box>
         </Paper>
 
-        <Divider sx={{ width: 280, my: 1 }}>
+        <Divider sx={{ width: 320, my: 1 }}>
           <Typography variant="caption" color="text.secondary">
-            or
+            {t("common.or") || "or"}
           </Typography>
         </Divider>
 
@@ -121,19 +129,36 @@ export default function LoginChoice({ onContinueAsUser, onSignInAnother }: Login
           startIcon={<Google />}
           onClick={handleSignInAnother}
           sx={{
+            width: 320,
             textTransform: "none",
-            py: 1.5,
-            px: 3,
+            py: 1.25,
             borderRadius: 2,
           }}
         >
-          Sign in with another account
+          {t("auth.signInAnotherAccount")}
+        </Button>
+
+        {/* Continue as guest */}
+        <Button
+          variant="text"
+          startIcon={<CloudOffOutlined />}
+          onClick={onContinueAsGuest}
+          sx={{
+            width: 320,
+            color: "text.secondary",
+            textTransform: "none",
+            py: 1,
+            borderRadius: 2,
+            "&:hover": { color: "text.primary" },
+          }}
+        >
+          {t("auth.continueAsGuest")}
         </Button>
       </Box>
     );
   }
 
-  // No cached user, show simple sign in button
+  // No cached user, show initial options
   return (
     <Box
       display="flex"
@@ -142,16 +167,63 @@ export default function LoginChoice({ onContinueAsUser, onSignInAnother }: Login
       justifyContent="center"
       flex={1}
       textAlign="center"
+      gap={2.5}
+      p={3}
+      maxWidth={420}
+      mx="auto"
     >
-      <Button
-        variant="contained"
-        size="large"
-        startIcon={<Google />}
-        onClick={onSignInAnother}
-        sx={{ textTransform: "none", py: 1.5, px: 4 }}
-      >
-        Sign in with Google
-      </Button>
+      <Box>
+        <Typography variant="h5" fontWeight="700" gutterBottom>
+          Google Tasks Pro
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, mx: "auto" }}>
+          {t("auth.guestModeDesc")}
+        </Typography>
+      </Box>
+
+      <Box display="flex" flexDirection="column" gap={1.5} width="100%" maxWidth={320}>
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={<Google />}
+          onClick={onSignInAnother}
+          sx={{
+            textTransform: "none",
+            py: 1.4,
+            fontWeight: 600,
+            borderRadius: 2.5,
+            boxShadow: 2,
+          }}
+        >
+          {t("auth.signInWithGoogle")}
+        </Button>
+
+        <Divider sx={{ my: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            {t("common.or") || "or"}
+          </Typography>
+        </Divider>
+
+        <Button
+          variant="outlined"
+          size="large"
+          startIcon={<CloudOffOutlined />}
+          onClick={onContinueAsGuest}
+          sx={{
+            textTransform: "none",
+            py: 1.25,
+            borderRadius: 2.5,
+            borderColor: "divider",
+            color: "text.primary",
+            "&:hover": {
+              borderColor: "primary.main",
+              bgcolor: "action.hover",
+            },
+          }}
+        >
+          {t("auth.continueAsGuest")}
+        </Button>
+      </Box>
     </Box>
   );
 }

@@ -81,16 +81,27 @@ const OAUTH_RESPONSE_HTML = `<!DOCTYPE html>
       color: #fff;
     }
     h1 { font-size: 20px; font-weight: 700; margin-bottom: 12px; color: #fff; }
-    p { font-size: 14px; color: #9aa0a6; line-height: 1.6; margin-bottom: 20px; }
-    .badge {
+    p { font-size: 14px; color: #9aa0a6; line-height: 1.6; margin-bottom: 24px; }
+    .btn {
       display: inline-block;
-      padding: 6px 14px;
-      background: rgba(37, 99, 235, 0.15);
-      border: 1px solid #2563eb;
-      color: #8ab4f8;
+      padding: 10px 24px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
       border-radius: 9999px;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #1d4ed8;
+    }
+    .note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #71767b;
     }
   </style>
 </head>
@@ -98,16 +109,24 @@ const OAUTH_RESPONSE_HTML = `<!DOCTYPE html>
   <div class="card">
     <div class="icon">✓</div>
     <h1>Sign In Successful!</h1>
-    <p>You have successfully connected to <strong>Google Tasks Pro</strong>.<br>You can now return to the desktop app.</p>
-    <div class="badge">Closing tab automatically...</div>
+    <p>You have successfully connected to <strong>Google Tasks Pro</strong>.<br>The app is now active in the foreground.</p>
+    <button class="btn" id="closeBtn" onclick="closeWindow()">Close this tab</button>
+    <div class="note">You can also safely close this tab using ⌘W or Ctrl+W</div>
   </div>
   <script>
-    setTimeout(function() {
+    function closeWindow() {
       try {
         window.open('', '_self', '');
         window.close();
       } catch (e) {}
-    }, 1200);
+      setTimeout(function() {
+        if (!window.closed) {
+          const btn = document.getElementById('closeBtn');
+          if (btn) btn.innerText = 'Close tab (⌘W / Ctrl+W)';
+        }
+      }, 300);
+    }
+    setTimeout(closeWindow, 500);
   </script>
 </body>
 </html>`;

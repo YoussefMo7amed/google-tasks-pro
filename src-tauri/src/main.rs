@@ -14,7 +14,8 @@ use libs::notifications::{
     cancel_notification, get_notification_count, schedule_notification, NotificationScheduler,
 };
 use libs::tauri_actions::{
-    greet, load_access_token, load_code, save_access_token, save_code, test_command,
+    bring_to_front, greet, load_access_token, load_code, save_access_token, save_code,
+    test_command,
 };
 use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
@@ -32,6 +33,7 @@ fn run_specta() {
             test_command,
             save_code,
             load_code,
+            bring_to_front,
         ],
         "../src/helpers/commands.ts",
     )
@@ -101,6 +103,25 @@ fn main() {
         })
         .setup(|app| {
             let app_handle = app.handle();
+            let app_handle_for_oauth = app.handle();
+
+            app.listen_global("oauth://url", move |_event| {
+                if let Some(w) = app_handle_for_oauth.get_window("main") {
+                    let _ = w.show();
+                    let _ = w.unminimize();
+                    let _ = w.set_focus();
+                    #[cfg(target_os = "macos")]
+                    {
+                        #[allow(deprecated)]
+                        unsafe {
+                            use cocoa::appkit::NSApplication;
+                            let app = cocoa::appkit::NSApp();
+                            app.activateIgnoringOtherApps_(cocoa::base::YES);
+                        }
+                    }
+                }
+            });
+
             std::thread::spawn(move || {
                 loop {
                     std::thread::sleep(std::time::Duration::from_secs(5));
@@ -136,6 +157,7 @@ fn main() {
             test_command,
             save_code,
             load_code,
+            bring_to_front,
             // Notification commands
             schedule_notification,
             cancel_notification,

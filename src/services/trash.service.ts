@@ -5,6 +5,7 @@
  */
 
 import { AppTask } from "../types/app";
+import { getActiveStorageScope } from "../helpers/storage-scope";
 
 export type TrashRetention = "1d" | "3d" | "7d" | "30d" | "never" | "custom";
 
@@ -22,8 +23,8 @@ export interface TrashedTask {
   expiresAt: string | null; // ISO string or null for "never"
 }
 
-const TRASH_ITEMS_KEY = "google_tasks_trash_items_v1";
-const TRASH_SETTINGS_KEY = "google_tasks_trash_settings_v1";
+const LEGACY_TRASH_ITEMS_KEY = "google_tasks_trash_items_v1";
+const LEGACY_TRASH_SETTINGS_KEY = "google_tasks_trash_settings_v1";
 
 const DEFAULT_SETTINGS: TrashSettings = {
   retention: "7d",
@@ -52,20 +53,54 @@ class TrashService {
     this.init();
   }
 
+  private getItemsKey(): string {
+    return `google_tasks_trash_items_${getActiveStorageScope()}`;
+  }
+
+  private getSettingsKey(): string {
+    return `google_tasks_trash_settings_${getActiveStorageScope()}`;
+  }
+
+  public reloadScope(): void {
+    this.initialized = false;
+    this.init();
+    this.notify();
+  }
+
   private init() {
     if (this.initialized || typeof window === "undefined") return;
     try {
+      const scope = getActiveStorageScope();
+      const settingsKey = this.getSettingsKey();
+      const itemsKey = this.getItemsKey();
+
+      // Migration for logged-in user from legacy key
+      if (scope !== "guest") {
+        if (!localStorage.getItem(itemsKey) && localStorage.getItem(LEGACY_TRASH_ITEMS_KEY)) {
+          localStorage.setItem(itemsKey, localStorage.getItem(LEGACY_TRASH_ITEMS_KEY)!);
+          localStorage.removeItem(LEGACY_TRASH_ITEMS_KEY);
+        }
+        if (!localStorage.getItem(settingsKey) && localStorage.getItem(LEGACY_TRASH_SETTINGS_KEY)) {
+          localStorage.setItem(settingsKey, localStorage.getItem(LEGACY_TRASH_SETTINGS_KEY)!);
+          localStorage.removeItem(LEGACY_TRASH_SETTINGS_KEY);
+        }
+      }
+
       // 1. Load settings
-      const rawSettings = localStorage.getItem(TRASH_SETTINGS_KEY);
+      const rawSettings = localStorage.getItem(settingsKey);
       if (rawSettings) {
         this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(rawSettings) };
+      } else {
+        this.settings = DEFAULT_SETTINGS;
       }
 
       // 2. Load items
-      const rawItems = localStorage.getItem(TRASH_ITEMS_KEY);
+      const rawItems = localStorage.getItem(itemsKey);
       if (rawItems) {
         const parsed: TrashedTask[] = JSON.parse(rawItems);
         this.items = Array.isArray(parsed) ? parsed : [];
+      } else {
+        this.items = [];
       }
 
       // 3. Auto-clean expired on initialization
@@ -81,8 +116,8 @@ class TrashService {
 
   private save() {
     try {
-      localStorage.setItem(TRASH_ITEMS_KEY, JSON.stringify(this.items));
-      localStorage.setItem(TRASH_SETTINGS_KEY, JSON.stringify(this.settings));
+      localStorage.setItem(this.getItemsKey(), JSON.stringify(this.items));
+      localStorage.setItem(this.getSettingsKey(), JSON.stringify(this.settings));
     } catch (err) {
       console.warn("Failed to persist trash items/settings:", err);
     }

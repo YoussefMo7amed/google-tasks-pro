@@ -39,17 +39,37 @@ export function useTaskLists() {
    * Fetch all task lists with offline-first caching
    */
   const fetchTaskLists = useCallback(async (forceRefresh = false) => {
+    // Guest / Offline Mode: isolated strictly to "guest" scope
+    if (!service) {
+      const guestCached = offlineCacheService.loadSnapshot("guest");
+      if (guestCached && guestCached.length > 0) {
+        setTaskLists(guestCached);
+        historyService.syncFromTaskLists(guestCached);
+      } else {
+        const defaultList: AppTaskList = {
+          kind: "tasks#taskList",
+          id: `local_list_${Date.now()}`,
+          etag: "",
+          selfLink: "",
+          title: "My Tasks",
+          updated: new Date().toISOString(),
+          tasks: [],
+          incompleteCount: 0,
+          isVisible: true,
+        };
+        setTaskLists([defaultList]);
+        offlineCacheService.saveSnapshot([defaultList], "guest");
+      }
+      setLoading(false);
+      return;
+    }
+
     // 1. Immediately load from offline cache if state is empty
     const cached = offlineCacheService.loadSnapshot();
     if (cached && taskListsRef.current.length === 0) {
       setTaskLists(cached);
       historyService.syncFromTaskLists(cached);
       setLoading(false);
-    }
-
-    if (!service) {
-      setLoading(false);
-      return;
     }
 
     // Skip redundant network fetch if already loaded and fetched recently (<30s), unless forced
@@ -218,7 +238,15 @@ export function useTaskLists() {
    * Rename a task list
    */
   const renameTaskList = useCallback(async (id: string, newTitle: string): Promise<boolean> => {
-    if (!service) return false;
+    if (!service) {
+      setTaskLists(prev => {
+        const next = prev.map(list => list.id === id ? { ...list, title: newTitle } : list);
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
+      setToast({ title: "List renamed", type: "success" });
+      return true;
+    }
 
     try {
       const updated = await service.rename(id, newTitle);
@@ -236,7 +264,15 @@ export function useTaskLists() {
    * Delete a task list
    */
   const deleteTaskList = useCallback(async (id: string): Promise<boolean> => {
-    if (!service) return false;
+    if (!service) {
+      setTaskLists(prev => {
+        const next = prev.filter(list => list.id !== id);
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
+      setToast({ title: "List deleted", type: "warning" });
+      return true;
+    }
 
     try {
       await service.delete(id);
@@ -254,7 +290,16 @@ export function useTaskLists() {
    * Reorder task lists (local only)
    */
   const reorderTaskLists = useCallback((fromIndex: number, toIndex: number) => {
-    if (!service) return;
+    if (!service) {
+      setTaskLists(prev => {
+        const next = [...prev];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        offlineCacheService.saveSnapshot(next);
+        return next;
+      });
+      return;
+    }
 
     const reordered = service.reorderLists(fromIndex, toIndex);
     setTaskLists(reordered);

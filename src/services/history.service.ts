@@ -6,6 +6,7 @@
  */
 
 import { AppTask, AppTaskList } from "../types/app";
+import { getActiveStorageScope } from "../helpers/storage-scope";
 
 export type QuadrantType = "Q1" | "Q2" | "Q3" | "Q4";
 
@@ -99,9 +100,29 @@ class HistoryService {
     });
   }
 
+  private getStorageKey(): string {
+    return `google_tasks_completed_history_${getActiveStorageScope()}`;
+  }
+
+  public reloadScope(): void {
+    this.load();
+    this.notify();
+  }
+
   private load(): void {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
+      const scope = getActiveStorageScope();
+      const key = this.getStorageKey();
+
+      // Migration for logged-in user from legacy key
+      if (scope !== "guest") {
+        if (!localStorage.getItem(key) && localStorage.getItem(STORAGE_KEY)) {
+          localStorage.setItem(key, localStorage.getItem(STORAGE_KEY)!);
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      const data = localStorage.getItem(key);
       if (data) {
         const parsed: CompletedHistoryItem[] = JSON.parse(data);
         // Automatically purge any leftover demo-generated tasks
@@ -109,6 +130,8 @@ class HistoryService {
         if (this.history.length !== parsed.length) {
           this.save();
         }
+      } else {
+        this.history = [];
       }
     } catch (e) {
       console.warn("Failed to load completed history from localStorage:", e);
@@ -118,7 +141,7 @@ class HistoryService {
 
   private save(): void {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.history));
+      localStorage.setItem(this.getStorageKey(), JSON.stringify(this.history));
     } catch (e) {
       console.warn("Failed to save completed history to localStorage:", e);
     }

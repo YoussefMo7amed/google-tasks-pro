@@ -7,29 +7,53 @@
 
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { IStarredRepository } from "./interfaces";
+import { getActiveStorageScope } from "../helpers/storage-scope";
 
-const STARRED_FILE = "starred-tasks.json";
+const LEGACY_STARRED_FILE = "starred-tasks.json";
 
 export class StarredRepository implements IStarredRepository {
   private cache: Set<string> | null = null;
+  private currentScope: string = "";
+
+  private getFileName(): string {
+    const scope = getActiveStorageScope();
+    return `starred-tasks-${scope}.json`;
+  }
 
   /**
    * Load starred tasks from file
    */
   private async load(): Promise<Set<string>> {
-    if (this.cache) {
+    const activeScope = getActiveStorageScope();
+    if (this.cache && this.currentScope === activeScope) {
       return this.cache;
     }
+    this.currentScope = activeScope;
 
+    const fileName = this.getFileName();
     try {
-      const content = await readTextFile(STARRED_FILE, {
+      const content = await readTextFile(fileName, {
         dir: BaseDirectory.AppData,
       });
       const data = JSON.parse(content) as string[];
       this.cache = new Set(data);
       return this.cache;
     } catch {
-      // File doesn't exist or is invalid
+      // If signed in, check if legacy un-scoped file exists to migrate
+      if (activeScope !== "guest") {
+        try {
+          const legacyContent = await readTextFile(LEGACY_STARRED_FILE, {
+            dir: BaseDirectory.AppData,
+          });
+          const legacyData = JSON.parse(legacyContent) as string[];
+          this.cache = new Set(legacyData);
+          await this.save();
+          return this.cache;
+        } catch {
+          // No legacy file
+        }
+      }
+
       this.cache = new Set();
       return this.cache;
     }
@@ -42,7 +66,8 @@ export class StarredRepository implements IStarredRepository {
     if (!this.cache) return;
 
     const data = Array.from(this.cache);
-    await writeTextFile(STARRED_FILE, JSON.stringify(data), {
+    const fileName = this.getFileName();
+    await writeTextFile(fileName, JSON.stringify(data), {
       dir: BaseDirectory.AppData,
     });
   }

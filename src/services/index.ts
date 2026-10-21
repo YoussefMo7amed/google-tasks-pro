@@ -4,5 +4,7 @@ export { offlineCacheService } from "./offline-cache.service";
 export { syncQueueService } from "./sync-queue.service";
 export { historyService } from "./history.service";
 export { recurrenceService } from "./recurrence.service";
+export { trashService } from "./trash.service";
+export { accountService } from "./account.service";
 export { aiService } from "./ai/ai.service";
 export * from "./ai/types";

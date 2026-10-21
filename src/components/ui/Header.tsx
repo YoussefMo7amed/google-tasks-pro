@@ -13,35 +13,44 @@ import {
   Typography,
   Button,
   Tooltip,
+  Chip,
 } from "@mui/material";
-import { Logout, AutoAwesome, Translate, Check, Undo, Redo, KeyboardAltOutlined } from "@mui/icons-material";
+import { Logout, AutoAwesome, Translate, Check, Undo, Redo, KeyboardAltOutlined, Google, CloudOffOutlined, PersonOutline, Add, DeleteOutline } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
   attemptLogoutState,
   loggedInSelector,
   userProfileSelector,
 } from "../../config/states";
-import { aiCopilotOpenAtom, shortcutsModalOpenAtom } from "../../store";
+import { aiCopilotOpenAtom, shortcutsModalOpenAtom, isGuestModeAtom } from "../../store";
 import ViewSwitcher from "./ViewSwitcher";
 import { useTranslation } from "../../i18n";
 import { useUndoRedo } from "../../hooks/useUndoRedo";
+import { useTaskLists } from "../../hooks";
+import { handleLogin, exitGuestMode, switchToGoogleAccount, switchToGuestMode } from "../../helpers/auth";
+import { accountService, StoredAccount } from "../../services/account.service";
 
 export default function Header() {
   const loggedIn = useRecoilValue(loggedInSelector);
   const profile = useRecoilValue(userProfileSelector);
+  const isGuest = useRecoilValue(isGuestModeAtom);
+  const setIsGuest = useSetRecoilState(isGuestModeAtom);
   const setAttemptLogout = useSetRecoilState(attemptLogoutState);
   const setAiCopilotOpen = useSetRecoilState(aiCopilotOpenAtom);
   const setShortcutsOpen = useSetRecoilState(shortcutsModalOpenAtom);
   const { t, language, setLanguage, supportedLanguages, isRtl } = useTranslation();
   const { canUndo, canRedo, undo, redo, getUndoLabel, getRedoLabel } = useUndoRedo();
+  const { fetchTaskLists } = useTaskLists();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [langMenuAnchor, setLangMenuAnchor] = useState<null | HTMLElement>(null);
+  const [savedAccounts, setSavedAccounts] = useState<StoredAccount[]>(() => accountService.getAccounts());
 
   const isMac = typeof navigator !== "undefined" && navigator.platform?.toUpperCase().indexOf("MAC") >= 0;
   const undoShortcut = isMac ? "⌘Z" : "Ctrl+Z";
   const redoShortcut = isMac ? "⌘⇧Z" : "Ctrl+Y";
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setSavedAccounts(accountService.getAccounts());
     setAnchorEl(event.currentTarget);
   };
 
@@ -52,6 +61,31 @@ export default function Header() {
   const handleLogout = () => {
     setAttemptLogout(true);
     handleMenuClose();
+  };
+
+  const handleSwitchToGoogle = async (email: string) => {
+    handleMenuClose();
+    const success = await switchToGoogleAccount(email);
+    if (success) {
+      await fetchTaskLists(true);
+    }
+  };
+
+  const handleSwitchToGuest = async () => {
+    handleMenuClose();
+    await switchToGuestMode();
+    await fetchTaskLists(true);
+  };
+
+  const handleRemoveAccount = (e: React.MouseEvent, email: string) => {
+    e.stopPropagation();
+    accountService.removeAccount(email);
+    setSavedAccounts(accountService.getAccounts());
+  };
+
+  const handleAddAccount = () => {
+    handleMenuClose();
+    handleLogin(true);
   };
 
   if (!loggedIn || !profile) {
@@ -233,52 +267,247 @@ export default function Header() {
             </Box>
           </Button>
 
-          <IconButton onClick={handleMenuOpen} size="small">
-            <Avatar
-              sx={{ width: 28, height: 28 }}
-              src={profile?.picture ?? ""}
-              alt={profile?.name ?? "User"}
-            >
-              {profile?.name?.charAt(0) ?? "U"}
-            </Avatar>
-          </IconButton>
+          <Tooltip title={isGuest ? `${t("auth.guestBadge")} — ${t("auth.connectGoogleToSync")}` : (profile?.name ?? "User")}>
+            <IconButton onClick={handleMenuOpen} size="small">
+              <Avatar
+                sx={{
+                  width: 28,
+                  height: 28,
+                  bgcolor: isGuest ? "action.selected" : "primary.main",
+                  color: isGuest ? "text.primary" : "primary.contrastText",
+                }}
+                src={!isGuest ? profile?.picture ?? "" : ""}
+                alt={profile?.name ?? "User"}
+              >
+                {isGuest ? (
+                  <PersonOutline sx={{ fontSize: 18 }} />
+                ) : (
+                  profile?.name?.charAt(0) ?? "U"
+                )}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
 
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
-            onClick={handleMenuClose}
             PaperProps={{
-              elevation: 3,
+              elevation: 4,
               sx: {
                 overflow: "visible",
-                filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
+                filter: "drop-shadow(0px 4px 16px rgba(0,0,0,0.18))",
                 mt: 1.5,
-                minWidth: 200,
+                minWidth: 280,
+                maxWidth: 320,
+                borderRadius: 2.5,
+                p: 0.5,
               },
             }}
-            transformOrigin={{ horizontal: "right", vertical: "top" }}
-            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+            transformOrigin={{ horizontal: isRtl ? "left" : "right", vertical: "top" }}
+            anchorOrigin={{ horizontal: isRtl ? "left" : "right", vertical: "bottom" }}
           >
-            <MenuItem disabled>
-              <Avatar
-                src={profile?.picture ?? ""}
-                sx={{ width: 32, height: 32, mr: 1.5 }}
-              />
-              <ListItemText
-                primary={profile?.name}
-                secondary={profile?.email}
-                primaryTypographyProps={{ variant: "body2" }}
-                secondaryTypographyProps={{ variant: "caption" }}
-              />
+            {/* Current Active Account Header */}
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Avatar
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    bgcolor: isGuest ? "action.selected" : "primary.main",
+                    color: isGuest ? "text.primary" : "primary.contrastText",
+                  }}
+                  src={!isGuest ? profile?.picture ?? "" : ""}
+                >
+                  {isGuest ? (
+                    <PersonOutline sx={{ fontSize: 22 }} />
+                  ) : (
+                    profile?.name?.charAt(0) ?? "U"
+                  )}
+                </Avatar>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <Typography variant="subtitle2" noWrap fontWeight={600}>
+                      {isGuest ? t("auth.guestBadge") : profile?.name}
+                    </Typography>
+                    <Chip
+                      label={t("auth.activeAccountBadge")}
+                      size="small"
+                      color="primary"
+                      sx={{ height: 18, fontSize: "0.65rem", fontWeight: 700 }}
+                    />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" noWrap display="block">
+                    {isGuest ? t("auth.guestModeDesc") : profile?.email}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            <Divider sx={{ my: 0.5 }} />
+
+            {/* Switch Account Section */}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ px: 2, py: 0.75, display: "block", fontWeight: 600, textTransform: "uppercase", fontSize: "0.7rem", letterSpacing: 0.5 }}
+            >
+              {t("auth.switchAccount")}
+            </Typography>
+
+            {/* Stored Google Accounts */}
+            {savedAccounts.map((acc) => {
+              const isCurrent = !isGuest && acc.email === profile?.email;
+              return (
+                <MenuItem
+                  key={acc.email}
+                  selected={isCurrent}
+                  onClick={() => {
+                    if (!isCurrent) handleSwitchToGoogle(acc.email);
+                  }}
+                  sx={{
+                    borderRadius: 1.5,
+                    mx: 0.5,
+                    my: 0.25,
+                    py: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 1,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1 }}>
+                    <Avatar
+                      src={acc.picture || ""}
+                      sx={{ width: 28, height: 28, fontSize: "0.85rem" }}
+                    >
+                      {acc.name?.charAt(0) ?? "U"}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="body2" noWrap fontWeight={isCurrent ? 600 : 400}>
+                        {acc.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap display="block">
+                        {acc.email}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    {isCurrent && <Check fontSize="small" color="primary" />}
+                    {!isCurrent && (
+                      <Tooltip title={t("auth.removeAccountTooltip")}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleRemoveAccount(e, acc.email)}
+                          sx={{ p: 0.5, opacity: 0.6, "&:hover": { opacity: 1, color: "error.main" } }}
+                        >
+                          <DeleteOutline sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
+                </MenuItem>
+              );
+            })}
+
+            {/* Guest Mode option in switcher */}
+            <MenuItem
+              selected={isGuest}
+              onClick={() => {
+                if (!isGuest) handleSwitchToGuest();
+              }}
+              sx={{
+                borderRadius: 1.5,
+                mx: 0.5,
+                my: 0.25,
+                py: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1 }}>
+                <Avatar sx={{ width: 28, height: 28, bgcolor: "action.selected" }}>
+                  <CloudOffOutlined sx={{ fontSize: 16, color: "text.secondary" }} />
+                </Avatar>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" noWrap fontWeight={isGuest ? 600 : 400}>
+                    {t("auth.guestBadge")}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap display="block">
+                    {t("auth.guestModeDesc")}
+                  </Typography>
+                </Box>
+              </Box>
+              {isGuest && <Check fontSize="small" color="primary" />}
             </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <Logout fontSize="small" />
+
+            {/* Add Another Google Account */}
+            <MenuItem
+              onClick={handleAddAccount}
+              sx={{
+                borderRadius: 1.5,
+                mx: 0.5,
+                my: 0.25,
+                py: 1,
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <Add fontSize="small" color="primary" />
               </ListItemIcon>
-              <ListItemText primary={t("auth.signOut")} />
+              <ListItemText
+                primary={t("auth.addAccount")}
+                primaryTypographyProps={{ variant: "body2", fontWeight: 500, color: "primary.main" }}
+              />
             </MenuItem>
+
+            <Divider sx={{ my: 0.5 }} />
+
+            {/* Actions: Sign out / Exit Guest */}
+            {isGuest ? (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    handleMenuClose();
+                    handleLogin(true);
+                  }}
+                  sx={{ borderRadius: 1.5, mx: 0.5, my: 0.25 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <Google fontSize="small" sx={{ color: "#4285F4" }} />
+                  </ListItemIcon>
+                  <ListItemText primary={t("auth.connectGoogleToSync")} primaryTypographyProps={{ variant: "body2" }} />
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleMenuClose();
+                    exitGuestMode();
+                    setIsGuest(false);
+                    setAttemptLogout(true);
+                  }}
+                  sx={{ borderRadius: 1.5, mx: 0.5, my: 0.25 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <Logout fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary={t("auth.exitGuestMode")} primaryTypographyProps={{ variant: "body2" }} />
+                </MenuItem>
+              </>
+            ) : (
+              <MenuItem
+                onClick={() => {
+                  handleLogout();
+                }}
+                sx={{ borderRadius: 1.5, mx: 0.5, my: 0.25 }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <Logout fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary={t("auth.signOut")} primaryTypographyProps={{ variant: "body2" }} />
+              </MenuItem>
+            )}
           </Menu>
         </Box>
       </Toolbar>
