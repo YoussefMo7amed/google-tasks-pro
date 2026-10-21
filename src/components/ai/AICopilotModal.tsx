@@ -21,6 +21,7 @@ import {
   Fade,
   Checkbox,
   Alert,
+  Portal,
 } from "@mui/material";
 import {
   Close,
@@ -32,6 +33,8 @@ import {
   Check,
   Fullscreen,
   FullscreenExit,
+  Remove,
+  OpenInFull,
   Add,
   History,
   DeleteOutline,
@@ -40,8 +43,8 @@ import {
   CancelOutlined,
   PlaylistRemove,
 } from "@mui/icons-material";
-import { useRecoilValue, useSetRecoilState } from "recoil";
-import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom } from "../../store";
+import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
+import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom, aiCopilotMinimizedAtom } from "../../store";
 import { useTasks, useTaskLists } from "../../hooks";
 import {
   aiService,
@@ -107,7 +110,7 @@ export default function AICopilotModal({
   onClose,
   onOpenSettings,
 }: AICopilotModalProps) {
-  const { t, language } = useTranslation();
+  const { t, language, isRtl } = useTranslation();
   const quickPrompts = getQuickPrompts(language);
   const quadrantColors = getQuadrantColors(language);
   const taskLists = useRecoilValue(taskListsAtom);
@@ -125,6 +128,7 @@ export default function AICopilotModal({
 
   // Sizing & UI controls
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isMinimized, setIsMinimized] = useRecoilState(aiCopilotMinimizedAtom);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -143,8 +147,10 @@ export default function AICopilotModal({
   useEffect(() => {
     if (open) {
       setCurrentSettings(AISettingsService.load());
+    } else {
+      setIsMinimized(false);
     }
-  }, [open]);
+  }, [open, setIsMinimized]);
 
   const isLocalProvider = currentSettings.provider === "ollama" || currentSettings.provider === "lm_studio";
   const hasKey = Boolean(currentSettings.apiKey && currentSettings.apiKey.trim().length > 0);
@@ -317,6 +323,14 @@ export default function AICopilotModal({
 
       AIChatHistoryService.updateSession(activeSessionId, finalMessages);
       setSessions(AIChatHistoryService.loadSessions());
+
+      if (isMinimized) {
+        setToast({
+          title: language === "ar" ? "✨ رد المساعد الذكي جاهز" : "✨ AI response ready",
+          body: language === "ar" ? "انقر على الأيقونة العائمة لعرض الرد." : "Click the floating widget to view response.",
+          type: "info",
+        });
+      }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       const errorMessage: AICopilotMessage = {
@@ -329,6 +343,14 @@ export default function AICopilotModal({
       setMessages(finalMessages);
       AIChatHistoryService.updateSession(activeSessionId, finalMessages);
       setSessions(AIChatHistoryService.loadSessions());
+
+      if (isMinimized) {
+        setToast({
+          title: language === "ar" ? "✨ رد المساعد الذكي جاهز" : "✨ AI response ready",
+          body: language === "ar" ? "انقر على الأيقونة العائمة لعرض الرد." : "Click the floating widget to view response.",
+          type: "info",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -638,9 +660,10 @@ export default function AICopilotModal({
   const activeSession = sessions.find((s) => s.id === activeSessionId);
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
+    <>
+      <Dialog
+        open={open && !isMinimized}
+        onClose={onClose}
       fullScreen={isMaximized}
       maxWidth={isMaximized ? false : showHistory ? "lg" : "md"}
       fullWidth
@@ -725,6 +748,12 @@ export default function AICopilotModal({
               onClick={() => setShowHistory((prev) => !prev)}
             >
               <History fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={t("ai.minimizeToWidget")}>
+            <IconButton size="small" onClick={() => setIsMinimized(true)}>
+              <Remove fontSize="small" />
             </IconButton>
           </Tooltip>
 
@@ -1513,5 +1542,132 @@ export default function AICopilotModal({
         </Box>
       </Box>
     </Dialog>
+
+    {/* Floating Messenger-style Bubble / Capsule Widget when Minimized */}
+    {open && isMinimized && (
+      <Portal>
+        <Fade in={open && isMinimized}>
+          <Paper
+            elevation={12}
+            onClick={() => setIsMinimized(false)}
+            sx={{
+              position: "fixed",
+              bottom: 24,
+              ...(isRtl ? { left: 24 } : { right: 24 }),
+              zIndex: 1300,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 1.25,
+              pl: 1.75,
+              pr: 1.25,
+              borderRadius: "32px",
+              cursor: "pointer",
+              bgcolor: "background.paper",
+              border: "1px solid",
+              borderColor: loading ? "primary.main" : "divider",
+              boxShadow: (theme) =>
+                loading
+                  ? `0 0 16px ${theme.palette.primary.main}66, 0 8px 24px rgba(0,0,0,0.25)`
+                  : "0 8px 30px rgba(0,0,0,0.18)",
+              transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+              "&:hover": {
+                transform: "translateY(-3px)",
+                boxShadow: (theme) =>
+                  `0 12px 32px rgba(0,0,0,0.25), 0 0 12px ${theme.palette.primary.main}44`,
+                borderColor: "primary.main",
+              },
+              userSelect: "none",
+            }}
+          >
+            {/* Sparkle Icon / Loading Spinner */}
+            <Box
+              sx={{
+                position: "relative",
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: (theme) => `${theme.palette.primary.main}18`,
+                color: "primary.main",
+                flexShrink: 0,
+              }}
+            >
+              {loading && (
+                <CircularProgress
+                  size={38}
+                  thickness={4}
+                  sx={{
+                    position: "absolute",
+                    color: "primary.main",
+                  }}
+                />
+              )}
+              <AutoAwesome sx={{ fontSize: 20 }} />
+            </Box>
+
+            {/* Chat info / Status */}
+            <Box sx={{ minWidth: 100, maxWidth: 220 }}>
+              <Typography
+                variant="body2"
+                fontWeight={700}
+                noWrap
+                sx={{ lineHeight: 1.2, fontSize: "0.85rem" }}
+              >
+                {activeSession?.title || t("ai.copilotTitle")}
+              </Typography>
+              <Typography
+                variant="caption"
+                color={loading ? "primary.main" : "text.secondary"}
+                fontWeight={loading ? 600 : 400}
+                noWrap
+                sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.3 }}
+              >
+                {loading
+                  ? t("ai.workingInBackground")
+                  : t("ai.expandWidget")}
+              </Typography>
+            </Box>
+
+            {/* Expand Action Button */}
+            <Tooltip title={t("ai.expandWidget")}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMinimized(false);
+                }}
+                sx={{
+                  bgcolor: "action.hover",
+                  "&:hover": { bgcolor: "action.selected" },
+                }}
+              >
+                <OpenInFull fontSize="small" sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+
+            {/* Close Button */}
+            <Tooltip title={t("common.close")}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMinimized(false);
+                  onClose();
+                }}
+                sx={{
+                  "&:hover": { bgcolor: "error.main", color: "#fff" },
+                }}
+              >
+                <Close fontSize="small" sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          </Paper>
+        </Fade>
+      </Portal>
+    )}
+  </>
   );
 }

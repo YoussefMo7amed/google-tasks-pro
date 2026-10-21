@@ -22,7 +22,7 @@ import {
   loggedInSelector,
   userProfileSelector,
 } from "../../config/states";
-import { aiCopilotOpenAtom, shortcutsModalOpenAtom, isGuestModeAtom } from "../../store";
+import { aiCopilotOpenAtom, aiCopilotMinimizedAtom, shortcutsModalOpenAtom, isGuestModeAtom } from "../../store";
 import ViewSwitcher from "./ViewSwitcher";
 import { useTranslation } from "../../i18n";
 import { useUndoRedo } from "../../hooks/useUndoRedo";
@@ -37,6 +37,7 @@ export default function Header() {
   const setIsGuest = useSetRecoilState(isGuestModeAtom);
   const setAttemptLogout = useSetRecoilState(attemptLogoutState);
   const setAiCopilotOpen = useSetRecoilState(aiCopilotOpenAtom);
+  const setAiCopilotMinimized = useSetRecoilState(aiCopilotMinimizedAtom);
   const setShortcutsOpen = useSetRecoilState(shortcutsModalOpenAtom);
   const { t, language, setLanguage, supportedLanguages, isRtl } = useTranslation();
   const { canUndo, canRedo, undo, redo, getUndoLabel, getRedoLabel } = useUndoRedo();
@@ -230,7 +231,10 @@ export default function Header() {
           <Button
             size="small"
             variant="outlined"
-            onClick={() => setAiCopilotOpen(true)}
+            onClick={() => {
+              setAiCopilotOpen(true);
+              setAiCopilotMinimized(false);
+            }}
             sx={{
               borderRadius: "18px",
               textTransform: "none",

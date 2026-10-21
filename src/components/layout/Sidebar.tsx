@@ -53,7 +53,7 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom } from "../../store";
+import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, aiCopilotMinimizedAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom } from "../../store";
 import { useTaskLists, useTrash } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
@@ -72,6 +72,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const setShowSettings = useSetRecoilState(settingsOpenAtom);
   const setSettingsActiveTab = useSetRecoilState(settingsActiveTabAtom);
   const [, setShowAiCopilot] = useRecoilState(aiCopilotOpenAtom);
+  const setAiCopilotMinimized = useSetRecoilState(aiCopilotMinimizedAtom);
   const [, setShowShortcuts] = useRecoilState(shortcutsModalOpenAtom);
   const [viewState, setViewState] = useRecoilState(viewStateAtom);
   const isGuest = useRecoilValue(isGuestModeAtom);
@@ -356,7 +357,10 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               </Tooltip>
               <Tooltip title={`${t("navigation.aiCopilot")} (⌘K)`} placement={isRtl ? "left" : "right"}>
                 <IconButton 
-                  onClick={() => setShowAiCopilot(true)}
+                  onClick={() => {
+                    setShowAiCopilot(true);
+                    setAiCopilotMinimized(false);
+                  }}
                   color="primary"
                 >
                   <AutoAwesome />
@@ -548,7 +552,10 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
 
                 {/* AI Copilot */}
                 <ListItemButton
-                  onClick={() => setShowAiCopilot(true)}
+                  onClick={() => {
+                    setShowAiCopilot(true);
+                    setAiCopilotMinimized(false);
+                  }}
                   sx={{
                     borderRadius: isRtl ? "24px 0 0 24px" : "0 24px 24px 0",
                     ...(isRtl ? { ml: 2, mr: 0 } : { mr: 2, ml: 0 }),

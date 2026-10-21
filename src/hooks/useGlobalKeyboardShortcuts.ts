@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import {
   aiCopilotOpenAtom,
+  aiCopilotMinimizedAtom,
   settingsOpenAtom,
   shortcutsModalOpenAtom,
   addCategoryOpenAtom,
@@ -31,6 +32,7 @@ interface GlobalShortcutsOptions {
 export function useGlobalKeyboardShortcuts(options?: GlobalShortcutsOptions) {
   const { t, language } = useTranslation();
   const [aiCopilotOpen, setAiCopilotOpen] = useRecoilState(aiCopilotOpenAtom);
+  const [isAiMinimized, setIsAiMinimized] = useRecoilState(aiCopilotMinimizedAtom);
   const [settingsOpen, setSettingsOpen] = useRecoilState(settingsOpenAtom);
   const [shortcutsOpen, setShortcutsOpen] = useRecoilState(shortcutsModalOpenAtom);
   const [addCategoryOpen, setAddCategoryOpen] = useRecoilState(addCategoryOpenAtom);
@@ -128,7 +130,15 @@ export function useGlobalKeyboardShortcuts(options?: GlobalShortcutsOptions) {
       const isAiKey = isMod && (e.code === "KeyK" || e.key.toLowerCase() === "k" || e.key === "ن");
       if (isAiKey) {
         e.preventDefault();
-        setAiCopilotOpen((prev) => !prev);
+        if (aiCopilotOpen && isAiMinimized) {
+          setIsAiMinimized(false);
+        } else {
+          setAiCopilotOpen((prev) => {
+            const next = !prev;
+            if (!next) setIsAiMinimized(false);
+            return next;
+          });
+        }
         return;
       }
 

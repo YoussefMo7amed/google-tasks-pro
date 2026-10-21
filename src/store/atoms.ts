@@ -111,6 +111,11 @@ export const aiCopilotOpenAtom = atom<boolean>({
   default: false,
 });
 
+export const aiCopilotMinimizedAtom = atom<boolean>({
+  key: "aiCopilotMinimized",
+  default: false,
+});
+
 export const settingsOpenAtom = atom<boolean>({
   key: "settingsOpen",
   default: false,

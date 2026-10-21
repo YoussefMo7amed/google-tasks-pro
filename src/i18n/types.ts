@@ -189,6 +189,9 @@ export interface TranslationSchema {
     copilotTitle: string;
     copilotSubtitle: string;
     newChat: string;
+    minimizeToWidget: string;
+    expandWidget: string;
+    workingInBackground: string;
     history: string;
     settings: string;
     inputPlaceholder: string;
