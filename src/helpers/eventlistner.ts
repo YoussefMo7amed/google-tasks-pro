@@ -1,8 +1,8 @@
-import { listen } from "@tauri-apps/api/event";
+import { onUrl } from "@fabianlars/tauri-plugin-oauth";
 
 type listnerCallback<T = any> = {
     onSucess: (data: T) => any,
-    onError ?: (err: Error) => any
+    onError?: (err: Error) => any
 }
 
 export interface AuthCodeData {
@@ -11,11 +11,11 @@ export interface AuthCodeData {
 }
 
 export async function listen_for_auth_code(callback: listnerCallback<AuthCodeData>) {
-    const unlisten = await listen("oauth://url", async (data) => {
+    const unlisten = await onUrl(async (payload) => {
       try {
-        console.log("gotten data", data.payload);
-        if (!data.payload) return;
-        const url = new URL(data.payload as string);
+        console.log("gotten data", payload);
+        if (!payload) return;
+        const url = new URL(payload);
         const code = new URLSearchParams(url.search).get("code");
         const port = url.port ? parseInt(url.port, 10) : undefined;
         return callback.onSucess({ code, port });
@@ -24,6 +24,5 @@ export async function listen_for_auth_code(callback: listnerCallback<AuthCodeDat
         return callback.onError ? callback.onError(err as Error) : null;
       }
     });
-  return;
+  return unlisten;
 }
-
