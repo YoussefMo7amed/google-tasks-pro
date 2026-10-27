@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Box,
@@ -34,11 +34,13 @@ import SplashScreen from "./components/ui/SplashScreen";
 import LoginChoice from "./components/ui/LoginChoice";
 import { Sidebar } from "./components/layout";
 import { aiCopilotOpenAtom, settingsOpenAtom, shortcutsModalOpenAtom, isGuestModeAtom, taskListsAtom } from "./store";
-import AICopilotModal from "./components/ai/AICopilotModal";
-import SettingsDialog from "./components/ui/SettingsDialog";
-import KeyboardShortcutsModal from "./components/ui/KeyboardShortcutsModal";
 import QuickCreateTaskDialog from "./components/ui/QuickCreateTaskDialog";
-import SyncGuestTasksModal from "./components/ui/SyncGuestTasksModal";
+
+// Lazy-loaded heavy modals for optimal bundle splitting and startup performance
+const AICopilotModal = lazy(() => import("./components/ai/AICopilotModal"));
+const SettingsDialog = lazy(() => import("./components/ui/SettingsDialog"));
+const KeyboardShortcutsModal = lazy(() => import("./components/ui/KeyboardShortcutsModal"));
+const SyncGuestTasksModal = lazy(() => import("./components/ui/SyncGuestTasksModal"));
 import { useGlobalKeyboardShortcuts, useTaskLists } from "./hooks";
 import { useTranslation } from "./i18n";
 import { listen_for_auth_code } from "./helpers/eventlistner";
@@ -276,32 +278,34 @@ function App() {
       </Box>
 
       {/* Guest Mode Tasks Sync Modal */}
-      <SyncGuestTasksModal
-        open={showGuestSyncModal}
-        onClose={() => {
-          setShowGuestSyncModal(false);
-          exitGuestMode();
-          setIsGuestMode(false);
-          trashService.reloadScope();
-          historyService.reloadScope();
-          syncQueueService.reloadScope();
-          fetchTaskLists(true);
-        }}
-        onComplete={() => {
-          setShowGuestSyncModal(false);
-          exitGuestMode();
-          setIsGuestMode(false);
-          trashService.reloadScope();
-          historyService.reloadScope();
-          syncQueueService.reloadScope();
-          fetchTaskLists(true);
-          setToastMessage({
-            title: t("common.success"),
-            body: t("auth.syncSuccessToast"),
-            type: "success",
-          });
-        }}
-      />
+      <Suspense fallback={null}>
+        <SyncGuestTasksModal
+          open={showGuestSyncModal}
+          onClose={() => {
+            setShowGuestSyncModal(false);
+            exitGuestMode();
+            setIsGuestMode(false);
+            trashService.reloadScope();
+            historyService.reloadScope();
+            syncQueueService.reloadScope();
+            fetchTaskLists(true);
+          }}
+          onComplete={() => {
+            setShowGuestSyncModal(false);
+            exitGuestMode();
+            setIsGuestMode(false);
+            trashService.reloadScope();
+            historyService.reloadScope();
+            syncQueueService.reloadScope();
+            fetchTaskLists(true);
+            setToastMessage({
+              title: t("common.success"),
+              body: t("auth.syncSuccessToast"),
+              type: "success",
+            });
+          }}
+        />
+      </Suspense>
 
       {/* Toast Messages */}
       <Snackbar
@@ -330,27 +334,30 @@ function App() {
         </Alert>
       </Snackbar>
 
-      {/* AI Copilot Assistant Modal */}
-      <AICopilotModal
-        open={aiCopilotOpen}
-        onClose={() => setAiCopilotOpen(false)}
-        onOpenSettings={() => {
-          setAiCopilotOpen(false);
-          setSettingsOpen(true);
-        }}
-      />
+      {/* Heavy secondary modals wrapped in Suspense for lazy code-splitting */}
+      <Suspense fallback={null}>
+        {/* AI Copilot Assistant Modal */}
+        <AICopilotModal
+          open={aiCopilotOpen}
+          onClose={() => setAiCopilotOpen(false)}
+          onOpenSettings={() => {
+            setAiCopilotOpen(false);
+            setSettingsOpen(true);
+          }}
+        />
 
-      {/* Global Settings Dialog */}
-      <SettingsDialog
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
+        {/* Global Settings Dialog */}
+        <SettingsDialog
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+        />
 
-      {/* Keyboard Shortcuts Cheat Sheet Modal */}
-      <KeyboardShortcutsModal
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
+        {/* Keyboard Shortcuts Cheat Sheet Modal */}
+        <KeyboardShortcutsModal
+          open={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
+        />
+      </Suspense>
 
       {/* Quick Create Task Modal (N / C) */}
       <QuickCreateTaskDialog />

@@ -5,7 +5,7 @@
  * Bridges old auth system with new hooks.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Box, CircularProgress, Typography, Button, Paper } from "@mui/material";
 import { LockOutlined, Google } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
@@ -13,14 +13,14 @@ import { accessTokenSelector } from "../config/states";
 import { accessTokenAtom, viewStateAtom, taskViewModeAtom, isGuestModeAtom } from "../store";
 import { useTaskLists } from "../hooks";
 import { handleLogin } from "../helpers/auth";
-import {
-  TaskListsContainer,
-  EisenhowerMatrixView,
-  AnalyticsView,
-  UnifiedListView,
-  CalendarTasksView,
-  TrashTasksView,
-} from "./tasks";
+import { TaskListsContainer } from "./tasks";
+
+// Lazy-loaded secondary views for code-splitting & faster initial load
+const EisenhowerMatrixView = lazy(() => import("./tasks/EisenhowerMatrixView"));
+const AnalyticsView = lazy(() => import("./tasks/AnalyticsView"));
+const UnifiedListView = lazy(() => import("./tasks/UnifiedListView"));
+const CalendarTasksView = lazy(() => import("./tasks/CalendarTasksView"));
+const TrashTasksView = lazy(() => import("./tasks/TrashTasksView"));
 
 export default function TaskPage() {
   // Get access token from OLD auth system
@@ -172,31 +172,39 @@ export default function TaskPage() {
           <TaskListsContainer />
         </Box>
       )}
-      {mountedViews.has("list") && (
-        <Box sx={{ flex: 1, display: currentViewKey === "list" ? "flex" : "none", width: "100%", height: "100%" }}>
-          <UnifiedListView />
-        </Box>
-      )}
-      {mountedViews.has("calendar") && (
-        <Box sx={{ flex: 1, display: currentViewKey === "calendar" ? "flex" : "none", width: "100%", height: "100%" }}>
-          <CalendarTasksView />
-        </Box>
-      )}
-      {mountedViews.has("eisenhower") && (
-        <Box sx={{ flex: 1, display: currentViewKey === "eisenhower" ? "flex" : "none", width: "100%", height: "100%" }}>
-          <EisenhowerMatrixView />
-        </Box>
-      )}
-      {mountedViews.has("analytics") && (
-        <Box sx={{ flex: 1, display: currentViewKey === "analytics" ? "flex" : "none", width: "100%", height: "100%" }}>
-          <AnalyticsView isVisible={currentViewKey === "analytics"} />
-        </Box>
-      )}
-      {mountedViews.has("trash") && (
-        <Box sx={{ flex: 1, display: currentViewKey === "trash" ? "flex" : "none", width: "100%", height: "100%" }}>
-          <TrashTasksView />
-        </Box>
-      )}
+      <Suspense
+        fallback={
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+            <CircularProgress size={36} />
+          </Box>
+        }
+      >
+        {mountedViews.has("list") && (
+          <Box sx={{ flex: 1, display: currentViewKey === "list" ? "flex" : "none", width: "100%", height: "100%" }}>
+            <UnifiedListView />
+          </Box>
+        )}
+        {mountedViews.has("calendar") && (
+          <Box sx={{ flex: 1, display: currentViewKey === "calendar" ? "flex" : "none", width: "100%", height: "100%" }}>
+            <CalendarTasksView />
+          </Box>
+        )}
+        {mountedViews.has("eisenhower") && (
+          <Box sx={{ flex: 1, display: currentViewKey === "eisenhower" ? "flex" : "none", width: "100%", height: "100%" }}>
+            <EisenhowerMatrixView />
+          </Box>
+        )}
+        {mountedViews.has("analytics") && (
+          <Box sx={{ flex: 1, display: currentViewKey === "analytics" ? "flex" : "none", width: "100%", height: "100%" }}>
+            <AnalyticsView isVisible={currentViewKey === "analytics"} />
+          </Box>
+        )}
+        {mountedViews.has("trash") && (
+          <Box sx={{ flex: 1, display: currentViewKey === "trash" ? "flex" : "none", width: "100%", height: "100%" }}>
+            <TrashTasksView />
+          </Box>
+        )}
+      </Suspense>
     </Box>
   );
 }
