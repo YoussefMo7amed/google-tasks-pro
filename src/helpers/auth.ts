@@ -312,14 +312,34 @@ export async function saveUserProfile(userProfile: UserProfile) {
     }
 }
 
-export async function getUserProfileFromStorage() {
+export async function getUserProfileFromStorage(): Promise<UserProfile | null> {
     try {
         const userProfile = await readTextFile(STORAGE_PATHS.user_profile, { baseDir: DEFAULT_DIRECTORY });
-        return JSON.parse(userProfile) as UserProfile;
+        const parsed = JSON.parse(userProfile);
+        if (parsed && typeof parsed === "object" && parsed.email) {
+            return parsed as UserProfile;
+        }
     } catch (error) {
-        console.error("Error getting user profile:", error);
-        return null;
+        console.debug("Error getting user profile:", error);
     }
+
+    // Fallback: If user_profile.json has no email, check accountService for any saved account
+    try {
+        const { accountService } = await import("../services/account.service");
+        const accounts = accountService.getAccounts();
+        if (accounts.length > 0 && accounts[0]?.email) {
+            const acc = accounts[0];
+            return {
+                email: acc.email,
+                name: acc.name,
+                picture: acc.picture || null,
+            } as UserProfile;
+        }
+    } catch (err) {
+        console.debug("Could not fallback to accountService:", err);
+    }
+
+    return null;
 }
 
 export async function deleteUserProfile() {

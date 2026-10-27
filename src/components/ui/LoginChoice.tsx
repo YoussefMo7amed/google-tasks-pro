@@ -64,8 +64,8 @@ export default function LoginChoice({
     );
   }
 
-  // If there's a cached user, show choice
-  if (cachedUser) {
+  // If there's a cached user with valid credentials, show choice
+  if (cachedUser && (cachedUser.email || cachedUser.name)) {
     return (
       <Box
         display="flex"
