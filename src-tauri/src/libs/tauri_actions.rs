@@ -1,54 +1,46 @@
-use tauri;
-
 // super mod imports;
 use super::auth::{AccessToken, Auth};
-use super::filehelper::ENV_FILE;
-use super::response::{SaveAccessTokenResponse, SaveTokenResponse, GreetResponse};
-
-
+use super::filehelper::{AppPaths, ENV_FILE};
+use super::response::{GreetResponse, SaveAccessTokenResponse, SaveTokenResponse};
 
 #[tauri::command]
-#[specta::specta]
 pub fn greet(name: String) -> GreetResponse {
-    return GreetResponse {
+    GreetResponse {
         message: format!("Hello, {}! You've been greeted from Rust!", name),
-    };
+    }
 }
 
 // remember to call `.manage(MyState::default())`
 #[tauri::command]
-#[specta::specta]
-pub fn save_access_token(token: String) -> SaveAccessTokenResponse {
+pub fn save_access_token(
+    paths: tauri::State<'_, AppPaths>,
+    token: String,
+) -> SaveAccessTokenResponse {
     dotenv::from_filename(ENV_FILE).ok();
-    return Auth::save_access_token(token);
+    Auth::save_access_token(&paths.access_token_file, token)
 }
 
 // a command to load the access token from the file
 #[tauri::command]
-#[specta::specta]
-pub fn load_access_token() -> AccessToken {
+pub fn load_access_token(paths: tauri::State<'_, AppPaths>) -> AccessToken {
     dotenv::from_filename(ENV_FILE).ok();
-    return Auth::load_access_token();
-}
-
-
-#[tauri::command]
-#[specta::specta]
-pub fn save_code(code: String) -> SaveTokenResponse {
-    dotenv::from_filename(ENV_FILE).ok();
-    return Auth::save_auth_code(code);
+    Auth::load_access_token(&paths.access_token_file)
 }
 
 #[tauri::command]
-#[specta::specta]
-pub fn load_code() -> String {
+pub fn save_code(paths: tauri::State<'_, AppPaths>, code: String) -> SaveTokenResponse {
     dotenv::from_filename(ENV_FILE).ok();
-    return Auth::load_auth_code();
+    Auth::save_auth_code(&paths.auth_code_file, code)
 }
 
 #[tauri::command]
-#[specta::specta]
-pub fn bring_to_front(window: tauri::Window) {
+pub fn load_code(paths: tauri::State<'_, AppPaths>) -> String {
+    dotenv::from_filename(ENV_FILE).ok();
+    Auth::load_auth_code(&paths.auth_code_file)
+}
+
+#[tauri::command]
+pub fn bring_to_front(window: tauri::WebviewWindow) {
     let _ = window.show();
     let _ = window.unminimize();
     let _ = window.set_focus();
