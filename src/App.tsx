@@ -278,34 +278,36 @@ function App() {
       </Box>
 
       {/* Guest Mode Tasks Sync Modal */}
-      <Suspense fallback={null}>
-        <SyncGuestTasksModal
-          open={showGuestSyncModal}
-          onClose={() => {
-            setShowGuestSyncModal(false);
-            exitGuestMode();
-            setIsGuestMode(false);
-            trashService.reloadScope();
-            historyService.reloadScope();
-            syncQueueService.reloadScope();
-            fetchTaskLists(true);
-          }}
-          onComplete={() => {
-            setShowGuestSyncModal(false);
-            exitGuestMode();
-            setIsGuestMode(false);
-            trashService.reloadScope();
-            historyService.reloadScope();
-            syncQueueService.reloadScope();
-            fetchTaskLists(true);
-            setToastMessage({
-              title: t("common.success"),
-              body: t("auth.syncSuccessToast"),
-              type: "success",
-            });
-          }}
-        />
-      </Suspense>
+      {showGuestSyncModal && (
+        <Suspense fallback={null}>
+          <SyncGuestTasksModal
+            open={showGuestSyncModal}
+            onClose={() => {
+              setShowGuestSyncModal(false);
+              exitGuestMode();
+              setIsGuestMode(false);
+              trashService.reloadScope();
+              historyService.reloadScope();
+              syncQueueService.reloadScope();
+              fetchTaskLists(true);
+            }}
+            onComplete={() => {
+              setShowGuestSyncModal(false);
+              exitGuestMode();
+              setIsGuestMode(false);
+              trashService.reloadScope();
+              historyService.reloadScope();
+              syncQueueService.reloadScope();
+              fetchTaskLists(true);
+              setToastMessage({
+                title: t("common.success"),
+                body: t("auth.syncSuccessToast"),
+                type: "success",
+              });
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Toast Messages */}
       <Snackbar
@@ -334,30 +336,37 @@ function App() {
         </Alert>
       </Snackbar>
 
-      {/* Heavy secondary modals wrapped in Suspense for lazy code-splitting */}
-      <Suspense fallback={null}>
-        {/* AI Copilot Assistant Modal */}
-        <AICopilotModal
-          open={aiCopilotOpen}
-          onClose={() => setAiCopilotOpen(false)}
-          onOpenSettings={() => {
-            setAiCopilotOpen(false);
-            setSettingsOpen(true);
-          }}
-        />
+      {/* Heavy secondary modals guarded and wrapped in Suspense for true on-demand lazy loading */}
+      {aiCopilotOpen && (
+        <Suspense fallback={null}>
+          <AICopilotModal
+            open={aiCopilotOpen}
+            onClose={() => setAiCopilotOpen(false)}
+            onOpenSettings={() => {
+              setAiCopilotOpen(false);
+              setSettingsOpen(true);
+            }}
+          />
+        </Suspense>
+      )}
 
-        {/* Global Settings Dialog */}
-        <SettingsDialog
-          open={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-        />
+      {settingsOpen && (
+        <Suspense fallback={null}>
+          <SettingsDialog
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+          />
+        </Suspense>
+      )}
 
-        {/* Keyboard Shortcuts Cheat Sheet Modal */}
-        <KeyboardShortcutsModal
-          open={shortcutsOpen}
-          onClose={() => setShortcutsOpen(false)}
-        />
-      </Suspense>
+      {shortcutsOpen && (
+        <Suspense fallback={null}>
+          <KeyboardShortcutsModal
+            open={shortcutsOpen}
+            onClose={() => setShortcutsOpen(false)}
+          />
+        </Suspense>
+      )}
 
       {/* Quick Create Task Modal (N / C) */}
       <QuickCreateTaskDialog />
