@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::AppHandle;
+use tauri_plugin_notification::NotificationExt;
 
 /// A scheduled notification waiting to be shown
 #[allow(dead_code)]
@@ -57,7 +58,7 @@ impl NotificationScheduler {
     #[allow(dead_code)]
     pub fn check_and_notify(&self, app: &AppHandle) {
         let now = Utc::now();
-        
+
         // 1. Collect due notifications and release mutex lock immediately
         let due_notifications: Vec<ScheduledNotification> = {
             let mut scheduled = self.scheduled.lock().unwrap();
@@ -79,14 +80,14 @@ impl NotificationScheduler {
                 notification.title, notification.body
             );
 
-            // Primary OS notification via Tauri
+            // Primary OS notification via Tauri v2 notification plugin
             let mut shown_via_tauri = false;
-            if let Ok(()) = tauri::api::notification::Notification::new(
-                &app.config().tauri.bundle.identifier,
-            )
-            .title(&notification.title)
-            .body(&notification.body)
-            .show()
+            if let Ok(()) = app
+                .notification()
+                .builder()
+                .title(&notification.title)
+                .body(&notification.body)
+                .show()
             {
                 shown_via_tauri = true;
             }
@@ -99,14 +100,12 @@ impl NotificationScheduler {
                         .title
                         .replace('\\', "\\\\")
                         .replace('"', "\\\"")
-                        .replace('\n', " ")
-                        .replace('\r', " ");
+                        .replace(['\n', '\r'], " ");
                     let clean_body = notification
                         .body
                         .replace('\\', "\\\\")
                         .replace('"', "\\\"")
-                        .replace('\n', " ")
-                        .replace('\r', " ");
+                        .replace(['\n', '\r'], " ");
                     let script = format!(
                         "display notification \"{}\" with title \"{}\"",
                         clean_body, clean_title
@@ -148,8 +147,18 @@ pub fn schedule_notification(
         title, task_id, notify_at
     );
 
-    scheduler.schedule(task_id.clone(), title, body, notify_at);
-    Ok(task_id)
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        scheduler.schedule(task_id.clone(), title, body, notify_at);
+        Ok(task_id)
+    }
+
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        // TODO: Implement Android/iOS native local notification scheduling (AlarmManager / Notification plugin)
+        let _ = (scheduler, &title, &body, notify_at);
+        Ok(task_id)
+    }
 }
 
 /// Cancel a scheduled notification
@@ -158,8 +167,18 @@ pub fn cancel_notification(
     scheduler: tauri::State<'_, NotificationScheduler>,
     task_id: String,
 ) -> Result<(), String> {
-    scheduler.cancel(&task_id);
-    Ok(())
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        scheduler.cancel(&task_id);
+        Ok(())
+    }
+
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        // TODO: Implement Android/iOS native notification cancellation
+        let _ = (scheduler, &task_id);
+        Ok(())
+    }
 }
 
 /// Get count of scheduled notifications (for debugging)
