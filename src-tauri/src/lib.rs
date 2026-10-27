@@ -18,9 +18,9 @@ use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    dotenv::from_filename(ENV_FILE).ok();
-    dotenv::from_filename("../.env").ok();
-    dotenv::dotenv().ok();
+    dotenvy::from_filename(ENV_FILE).ok();
+    dotenvy::from_filename("../.env").ok();
+    dotenvy::dotenv().ok();
 
     // Create notification scheduler
     let notification_scheduler = NotificationScheduler::default();
