@@ -46,3 +46,6 @@ src-tauri/target
 # next build 
 .next
 
+
+# Serena local cache/config
+.serena/
