@@ -8,8 +8,8 @@
  * Notifications are triggered at the user-configured hour on the due date.
  */
 
-import { invoke } from '@tauri-apps/api/tauri';
-import { isPermissionGranted, requestPermission } from '@tauri-apps/api/notification';
+import { invoke } from '@tauri-apps/api/core';
+import { isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification';
 import { AppTask } from '../types/app';
 import { getNotificationHour } from './settings.service';
 

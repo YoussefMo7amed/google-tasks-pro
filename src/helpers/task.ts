@@ -1,4 +1,4 @@
-import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import axios from "axios";
 import { task, taskCategory } from "../types/taskapi";
 import { GlobalCacheManager } from "./cacher";
@@ -236,11 +236,11 @@ export class Task {
   async saveTasksToFile(taskCategories?: taskCategory[]) {
     const tobeSaved = taskCategories || this.tasksCategoryList.get();
     const tasks = JSON.stringify(tobeSaved);
-    await writeTextFile(TASKS_FILE, tasks, { dir: DEFAULT_DIRECTORY });
+    await writeTextFile(TASKS_FILE, tasks, { baseDir: DEFAULT_DIRECTORY });
   }
 
   async getTasksFromFile(): Promise<taskCategory[]> {
-    const tasks = await readTextFile(TASKS_FILE, { dir: DEFAULT_DIRECTORY });
+    const tasks = await readTextFile(TASKS_FILE, { baseDir: DEFAULT_DIRECTORY });
     // check if a valid json
     try {
       return JSON.parse(tasks);
@@ -368,7 +368,7 @@ export class Task {
    * @returns {task[]} - The list of tasks.
    */
   async getTasksByCategoryPositionFromFile(position: number): Promise<task[]> {
-    const tasks = await readTextFile(TASKS_FILE, { dir: DEFAULT_DIRECTORY });
+    const tasks = await readTextFile(TASKS_FILE, { baseDir: DEFAULT_DIRECTORY });
     const taskCategories = JSON.parse(tasks);
     return taskCategories[position].tasks;
   }
@@ -432,7 +432,7 @@ export class Task {
   }
 
   async getTaskByIdFromFile(categoryID: string): Promise<task[]> {
-    const tasks = await readTextFile(TASKS_FILE, { dir: DEFAULT_DIRECTORY });
+    const tasks = await readTextFile(TASKS_FILE, { baseDir: DEFAULT_DIRECTORY });
     const taskCategories = JSON.parse(tasks);
     return taskCategories.find(
       (taskCategory: taskCategory) => taskCategory.id === categoryID

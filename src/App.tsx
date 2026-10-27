@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import {
   Box,
   Snackbar,
@@ -109,7 +109,8 @@ function App() {
         console.log(code, "code generated", "port:", port);
         // Bring desktop app to front and focus immediately
         invoke("bring_to_front").catch(console.warn);
-        import("@tauri-apps/api/window").then(({ appWindow }) => {
+        import("@tauri-apps/api/webviewWindow").then(({ getCurrentWebviewWindow }) => {
+          const appWindow = getCurrentWebviewWindow();
           appWindow.show().catch(console.warn);
           appWindow.unminimize().catch(console.warn);
           appWindow.setFocus().catch(console.warn);

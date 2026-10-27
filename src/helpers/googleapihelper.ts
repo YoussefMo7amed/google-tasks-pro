@@ -1,4 +1,4 @@
-import { readTextFile } from "@tauri-apps/api/fs";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import settings from "../config/settings";
 import {GoogleServices } from "../types/googleapis";
 import axios, { AxiosInstance } from "axios";
@@ -29,7 +29,7 @@ class _GoogleApiHelper {
     }
     
     async accessToken(): Promise<AccessToken> {
-        const accessTokenText = await readTextFile(STORAGE_PATHS.access_token, { dir: DEFAULT_DIRECTORY });
+        const accessTokenText = await readTextFile(STORAGE_PATHS.access_token, { baseDir: DEFAULT_DIRECTORY });
         return JSON.parse(accessTokenText) as AccessToken;
     }
 

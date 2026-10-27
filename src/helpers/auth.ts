@@ -1,8 +1,8 @@
-import { shell } from "@tauri-apps/api";
-import { invoke } from "@tauri-apps/api/tauri";
+import { open as openUrl } from "@tauri-apps/plugin-shell";
+import { cancel as cancelOAuthServer } from "@fabianlars/tauri-plugin-oauth";
 import axios from "axios";
 import { UserProfile } from "../types/googleapis";
-import { readTextFile, removeFile, writeTextFile } from "@tauri-apps/api/fs";
+import { readTextFile, remove, writeTextFile } from "@tauri-apps/plugin-fs";
 import { getClientId, getClientSecret } from "../config/credentials";
 import settings from "../config/settings";
 import { generate_oauth_port, get_access_token, get_auth_code, save_access_token, save_auth_code } from "./invoker";
@@ -11,6 +11,7 @@ import { setRecoil } from "recoil-nexus";
 import { accessTokenState, activeCategoryTasksState, activeTaskCategoryState, authLoadingState, messageState, userProfileState } from "../config/states";
 import { pushNotification } from "./windowhelper";
 import { cancelAllNotifications } from "../services/notification.service";
+import { isMobile } from "./platform";
 
 const DEFAULT_DIRECTORY = settings.fs.DEFAULT_DIRECTORY;
 const GOOGLE_OAUTH_ENDPOINT = settings.auth.GOOGLE_OAUTH_ENDPOINT;
@@ -24,7 +25,7 @@ class PortManager {
         // If there was an existing port, attempt to cancel it first to prevent port leaks
         if (this.port) {
             try {
-                await invoke('plugin:oauth|cancel', { port: this.port });
+                await cancelOAuthServer(this.port);
             } catch {
                 // Ignore if already stopped
             }
@@ -41,7 +42,7 @@ class PortManager {
 
     reset() {
         if (this.port) {
-            invoke('plugin:oauth|cancel', { port: this.port }).catch(() => {});
+            cancelOAuthServer(this.port).catch(() => {});
             this.port = undefined;
         }
     }
@@ -142,6 +143,16 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
 
  // to handle login to get auth
 export async function openAuthWindow() {
+    // Platform branch point: Android OAuth vs Desktop OAuth
+    if (isMobile()) {
+        // ANDROID / MOBILE OAUTH FLOW BRANCH POINT (Planned Phase 4)
+        // Android requires custom scheme / deep-link redirect + PKCE (no client secret)
+        // e.g. using @tauri-apps/plugin-deep-link and auth-session
+        console.warn("Mobile OAuth flow is not yet implemented. Branch point for Phase 4.");
+        throw new Error("Mobile OAuth flow is not yet implemented");
+    }
+
+    // DESKTOP OAUTH FLOW:
     // ALWAYS start a fresh OAuth listener session so retries never reuse a dead port
     const port = await portManager.startNewSession();
     const url = new URL(GOOGLE_OAUTH_ENDPOINT);
@@ -153,7 +164,7 @@ export async function openAuthWindow() {
     url.searchParams.append("redirect_uri", getLocalHostUrl(port));
     url.searchParams.append("include_granted_scopes", "true");
     url.searchParams.append("state", "state_parameter_passthrough_value");
-    shell.open(url.href);
+    await openUrl(url.href);
 }
 
 /**
@@ -282,7 +293,7 @@ export async function getAccessTokenFromStorage() {
 
 export async function deleteAccessToken() {
     try {
-        return await removeFile(STORAGE_PATHS.access_token, { dir: DEFAULT_DIRECTORY });
+        return await remove(STORAGE_PATHS.access_token, { baseDir: DEFAULT_DIRECTORY });
     } catch (error) {
         // File might not exist, that's okay - fail silently
         console.debug("deleteAccessToken: file may not exist", error);
@@ -294,7 +305,7 @@ export async function saveUserProfile(userProfile: UserProfile) {
         if (userProfile?.email) {
             localStorage.setItem("current_user_email", userProfile.email);
         }
-        return await writeTextFile(STORAGE_PATHS.user_profile, JSON.stringify(userProfile), { dir: DEFAULT_DIRECTORY });
+        return await writeTextFile(STORAGE_PATHS.user_profile, JSON.stringify(userProfile), { baseDir: DEFAULT_DIRECTORY });
     } catch (error) {
         console.error("Error saving user profile:", error);
         throw new Error("Error saving user profile");
@@ -303,7 +314,7 @@ export async function saveUserProfile(userProfile: UserProfile) {
 
 export async function getUserProfileFromStorage() {
     try {
-        const userProfile = await readTextFile(STORAGE_PATHS.user_profile, { dir: DEFAULT_DIRECTORY });
+        const userProfile = await readTextFile(STORAGE_PATHS.user_profile, { baseDir: DEFAULT_DIRECTORY });
         return JSON.parse(userProfile) as UserProfile;
     } catch (error) {
         console.error("Error getting user profile:", error);
@@ -314,7 +325,7 @@ export async function getUserProfileFromStorage() {
 export async function deleteUserProfile() {
     try {
         localStorage.removeItem("current_user_email");
-        return await removeFile(STORAGE_PATHS.user_profile, { dir: DEFAULT_DIRECTORY });
+        return await remove(STORAGE_PATHS.user_profile, { baseDir: DEFAULT_DIRECTORY });
     } catch (error) {
         // File might not exist, that's okay - fail silently
         console.debug("deleteUserProfile: file may not exist", error);

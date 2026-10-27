@@ -1,5 +1,5 @@
-import { Options, isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/api/notification";
-import { showMenu } from "tauri-plugin-context-menu";
+import { Options, isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import { showMenu } from "./contextMenu";
 
 // Disable the right-click menu and text selection.
 export function loadContextmenu() {
@@ -26,15 +26,18 @@ export function loadContextmenu() {
 export function pushNotification(options: string | Options) {
     isPermissionGranted().then((granted) => {
         if (!granted) {
-            requestPermission().then((granted) => {
-                if (!granted) {
+            requestPermission().then((permission) => {
+                if (permission !== 'granted') {
                     console.log("permission not granted");
                     return;
                 }
+                console.log("permission granted");
+                sendNotification(options);
             });
+            return;
         }
-      console.log("permission granted");
-      sendNotification(options);
+        console.log("permission granted");
+        sendNotification(options);
     });
 }
 

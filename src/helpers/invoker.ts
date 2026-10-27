@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/tauri';
+import { start as startOAuthServer } from '@fabianlars/tauri-plugin-oauth';
 import * as commands from './commands';
 import { AccessToken, SaveAccessTokenResponse, SaveTokenResponse } from './commands';
 import {AuthStore} from './DBStores';
@@ -129,11 +129,9 @@ const OAUTH_RESPONSE_HTML = `<!DOCTYPE html>
 
 export async function generate_oauth_port(): Promise<number> {
     try {
-        // Use Tauri invoke to call the Rust OAuth plugin v1 with custom auto-closing HTML
-        const port = await invoke<number>('plugin:oauth|start', {
-            config: {
-                response: OAUTH_RESPONSE_HTML,
-            }
+        // Use Tauri OAuth plugin v2 to spawn localhost server with custom auto-closing HTML
+        const port = await startOAuthServer({
+            response: OAUTH_RESPONSE_HTML,
         });
         return port;
     } catch (error) {

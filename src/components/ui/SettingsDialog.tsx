@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRecoilState } from 'recoil';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { settingsActiveTabAtom, aiSettingsAtom } from '../../store';
 import {
   Dialog,
