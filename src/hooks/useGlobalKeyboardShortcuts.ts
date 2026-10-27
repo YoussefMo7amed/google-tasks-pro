@@ -22,6 +22,7 @@ import {
 } from "../store";
 import { useUndoRedo } from "./useUndoRedo";
 import { useTranslation } from "../i18n";
+import { isDesktop } from "../helpers/platform";
 
 interface GlobalShortcutsOptions {
   onSync?: () => void;
@@ -44,6 +45,8 @@ export function useGlobalKeyboardShortcuts(options?: GlobalShortcutsOptions) {
   const { undo, redo, canUndo, canRedo } = useUndoRedo();
 
   useEffect(() => {
+    if (!isDesktop()) return;
+
     const handleKeyDown = async (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
       const isInputActive =

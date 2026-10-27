@@ -18,7 +18,8 @@ import {
   taskObjectSelector,
 } from "../../config/states";
 import { task } from "../../types/taskapi";
-import { isRegistered, register } from "@tauri-apps/api/globalShortcut";
+import { isRegistered, register, ShortcutEvent } from "@tauri-apps/plugin-global-shortcut";
+import { isDesktop } from "../../helpers/platform";
 import { useTranslation } from "../../i18n";
 
 // No props interface needed - this is a standalone FAB component
@@ -37,20 +38,26 @@ export default function AddTaskFab() {
   );
 
   useEffect(() => {
-    // Register global shortcut for adding tasks
-    isRegistered("CommandOrControl+Shift+N").then((data) => {
+    if (!isDesktop()) return;
+
+    // Register global shortcut for adding tasks (desktop only)
+    isRegistered("CommandOrControl+Shift+N").then((data: boolean) => {
       if (data) return;
       console.log("registering shortcut");
-      register("CommandOrControl+Shift+N", () => {
-        console.log("Shortcut triggered");
-        handleOpen();
+      register("CommandOrControl+Shift+N", (event: ShortcutEvent) => {
+        if (event.state === "Pressed") {
+          console.log("Shortcut triggered");
+          handleOpen();
+        }
       })
         .then(() => {
           console.log("Shortcut registered");
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.log("Shortcut registration failed", err);
         });
+    }).catch((err: unknown) => {
+      console.log("Failed to check if shortcut is registered", err);
     });
   }, []);
 

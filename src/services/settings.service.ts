@@ -4,7 +4,7 @@
  * Manages app-wide settings stored in Tauri's local store.
  */
 
-import { Store } from 'tauri-plugin-store-api';
+import { Store } from '@tauri-apps/plugin-store';
 
 const SETTINGS_STORE = '.settings.dat';
 const SETTINGS_KEY = 'appSettings';
@@ -31,7 +31,7 @@ let cachedSettings: AppSettings | null = null;
  */
 async function getStore(): Promise<Store> {
   if (!store) {
-    store = new Store(SETTINGS_STORE);
+    store = await Store.load(SETTINGS_STORE);
   }
   return store;
 }
@@ -47,8 +47,9 @@ export async function loadSettings(): Promise<AppSettings> {
   try {
     const s = await getStore();
     const saved = await s.get<AppSettings>(SETTINGS_KEY);
-    cachedSettings = saved ? { ...DEFAULT_SETTINGS, ...saved } : DEFAULT_SETTINGS;
-    return cachedSettings;
+    const resolved = saved ? { ...DEFAULT_SETTINGS, ...saved } : DEFAULT_SETTINGS;
+    cachedSettings = resolved;
+    return resolved;
   } catch (error) {
     console.error('Failed to load settings:', error);
     return DEFAULT_SETTINGS;

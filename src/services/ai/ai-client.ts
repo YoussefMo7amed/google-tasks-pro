@@ -5,7 +5,7 @@
  * Falls back to standard window.fetch in standard browser environments.
  */
 
-import { fetch as tauriFetch, Body, ResponseType } from "@tauri-apps/api/http";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
 export interface AIHttpRequestOptions {
   method?: "GET" | "POST";
@@ -32,37 +32,32 @@ export async function aiFetch<T = any>(
   // 1. Try Tauri native HTTP (Rust) to bypass any CORS restrictions
   if (isTauri) {
     try {
-      let tauriBody: Body | undefined = undefined;
-      if (options.body !== undefined && options.body !== null) {
-        if (typeof options.body === "string") {
-          tauriBody = Body.text(options.body);
-        } else {
-          tauriBody = Body.json(options.body);
-        }
-      }
+      const requestBody = options.body !== undefined && options.body !== null
+        ? typeof options.body === "string"
+          ? options.body
+          : JSON.stringify(options.body)
+        : undefined;
 
-      const res = await tauriFetch<string>(url, {
+      const res = await tauriFetch(url, {
         method,
         headers,
-        body: tauriBody,
-        responseType: ResponseType.Text,
-        timeout: options.timeout ?? 60,
+        body: requestBody,
+        connectTimeout: (options.timeout ?? 60) * 1000,
       });
 
-      let parsedData: any = res.data;
-      if (typeof res.data === "string") {
-        try {
-          parsedData = JSON.parse(res.data);
-        } catch {
-          parsedData = res.data;
-        }
+      const rawText = await res.text();
+      let parsedData: any = rawText;
+      try {
+        parsedData = JSON.parse(rawText);
+      } catch {
+        parsedData = rawText;
       }
 
       return {
         ok: res.ok,
         status: res.status,
         data: parsedData as T,
-        rawText: typeof res.data === "string" ? res.data : JSON.stringify(res.data),
+        rawText,
       };
     } catch (tauriErr) {
       console.warn("Tauri native HTTP encountered an error, trying window.fetch fallback:", tauriErr);

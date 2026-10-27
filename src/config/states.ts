@@ -37,8 +37,8 @@ const activeTaskCategoryState = atom<number>({
   default: SettingsStore.get<number>(
     settings.storage.constants.last_active_category
   )
-    .then((value) => value ?? -1)
-    .catch((err) => {
+    .then((value: number | undefined) => value ?? -1)
+    .catch((err: unknown) => {
       console.error("activeTaskCategoryState error", err);
       return -1;
     }),

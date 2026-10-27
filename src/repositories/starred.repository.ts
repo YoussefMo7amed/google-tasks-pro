@@ -5,7 +5,7 @@
  * This is separate from Google's API since it doesn't support starring.
  */
 
-import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
+import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/plugin-fs";
 import { IStarredRepository } from "./interfaces";
 import { getActiveStorageScope } from "../helpers/storage-scope";
 
@@ -33,7 +33,7 @@ export class StarredRepository implements IStarredRepository {
     const fileName = this.getFileName();
     try {
       const content = await readTextFile(fileName, {
-        dir: BaseDirectory.AppData,
+        baseDir: BaseDirectory.AppData,
       });
       const data = JSON.parse(content) as string[];
       this.cache = new Set(data);
@@ -43,7 +43,7 @@ export class StarredRepository implements IStarredRepository {
       if (activeScope !== "guest") {
         try {
           const legacyContent = await readTextFile(LEGACY_STARRED_FILE, {
-            dir: BaseDirectory.AppData,
+            baseDir: BaseDirectory.AppData,
           });
           const legacyData = JSON.parse(legacyContent) as string[];
           this.cache = new Set(legacyData);
@@ -68,7 +68,7 @@ export class StarredRepository implements IStarredRepository {
     const data = Array.from(this.cache);
     const fileName = this.getFileName();
     await writeTextFile(fileName, JSON.stringify(data), {
-      dir: BaseDirectory.AppData,
+      baseDir: BaseDirectory.AppData,
     });
   }
 
