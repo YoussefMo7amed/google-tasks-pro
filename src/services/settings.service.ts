@@ -31,7 +31,10 @@ let cachedSettings: AppSettings | null = null;
  */
 async function getStore(): Promise<Store> {
   if (!store) {
-    store = await Store.load(SETTINGS_STORE);
+    store = await Store.load(SETTINGS_STORE).catch((err) => {
+      store = null;
+      throw err;
+    });
   }
   return store;
 }
