@@ -54,6 +54,28 @@ export default function TaskPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access_token, isGuestMode]);
 
+  const currentViewKey =
+    viewState.view === "analytics"
+      ? "analytics"
+      : viewState.view === "eisenhower"
+      ? "eisenhower"
+      : viewState.view === "trash"
+      ? "trash"
+      : taskViewMode === "list"
+      ? "list"
+      : taskViewMode === "calendar"
+      ? "calendar"
+      : "board";
+
+  const [mountedViews, setMountedViews] = useState<Set<string>>(() => new Set([currentViewKey]));
+
+  useEffect(() => {
+    setMountedViews((prev) => {
+      if (prev.has(currentViewKey)) return prev;
+      return new Set(prev).add(currentViewKey);
+    });
+  }, [currentViewKey]);
+
   if (!access_token && !isGuestMode) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
@@ -134,28 +156,6 @@ export default function TaskPage() {
       </Box>
     );
   }
-
-  const currentViewKey =
-    viewState.view === "analytics"
-      ? "analytics"
-      : viewState.view === "eisenhower"
-      ? "eisenhower"
-      : viewState.view === "trash"
-      ? "trash"
-      : taskViewMode === "list"
-      ? "list"
-      : taskViewMode === "calendar"
-      ? "calendar"
-      : "board";
-
-  const [mountedViews, setMountedViews] = useState<Set<string>>(() => new Set([currentViewKey]));
-
-  useEffect(() => {
-    setMountedViews((prev) => {
-      if (prev.has(currentViewKey)) return prev;
-      return new Set(prev).add(currentViewKey);
-    });
-  }, [currentViewKey]);
 
   return (
     <Box
