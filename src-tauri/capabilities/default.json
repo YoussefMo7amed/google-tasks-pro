@@ -1,0 +1,61 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for Google Tasks Pro desktop client",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:webview:default",
+    "core:image:default",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+    "dialog:allow-message",
+    "notification:default",
+    "shell:allow-open",
+    "global-shortcut:default",
+    "store:default",
+    "log:default",
+    "os:default",
+    "deep-link:default",
+    "oauth:allow-start",
+    "oauth:allow-cancel",
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$APPDATA/codad5.google.task/**" },
+        { "path": "$APPDATA/codad5.google.task/*" },
+        { "path": "$APPDATA/codad5.google.task" },
+        { "path": "$APPDATA/**" },
+        { "path": "$APPDATA/*" },
+        { "path": "$APPDATA" },
+        { "path": "$DOWNLOAD/codad5.google.task/**" },
+        { "path": "$DOWNLOAD/codad5.google.task/*" },
+        { "path": "$DOWNLOAD/codad5.google.task" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$DOWNLOAD/*" },
+        { "path": "$DOWNLOAD" },
+        { "path": "$APPLOCALDATA/codad5.google.task/**" },
+        { "path": "$APPLOCALDATA/codad5.google.task/*" },
+        { "path": "$APPLOCALDATA/codad5.google.task" },
+        { "path": "$APPLOCALDATA/**" },
+        { "path": "$APPLOCALDATA/*" },
+        { "path": "$APPLOCALDATA" }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "http://*" },
+        { "url": "https://*" },
+        { "url": "http://**" },
+        { "url": "https://**" }
+      ]
+    }
+  ]
+}
