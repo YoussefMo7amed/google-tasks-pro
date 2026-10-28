@@ -4,6 +4,8 @@ export const DEFAULT_CLIENT_ID =
   (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? (typeof process !== "undefined" ? (process.env?.VITE_GOOGLE_CLIENT_ID as string) : "") ?? "") as string;
 export const DEFAULT_CLIENT_SECRET =
   (import.meta.env.VITE_GOOGLE_CLIENT_SECRET ?? (typeof process !== "undefined" ? (process.env?.VITE_GOOGLE_CLIENT_SECRET as string) : "") ?? "") as string;
+export const DEFAULT_ANDROID_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_ANDROID_CLIENT_ID ?? "") as string;
 
 export function getClientId(): string {
   if (typeof window !== "undefined" && window.localStorage) {
@@ -11,6 +13,26 @@ export function getClientId(): string {
     if (custom && custom.trim()) return custom.trim();
   }
   return DEFAULT_CLIENT_ID;
+}
+
+export function getAndroidClientId(): string {
+  if (typeof window !== "undefined" && window.localStorage) {
+    const custom = window.localStorage.getItem("custom_google_android_client_id");
+    if (custom && custom.trim()) return custom.trim();
+  }
+  if (DEFAULT_ANDROID_CLIENT_ID && DEFAULT_ANDROID_CLIENT_ID.trim()) {
+    return DEFAULT_ANDROID_CLIENT_ID.trim();
+  }
+  return getClientId();
+}
+
+export function getMobileRedirectUri(): string {
+  const clientId = getAndroidClientId();
+  if (clientId.endsWith(".apps.googleusercontent.com")) {
+    const prefix = clientId.replace(".apps.googleusercontent.com", "");
+    return `com.googleusercontent.apps.${prefix}:/oauth2redirect`;
+  }
+  return "googletaskspro://oauth2redirect";
 }
 
 export function getClientSecret(): string {

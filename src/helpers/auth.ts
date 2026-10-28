@@ -3,7 +3,7 @@ import { cancel as cancelOAuthServer } from "@fabianlars/tauri-plugin-oauth";
 import axios from "axios";
 import { UserProfile } from "../types/googleapis";
 import { readTextFile, remove, writeTextFile } from "@tauri-apps/plugin-fs";
-import { getClientId, getClientSecret } from "../config/credentials";
+import { getClientId, getClientSecret, getAndroidClientId, getMobileRedirectUri } from "../config/credentials";
 import settings from "../config/settings";
 import { generate_oauth_port, get_access_token, get_auth_code, save_access_token, save_auth_code } from "./invoker";
 import { AccessToken } from "./commands";
@@ -54,8 +54,66 @@ export function cancelLoginSession() {
     portManager.reset();
 }
 
+/**
+ * Web Crypto PKCE helpers for mobile / public OAuth clients
+ */
+export function generateCodeVerifier(): string {
+    const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+    const randomValues = new Uint8Array(64);
+    crypto.getRandomValues(randomValues);
+    return Array.from(randomValues, (byte) => charset[byte % charset.length]).join("");
+}
+
+export async function generateCodeChallenge(verifier: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    const bytes = new Uint8Array(digest);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+}
+
 export async function getAccessToken(code: string, portOverride?: number): Promise<AccessToken> {
     try {
+        const mobile = isMobile();
+        const verifier = typeof window !== "undefined" && window.localStorage
+            ? window.localStorage.getItem("pkce_code_verifier")
+            : null;
+
+        if (mobile || (!portOverride && !portManager.getPort() && verifier)) {
+            const androidClientId = getAndroidClientId();
+            const desktopClientId = getClientId();
+            const desktopClientSecret = getClientSecret();
+
+            const data: Record<string, string | undefined> = {
+                code,
+                client_id: androidClientId,
+                redirect_uri: getMobileRedirectUri(),
+                grant_type: "authorization_code",
+                code_verifier: verifier || undefined,
+            };
+
+            if (androidClientId === desktopClientId && desktopClientSecret) {
+                data.client_secret = desktopClientSecret;
+            }
+
+            const payload = Object.fromEntries(
+                Object.entries(data).filter(([_, v]) => v !== undefined)
+            );
+
+            const response = await axios.post("https://oauth2.googleapis.com/token", payload, { timeout: 8000 });
+            if (typeof window !== "undefined" && window.localStorage) {
+                window.localStorage.removeItem("pkce_code_verifier");
+            }
+            return response.data;
+        }
+
         const port = portOverride || portManager.getPort();
         const data = {
             code,
@@ -68,6 +126,9 @@ export async function getAccessToken(code: string, portOverride?: number): Promi
         return response.data;
     }
     catch (error: any) {
+        if (typeof window !== "undefined" && window.localStorage) {
+            window.localStorage.removeItem("pkce_code_verifier");
+        }
         const errorData = error?.response?.data;
         console.error("Error getting access token:", errorData || error?.message || error);
         const description = errorData?.error_description || errorData?.error || error?.message || "Error getting access token";
@@ -80,14 +141,27 @@ export async function refreshAccessToken(refreshToken: string) : Promise<AccessT
         throw new Error("No refresh token provided");
     }
     try {
-        const data = {
+        const mobile = isMobile();
+        const androidClientId = getAndroidClientId();
+        const desktopClientId = getClientId();
+        const desktopClientSecret = getClientSecret();
+
+        const data: Record<string, string | undefined> = {
             refresh_token: refreshToken,
-            client_id: getClientId(),
-            client_secret: getClientSecret(),
+            client_id: mobile ? androidClientId : desktopClientId,
             grant_type: "refresh_token",
         };
+
+        if (!mobile || (androidClientId === desktopClientId && desktopClientSecret)) {
+            data.client_secret = desktopClientSecret;
+        }
+
+        const payload = Object.fromEntries(
+            Object.entries(data).filter(([_, v]) => v !== undefined)
+        );
+
         console.log('attempting to refresh access token');
-        const response = await axios.post("https://oauth2.googleapis.com/token", data, { timeout: 8000 });
+        const response = await axios.post("https://oauth2.googleapis.com/token", payload, { timeout: 8000 });
         return {...response.data, refresh_token: refreshToken};
     } catch (error) {
         console.error("Error refreshing access token:", error);
@@ -143,13 +217,24 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
 
  // to handle login to get auth
 export async function openAuthWindow() {
-    // Platform branch point: Android OAuth vs Desktop OAuth
+    // Platform branch point: Android / Mobile OAuth with PKCE & Deep-Link Redirect
     if (isMobile()) {
-        // ANDROID / MOBILE OAUTH FLOW BRANCH POINT (Planned Phase 4)
-        // Android requires custom scheme / deep-link redirect + PKCE (no client secret)
-        // e.g. using @tauri-apps/plugin-deep-link and auth-session
-        console.warn("Mobile OAuth flow is not yet implemented. Branch point for Phase 4.");
-        throw new Error("Mobile OAuth flow is not yet implemented");
+        const verifier = generateCodeVerifier();
+        const challenge = await generateCodeChallenge(verifier);
+        if (typeof window !== "undefined" && window.localStorage) {
+            window.localStorage.setItem("pkce_code_verifier", verifier);
+        }
+        const url = new URL(GOOGLE_OAUTH_ENDPOINT);
+        url.searchParams.append("scope", SCOPE);
+        url.searchParams.append("response_type", "code");
+        url.searchParams.append("client_id", getAndroidClientId());
+        url.searchParams.append("redirect_uri", getMobileRedirectUri());
+        url.searchParams.append("code_challenge", challenge);
+        url.searchParams.append("code_challenge_method", "S256");
+        url.searchParams.append("prompt", "select_account consent");
+        url.searchParams.append("access_type", "offline");
+        await openUrl(url.href);
+        return;
     }
 
     // DESKTOP OAUTH FLOW:
