@@ -174,17 +174,14 @@ pub fn run() {
                 }
             });
 
-            // Polling scheduler on desktop only
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
-            {
-                std::thread::spawn(move || {
-                    loop {
-                        std::thread::sleep(std::time::Duration::from_secs(5));
-                        let scheduler = app_handle.state::<NotificationScheduler>();
-                        scheduler.check_and_notify(&app_handle);
-                    }
-                });
-            }
+            // Polling scheduler across all platforms while app process is alive
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    let scheduler = app_handle.state::<NotificationScheduler>();
+                    scheduler.check_and_notify(&app_handle);
+                }
+            });
 
             Ok(())
         })
