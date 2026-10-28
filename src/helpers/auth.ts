@@ -141,14 +141,27 @@ export async function refreshAccessToken(refreshToken: string) : Promise<AccessT
         throw new Error("No refresh token provided");
     }
     try {
-        const data = {
+        const mobile = isMobile();
+        const androidClientId = getAndroidClientId();
+        const desktopClientId = getClientId();
+        const desktopClientSecret = getClientSecret();
+
+        const data: Record<string, string | undefined> = {
             refresh_token: refreshToken,
-            client_id: getClientId(),
-            client_secret: getClientSecret(),
+            client_id: mobile ? androidClientId : desktopClientId,
             grant_type: "refresh_token",
         };
+
+        if (!mobile || (androidClientId === desktopClientId && desktopClientSecret)) {
+            data.client_secret = desktopClientSecret;
+        }
+
+        const payload = Object.fromEntries(
+            Object.entries(data).filter(([_, v]) => v !== undefined)
+        );
+
         console.log('attempting to refresh access token');
-        const response = await axios.post("https://oauth2.googleapis.com/token", data, { timeout: 8000 });
+        const response = await axios.post("https://oauth2.googleapis.com/token", payload, { timeout: 8000 });
         return {...response.data, refresh_token: refreshToken};
     } catch (error) {
         console.error("Error refreshing access token:", error);
