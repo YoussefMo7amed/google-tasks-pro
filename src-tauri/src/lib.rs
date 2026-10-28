@@ -12,8 +12,10 @@ use libs::tauri_actions::{
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+use tauri::Listener;
 
-use tauri::{Listener, Manager};
+use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -94,9 +96,8 @@ pub fn run() {
             app.manage(app_paths);
 
             let app_handle = app.handle().clone();
-            let app_handle_for_oauth = app.handle().clone();
 
-            // Setup tray icon and menu (desktop only)
+            // Setup tray icon, menu, and oauth listener (desktop only)
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
             {
                 let show_item = MenuItemBuilder::with_id("show", "Open Google Tasks").build(app)?;
@@ -154,37 +155,35 @@ pub fn run() {
                 }
 
                 tray_builder.build(app)?;
-            }
 
-            // Listen for oauth url events
-            app.listen("oauth://url", move |_event| {
-                if let Some(w) = app_handle_for_oauth.get_webview_window("main") {
-                    let _ = w.show();
-                    let _ = w.unminimize();
-                    let _ = w.set_focus();
-                    #[cfg(target_os = "macos")]
-                    {
-                        #[allow(deprecated)]
-                        unsafe {
-                            use cocoa::appkit::NSApplication;
-                            let cocoa_app = cocoa::appkit::NSApp();
-                            cocoa_app.activateIgnoringOtherApps_(cocoa::base::YES);
+                // Listen for oauth url events (desktop only)
+                let app_handle_for_oauth = app.handle().clone();
+                app.listen("oauth://url", move |_event| {
+                    if let Some(w) = app_handle_for_oauth.get_webview_window("main") {
+                        let _ = w.show();
+                        let _ = w.unminimize();
+                        let _ = w.set_focus();
+                        #[cfg(target_os = "macos")]
+                        {
+                            #[allow(deprecated)]
+                            unsafe {
+                                use cocoa::appkit::NSApplication;
+                                let cocoa_app = cocoa::appkit::NSApp();
+                                cocoa_app.activateIgnoringOtherApps_(cocoa::base::YES);
+                            }
                         }
-                    }
-                }
-            });
-
-            // Polling scheduler on desktop only
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
-            {
-                std::thread::spawn(move || {
-                    loop {
-                        std::thread::sleep(std::time::Duration::from_secs(5));
-                        let scheduler = app_handle.state::<NotificationScheduler>();
-                        scheduler.check_and_notify(&app_handle);
                     }
                 });
             }
+
+            // Polling scheduler across all platforms while app process is alive
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    let scheduler = app_handle.state::<NotificationScheduler>();
+                    scheduler.check_and_notify(&app_handle);
+                }
+            });
 
             Ok(())
         })

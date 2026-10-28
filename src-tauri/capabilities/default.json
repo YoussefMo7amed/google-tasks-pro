@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for Google Tasks Pro desktop client",
+  "description": "Default cross-platform capabilities for Google Tasks Pro",
   "windows": [
     "main"
   ],
@@ -21,16 +21,10 @@
     "dialog:allow-message",
     "notification:default",
     "shell:allow-open",
-    "global-shortcut:default",
-    "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister",
-    "global-shortcut:allow-is-registered",
     "store:default",
     "log:default",
     "os:default",
     "deep-link:default",
-    "oauth:allow-start",
-    "oauth:allow-cancel",
     "fs:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",

@@ -132,6 +132,7 @@ impl NotificationScheduler {
 /// Schedule a notification for a task
 #[tauri::command]
 pub fn schedule_notification(
+    app: tauri::AppHandle,
     scheduler: tauri::State<'_, NotificationScheduler>,
     task_id: String,
     title: String,
@@ -149,14 +150,22 @@ pub fn schedule_notification(
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
+        let _ = &app;
         scheduler.schedule(task_id.clone(), title, body, notify_at);
         Ok(task_id)
     }
 
     #[cfg(any(target_os = "android", target_os = "ios"))]
     {
-        // TODO: Implement Android/iOS native local notification scheduling (AlarmManager / Notification plugin)
-        let _ = (scheduler, &title, &body, notify_at);
+        if notify_at <= Utc::now() {
+            let _ = app
+                .notification()
+                .builder()
+                .title(&title)
+                .body(&body)
+                .show();
+        }
+        scheduler.schedule(task_id.clone(), title, body, notify_at);
         Ok(task_id)
     }
 }
@@ -167,18 +176,8 @@ pub fn cancel_notification(
     scheduler: tauri::State<'_, NotificationScheduler>,
     task_id: String,
 ) -> Result<(), String> {
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    {
-        scheduler.cancel(&task_id);
-        Ok(())
-    }
-
-    #[cfg(any(target_os = "android", target_os = "ios"))]
-    {
-        // TODO: Implement Android/iOS native notification cancellation
-        let _ = (scheduler, &task_id);
-        Ok(())
-    }
+    scheduler.cancel(&task_id);
+    Ok(())
 }
 
 /// Get count of scheduled notifications (for debugging)

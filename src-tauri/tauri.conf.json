@@ -60,5 +60,12 @@
       }
     },
     "externalBin": []
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["googletaskspro"]
+      }
+    }
   }
 }

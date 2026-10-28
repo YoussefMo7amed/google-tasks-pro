@@ -37,17 +37,25 @@ pub fn load_code(paths: tauri::State<'_, AppPaths>) -> String {
 
 #[tauri::command]
 pub fn bring_to_front(window: tauri::WebviewWindow) {
-    let _ = window.show();
-    let _ = window.unminimize();
-    let _ = window.set_focus();
-
-    #[cfg(target_os = "macos")]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
-        #[allow(deprecated)]
-        unsafe {
-            use cocoa::appkit::NSApplication;
-            let app = cocoa::appkit::NSApp();
-            app.activateIgnoringOtherApps_(cocoa::base::YES);
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+
+        #[cfg(target_os = "macos")]
+        {
+            #[allow(deprecated)]
+            unsafe {
+                use cocoa::appkit::NSApplication;
+                let app = cocoa::appkit::NSApp();
+                app.activateIgnoringOtherApps_(cocoa::base::YES);
+            }
         }
+    }
+
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        let _ = window;
     }
 }
