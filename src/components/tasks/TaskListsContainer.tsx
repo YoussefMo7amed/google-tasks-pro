@@ -270,7 +270,7 @@ export default function TaskListsContainer() {
           justifyContent: "center",
           alignItems: "flex-start",
           py: 2,
-          px: 4,
+          px: { xs: 1.5, sm: 4 },
         }}
       >
         <StarredTasksCard />
@@ -339,6 +339,7 @@ export default function TaskListsContainer() {
           border: 1,
           borderColor: "divider",
           opacity: 0.85,
+          display: { xs: "none", md: "inline-flex" },
           "&:hover": {
             opacity: 1,
             bgcolor: "background.paper",
@@ -364,12 +365,12 @@ export default function TaskListsContainer() {
             ref={containerRef}
             sx={{
               display: "flex",
-              gap: 2.5,
+              gap: { xs: 1.5, md: 2.5 },
               overflowX: "auto",
               overflowY: "hidden",
               flexWrap: "nowrap",
-              py: 2,
-              px: 6,
+              py: { xs: 1.25, md: 2 },
+              px: { xs: 1.5, sm: 3, md: 6 },
               height: "100%",
               alignItems: "stretch",
               scrollSnapType: "x mandatory",
@@ -447,6 +448,7 @@ export default function TaskListsContainer() {
           border: 1,
           borderColor: "divider",
           opacity: 0.85,
+          display: { xs: "none", md: "inline-flex" },
           "&:hover": {
             opacity: 1,
             bgcolor: "background.paper",

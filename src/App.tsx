@@ -20,6 +20,7 @@ import {
 import { loadContextmenu } from "./helpers/windowhelper";
 import { isDesktop } from "./helpers/platform";
 import TaskPage from "./components/TaskPage";
+import { MobileBottomNav } from "./components/ui/ViewSwitcher";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import {
   activeTaskCategoryState,
@@ -239,7 +240,10 @@ function App() {
 
           {/* Content */}
           {loggedIn ? (
-            <TaskPage />
+            <>
+              <TaskPage />
+              <MobileBottomNav />
+            </>
           ) : loading ? (
             <SplashScreen
               message="Connecting to Google"

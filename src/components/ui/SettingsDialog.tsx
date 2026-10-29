@@ -369,6 +369,14 @@ export default function SettingsDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: { xs: 0, sm: 3 },
+          m: { xs: 0, sm: 2 },
+          maxHeight: { xs: "100%", sm: "calc(100% - 64px)" },
+          height: { xs: "100%", sm: "auto" },
+        },
+      }}
     >
       <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h6" fontWeight={700}>{t("settings.title")}</Typography>

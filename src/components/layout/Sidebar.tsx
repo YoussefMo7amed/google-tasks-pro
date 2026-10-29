@@ -278,10 +278,13 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
 
       {/* Create Button */}
       {!effectiveCollapsed && (
-        <Box sx={{ px: 2, pb: 2 }}>
+        <Box sx={{ px: 2, pt: isMobileViewport ? 1.5 : 0, pb: 2 }}>
           <Button
             variant="contained"
-            onClick={() => setShowAddCategory(true)}
+            onClick={() => {
+              if (isMobileViewport) setMobileOpen(false);
+              setShowAddCategory(true);
+            }}
             sx={{
               borderRadius: "28px",
               textTransform: "none",
@@ -594,18 +597,20 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                       textAlign: isRtl ? "right" : "left",
                     }}
                   />
-                  <Chip
-                    label="⌘K"
-                    size="small"
-                    sx={{
-                      height: 18,
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      bgcolor: "action.selected",
-                      color: "text.secondary",
-                      ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
-                    }}
-                  />
+                  {!isMobileViewport && (
+                    <Chip
+                      label="⌘K"
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        bgcolor: "action.selected",
+                        color: "text.secondary",
+                        ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
+                      }}
+                    />
+                  )}
                 </ListItemButton>
               </List>
 
@@ -929,42 +934,44 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
           <Divider sx={{ mb: 0.5 }} />
 
           {/* Keyboard Shortcuts Button */}
-          <ListItemButton
-            onClick={() => setShowShortcuts(true)}
-            sx={{
-              py: 0.8,
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: isCollapsed ? 0 : 36 }}>
-              <KeyboardAltOutlined fontSize="small" sx={{ color: "text.secondary" }} />
-            </ListItemIcon>
-            {!isCollapsed && (
-              <>
-                <ListItemText
-                  primary={t("shortcuts.modalTitle")}
-                  primaryTypographyProps={{
-                    variant: "body2",
-                    textAlign: isRtl ? "right" : "left",
-                    color: "text.secondary",
-                  }}
-                />
-                <Chip
-                  label="?"
-                  size="small"
-                  sx={{
-                    height: 18,
-                    minWidth: 18,
-                    fontSize: "0.65rem",
-                    fontWeight: 700,
-                    bgcolor: "action.selected",
-                    color: "text.secondary",
-                    ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
-                  }}
-                />
-              </>
-            )}
-          </ListItemButton>
+          {!isMobileViewport && (
+            <ListItemButton
+              onClick={() => setShowShortcuts(true)}
+              sx={{
+                py: 0.8,
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: isCollapsed ? 0 : 36 }}>
+                <KeyboardAltOutlined fontSize="small" sx={{ color: "text.secondary" }} />
+              </ListItemIcon>
+              {!isCollapsed && (
+                <>
+                  <ListItemText
+                    primary={t("shortcuts.modalTitle")}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      textAlign: isRtl ? "right" : "left",
+                      color: "text.secondary",
+                    }}
+                  />
+                  <Chip
+                    label="?"
+                    size="small"
+                    sx={{
+                      height: 18,
+                      minWidth: 18,
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      bgcolor: "action.selected",
+                      color: "text.secondary",
+                      ...(isRtl ? { mr: "auto", ml: 0 } : { ml: "auto", mr: 0 }),
+                    }}
+                  />
+                </>
+              )}
+            </ListItemButton>
+          )}
 
           {/* Settings Button */}
           <ListItemButton
@@ -1008,6 +1015,8 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               width: 280,
               bgcolor: "background.default",
               backgroundImage: "none",
+              pt: "env(safe-area-inset-top, 0px)",
+              pb: "env(safe-area-inset-bottom, 0px)",
             },
           }}
         >

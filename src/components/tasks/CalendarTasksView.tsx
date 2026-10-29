@@ -30,6 +30,8 @@ import {
   FormControl,
   InputLabel,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   ChevronLeft,
@@ -110,6 +112,8 @@ function parseDueDate(dueStr?: string | null): string | null {
 
 export default function CalendarTasksView() {
   const { t, language } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const taskLists = useRecoilValue(taskListsAtom);
   const {
     toggleTaskComplete,
@@ -124,6 +128,7 @@ export default function CalendarTasksView() {
 
   // Current view date (year & month)
   const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [selectedDateKey, setSelectedDateKey] = useState<string>(() => formatDateKey(new Date()));
   const [selectedListId, setSelectedListId] = useState<string>("all");
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
 
@@ -281,7 +286,7 @@ export default function CalendarTasksView() {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        p: 2.5,
+        p: { xs: 1.25, sm: 2.5 },
         overflowY: "auto",
         overflowX: "hidden",
         bgcolor: "background.default",
@@ -378,8 +383,8 @@ export default function CalendarTasksView() {
         </Box>
 
         {/* Filters */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: { xs: "100%", sm: "auto" }, mt: { xs: 0.5, sm: 0 } }}>
+          <FormControl size="small" sx={{ minWidth: 140, flex: { xs: 1, sm: "initial" } }}>
             <InputLabel id="calendar-list-select-label" sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.85rem" }}>
               {t("tasks.list")}
             </InputLabel>
@@ -426,7 +431,7 @@ export default function CalendarTasksView() {
         sx={{
           display: "grid",
           gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-          gap: 1,
+          gap: { xs: 0.5, sm: 1 },
           mb: 1,
           width: "100%",
           boxSizing: "border-box",
@@ -437,17 +442,17 @@ export default function CalendarTasksView() {
             key={wd.key}
             elevation={0}
             sx={{
-              py: 0.8,
+              py: { xs: 0.5, sm: 0.8 },
               textAlign: "center",
               bgcolor: "action.hover",
-              borderRadius: "10px",
+              borderRadius: { xs: "8px", sm: "10px" },
               border: 1,
               borderColor: "divider",
               minWidth: 0,
               overflow: "hidden",
             }}
           >
-            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary" }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary", fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
               {language === "ar" ? wd.ar : wd.en}
             </Typography>
           </Paper>
@@ -459,28 +464,41 @@ export default function CalendarTasksView() {
         sx={{
           display: "grid",
           gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-          gridAutoRows: "minmax(120px, 1fr)",
-          gap: 1,
+          gridAutoRows: { xs: "minmax(44px, auto)", sm: "minmax(120px, 1fr)" },
+          gap: { xs: 0.5, sm: 1 },
           width: "100%",
           boxSizing: "border-box",
-          flex: 1,
+          flex: { xs: "0 0 auto", sm: 1 },
         }}
       >
         {calendarDays.map(({ date, dateKey, isCurrentMonth, isToday }) => {
           const dayTasks = tasksByDate.get(dateKey) || [];
+          const isSelected = isMobile && selectedDateKey === dateKey;
 
           return (
             <Paper
               key={dateKey}
               elevation={0}
+              onClick={() => {
+                if (isMobile) {
+                  setSelectedDateKey(dateKey);
+                }
+              }}
               sx={{
-                p: 1,
+                p: { xs: 0.5, sm: 1 },
                 display: "flex",
                 flexDirection: "column",
-                borderRadius: "12px",
+                borderRadius: { xs: "8px", sm: "12px" },
                 border: 1,
-                borderColor: isToday ? "primary.main" : "divider",
-                bgcolor: isToday
+                borderColor: isSelected
+                  ? "primary.main"
+                  : isToday
+                  ? "primary.main"
+                  : "divider",
+                borderWidth: isSelected ? 2 : 1,
+                bgcolor: isSelected
+                  ? "action.selected"
+                  : isToday
                   ? "action.selected"
                   : isCurrentMonth
                   ? "background.paper"
@@ -491,6 +509,7 @@ export default function CalendarTasksView() {
                 width: "100%",
                 boxSizing: "border-box",
                 overflow: "hidden",
+                cursor: isMobile ? "pointer" : "default",
                 "&:hover": {
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                   borderColor: isToday ? "primary.main" : "text.secondary",
@@ -500,151 +519,336 @@ export default function CalendarTasksView() {
                 },
               }}
             >
-              {/* Day Header */}
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
+              {isMobile ? (
+                /* Compact cell for phone screens */
                 <Box
                   sx={{
-                    width: 26,
-                    height: 26,
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRadius: "50%",
-                    bgcolor: isToday ? "primary.main" : "transparent",
-                    color: isToday ? "#fff" : "text.primary",
-                    fontWeight: isToday ? 800 : 600,
-                    fontSize: "0.85rem",
+                    height: "100%",
+                    minHeight: 38,
+                    gap: 0.35,
                   }}
                 >
-                  {date.getDate()}
-                </Box>
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "50%",
+                      bgcolor: isToday ? "primary.main" : isSelected ? "action.focus" : "transparent",
+                      color: isToday ? "#fff" : "text.primary",
+                      fontWeight: isToday || isSelected ? 800 : 600,
+                      fontSize: "0.78rem",
+                    }}
+                  >
+                    {date.getDate()}
+                  </Box>
 
-                <IconButton
-                  className="day-add-btn"
-                  size="small"
-                  onClick={() => handleOpenQuickAdd(dateKey)}
-                  sx={{
-                    p: 0.25,
-                    opacity: 0,
-                    transition: "opacity 0.2s",
-                    bgcolor: "action.hover",
-                    "&:hover": { bgcolor: "action.selected" },
-                  }}
-                >
-                  <Add sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Box>
-
-              {/* Day Tasks List */}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 0.6,
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  maxHeight: 140,
-                  pr: 0.25,
-                  width: "100%",
-                  minWidth: 0,
-                  boxSizing: "border-box",
-                }}
-              >
-                {dayTasks.map(({ task }) => {
-                  const quadrant = extractQuadrant(task.title);
-                  const cleanTitle = cleanTitleFromQuadrant(task.title);
-                  const isDone = task.status === "completed";
-                  const isOverdue = !isDone && dateKey < todayStr;
-                  const qColor = quadrant ? QUADRANT_COLORS[quadrant] : null;
-
-                  return (
-                    <Paper
-                      key={task.id}
-                      elevation={0}
-                      onClick={() => setDetailTask(task)}
+                  {dayTasks.length > 0 && (
+                    <Box
                       sx={{
-                        p: 0.6,
-                        px: 0.8,
-                        borderRadius: "8px",
-                        border: 1,
-                        borderColor: isOverdue ? "#fca5a5" : isDone ? "transparent" : "divider",
-                        borderLeft: isOverdue ? "3.5px solid #dc2626" : undefined,
-                        bgcolor: isOverdue ? "rgba(254, 226, 226, 0.35)" : isDone ? "action.hover" : "background.default",
-                        cursor: "pointer",
                         display: "flex",
+                        gap: "3px",
                         alignItems: "center",
-                        gap: 0.6,
-                        transition: "all 0.15s ease",
-                        opacity: isDone ? 0.6 : 1,
-                        width: "100%",
-                        minWidth: 0,
-                        maxWidth: "100%",
-                        boxSizing: "border-box",
-                        overflow: "hidden",
-                        "&:hover": {
-                          bgcolor: "action.selected",
-                          borderColor: isOverdue ? "#dc2626" : "primary.light",
-                        },
+                        justifyContent: "center",
+                        height: 6,
                       }}
                     >
-                      {/* Completion check */}
-                      <Checkbox
-                        size="small"
-                        checked={isDone}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleTaskComplete(task.listId, task.id);
-                        }}
-                        sx={{ p: 0, width: 18, height: 18, flexShrink: 0 }}
-                      />
+                      {dayTasks.slice(0, 4).map(({ task }, dotIdx) => {
+                        const quadrant = extractQuadrant(task.title);
+                        const dotColor = quadrant && QUADRANT_COLORS[quadrant]
+                          ? QUADRANT_COLORS[quadrant].color
+                          : task.status === "completed"
+                          ? "#9ca3af"
+                          : "#2563eb";
+                        return (
+                          <Box
+                            key={dotIdx}
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              bgcolor: dotColor,
+                              flexShrink: 0,
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Box>
+              ) : (
+                /* Desktop cell with full task items */
+                <>
+                  {/* Day Header */}
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
+                    <Box
+                      sx={{
+                        width: 26,
+                        height: 26,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "50%",
+                        bgcolor: isToday ? "primary.main" : "transparent",
+                        color: isToday ? "#fff" : "text.primary",
+                        fontWeight: isToday ? 800 : 600,
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {date.getDate()}
+                    </Box>
 
-                      {/* Quadrant badge */}
-                      {qColor && (
-                        <Box
-                          component="span"
+                    <IconButton
+                      className="day-add-btn"
+                      size="small"
+                      onClick={() => handleOpenQuickAdd(dateKey)}
+                      sx={{
+                        p: 0.25,
+                        opacity: 0,
+                        transition: "opacity 0.2s",
+                        bgcolor: "action.hover",
+                        "&:hover": { bgcolor: "action.selected" },
+                      }}
+                    >
+                      <Add sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+
+                  {/* Day Tasks List */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.6,
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      maxHeight: 140,
+                      pr: 0.25,
+                      width: "100%",
+                      minWidth: 0,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {dayTasks.map(({ task }) => {
+                      const quadrant = extractQuadrant(task.title);
+                      const cleanTitle = cleanTitleFromQuadrant(task.title);
+                      const isDone = task.status === "completed";
+                      const isOverdue = !isDone && dateKey < todayStr;
+                      const qColor = quadrant ? QUADRANT_COLORS[quadrant] : null;
+
+                      return (
+                        <Paper
+                          key={task.id}
+                          elevation={0}
+                          onClick={() => setDetailTask(task)}
                           sx={{
-                            px: 0.5,
-                            py: 0.1,
-                            borderRadius: "4px",
-                            bgcolor: qColor.bg,
-                            color: qColor.color,
-                            fontSize: "0.65rem",
-                            fontWeight: 700,
-                            flexShrink: 0,
+                            p: 0.6,
+                            px: 0.8,
+                            borderRadius: "8px",
+                            border: 1,
+                            borderColor: isOverdue ? "#fca5a5" : isDone ? "transparent" : "divider",
+                            borderLeft: isOverdue ? "3.5px solid #dc2626" : undefined,
+                            bgcolor: isOverdue ? "rgba(254, 226, 226, 0.35)" : isDone ? "action.hover" : "background.default",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.6,
+                            transition: "all 0.15s ease",
+                            opacity: isDone ? 0.6 : 1,
+                            width: "100%",
+                            minWidth: 0,
+                            maxWidth: "100%",
+                            boxSizing: "border-box",
+                            overflow: "hidden",
+                            "&:hover": {
+                              bgcolor: "action.selected",
+                              borderColor: isOverdue ? "#dc2626" : "primary.light",
+                            },
                           }}
                         >
-                          {qColor.label}
-                        </Box>
-                      )}
+                          {/* Completion check */}
+                          <Checkbox
+                            size="small"
+                            checked={isDone}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTaskComplete(task.listId, task.id);
+                            }}
+                            sx={{ p: 0, width: 18, height: 18, flexShrink: 0 }}
+                          />
 
-                      {/* Title */}
-                      <Typography
-                        variant="caption"
-                        noWrap
-                        dir="auto"
-                        title={cleanTitle}
-                        sx={{
-                          flex: 1,
-                          minWidth: 0,
-                          fontFamily: "Cairo, sans-serif",
-                          fontWeight: 500,
-                          fontSize: "0.76rem",
-                          textDecoration: isDone ? "line-through" : "none",
-                          color: isOverdue ? "error.main" : isDone ? "text.secondary" : "text.primary",
-                          unicodeBidi: "plaintext",
-                          textAlign: "start",
-                        }}
-                      >
-                        {cleanTitle}
-                      </Typography>
-                    </Paper>
-                  );
-                })}
-              </Box>
+                          {/* Quadrant badge */}
+                          {qColor && (
+                            <Box
+                              component="span"
+                              sx={{
+                                px: 0.5,
+                                py: 0.1,
+                                borderRadius: "4px",
+                                bgcolor: qColor.bg,
+                                color: qColor.color,
+                                fontSize: "0.65rem",
+                                fontWeight: 700,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {qColor.label}
+                            </Box>
+                          )}
+
+                          {/* Title */}
+                          <Typography
+                            variant="caption"
+                            noWrap
+                            dir="auto"
+                            title={cleanTitle}
+                            sx={{
+                              flex: 1,
+                              minWidth: 0,
+                              fontFamily: "Cairo, sans-serif",
+                              fontWeight: 500,
+                              fontSize: "0.76rem",
+                              textDecoration: isDone ? "line-through" : "none",
+                              color: isOverdue ? "error.main" : isDone ? "text.secondary" : "text.primary",
+                              unicodeBidi: "plaintext",
+                              textAlign: "start",
+                            }}
+                          >
+                            {cleanTitle}
+                          </Typography>
+                        </Paper>
+                      );
+                    })}
+                  </Box>
+                </>
+              )}
             </Paper>
           );
         })}
       </Box>
+
+      {/* Mobile Agenda Section */}
+      {isMobile && (
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 1.5,
+            p: 1.5,
+            borderRadius: "14px",
+            border: 1,
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
+          {/* Agenda Header */}
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <EventNote sx={{ fontSize: 20, color: "primary.main" }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontFamily: "Cairo, sans-serif" }}>
+                {selectedDateKey === todayStr
+                  ? (language === "ar" ? `اليوم (${selectedDateKey})` : `Today (${selectedDateKey})`)
+                  : selectedDateKey}
+              </Typography>
+              <Chip
+                size="small"
+                label={tasksByDate.get(selectedDateKey)?.length || 0}
+                sx={{ height: 20, fontSize: "0.72rem", fontWeight: 700 }}
+              />
+            </Box>
+            <IconButton
+              size="small"
+              onClick={() => handleOpenQuickAdd(selectedDateKey)}
+              sx={{ bgcolor: "action.hover" }}
+            >
+              <Add fontSize="small" />
+            </IconButton>
+          </Box>
+
+          {/* Agenda Tasks List */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 0.5 }}>
+            {(tasksByDate.get(selectedDateKey) || []).length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 1.5, textAlign: "center", fontStyle: "italic" }}>
+                {language === "ar" ? "لا توجد مهام في هذا التاريخ" : "No tasks scheduled for this date"}
+              </Typography>
+            ) : (
+              (tasksByDate.get(selectedDateKey) || []).map(({ task }) => {
+                const quadrant = extractQuadrant(task.title);
+                const cleanTitle = cleanTitleFromQuadrant(task.title);
+                const isDone = task.status === "completed";
+                const qColor = quadrant ? QUADRANT_COLORS[quadrant] : null;
+
+                return (
+                  <Paper
+                    key={task.id}
+                    elevation={0}
+                    onClick={() => setDetailTask(task)}
+                    sx={{
+                      p: 1,
+                      borderRadius: "10px",
+                      border: 1,
+                      borderColor: isDone ? "transparent" : "divider",
+                      bgcolor: isDone ? "action.hover" : "background.default",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      cursor: "pointer",
+                      opacity: isDone ? 0.6 : 1,
+                    }}
+                  >
+                    <Checkbox
+                      size="small"
+                      checked={isDone}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskComplete(task.listId, task.id);
+                      }}
+                      sx={{ p: 0 }}
+                    />
+                    {qColor && (
+                      <Box
+                        component="span"
+                        sx={{
+                          px: 0.6,
+                          py: 0.1,
+                          borderRadius: "4px",
+                          bgcolor: qColor.bg,
+                          color: qColor.color,
+                          fontSize: "0.65rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {qColor.label}
+                      </Box>
+                    )}
+                    <Typography
+                      variant="body2"
+                      noWrap
+                      dir="auto"
+                      sx={{
+                        flex: 1,
+                        textDecoration: isDone ? "line-through" : "none",
+                        fontWeight: 500,
+                        color: isDone ? "text.secondary" : "text.primary",
+                      }}
+                    >
+                      {cleanTitle}
+                    </Typography>
+                  </Paper>
+                );
+              })
+            )}
+          </Box>
+        </Paper>
+      )}
 
       {/* Quick Add Task Dialog */}
       <Dialog

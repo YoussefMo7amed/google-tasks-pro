@@ -224,10 +224,10 @@ export default function TaskListCard({
     <Paper
       elevation={0}
       sx={{
-        width: 330,
-        minWidth: 330,
-        height: isDragOverlay ? "auto" : "calc(100% - 16px)",
-        maxHeight: isDragOverlay ? "none" : "calc(100% - 16px)",
+        width: { xs: "calc(100vw - 24px)", sm: 330 },
+        minWidth: { xs: "calc(100vw - 24px)", sm: 330 },
+        height: isDragOverlay ? "auto" : { xs: "calc(100% - 4px)", md: "calc(100% - 16px)" },
+        maxHeight: isDragOverlay ? "none" : { xs: "calc(100% - 4px)", md: "calc(100% - 16px)" },
         flexShrink: 0,
         bgcolor: isOver ? "action.hover" : "background.paper",
         borderRadius: "16px",

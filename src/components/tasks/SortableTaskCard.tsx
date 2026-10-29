@@ -47,7 +47,7 @@ export default function SortableTaskCard({
       style={style}
       sx={{
         height: "100%",
-        scrollSnapAlign: "start",
+        scrollSnapAlign: { xs: "center", md: "start" },
       }}
     >
       <TaskListCard

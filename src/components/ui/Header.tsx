@@ -129,11 +129,11 @@ export default function Header() {
           )}
           <Typography
             variant="subtitle2"
-            color="text.secondary"
             sx={{
-              fontWeight: 600,
+              fontWeight: 700,
               letterSpacing: 0.5,
-              display: { xs: "none", sm: "block" },
+              color: "text.primary",
+              display: "block",
             }}
           >
             {t("navigation.tasks")}

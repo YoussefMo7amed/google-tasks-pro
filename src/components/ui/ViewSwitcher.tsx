@@ -5,7 +5,16 @@
  * Board (الأعمدة), List (القائمة الموحدة), Calendar (التقويم), and Eisenhower Matrix (أيزنهاور).
  */
 
-import { ToggleButtonGroup, ToggleButton, Box, Typography, Tooltip } from "@mui/material";
+import {
+  ToggleButtonGroup,
+  ToggleButton,
+  Box,
+  Typography,
+  Tooltip,
+  Paper,
+  BottomNavigation,
+  BottomNavigationAction,
+} from "@mui/material";
 import {
   ViewKanban,
   ViewList,
@@ -21,19 +30,26 @@ export default function ViewSwitcher() {
   const [viewMode, setViewMode] = useRecoilState(taskViewModeAtom);
   const [viewState, setViewState] = useRecoilState(viewStateAtom);
 
+  const selectMode = (newMode: TaskViewMode) => {
+    if (!newMode) return;
+    setViewMode(newMode);
+
+    if (newMode === "eisenhower") {
+      setViewState((prev) => ({ ...prev, view: "eisenhower" }));
+    } else if (
+      viewState.view === "eisenhower" ||
+      viewState.view === "analytics" ||
+      viewState.view === "trash"
+    ) {
+      setViewState((prev) => ({ ...prev, view: "all" }));
+    }
+  };
+
   const handleModeChange = (
     _event: React.MouseEvent<HTMLElement>,
     newMode: TaskViewMode | null
   ) => {
-    if (!newMode) return;
-    setViewMode(newMode);
-
-    // Synchronize with viewState if necessary
-    if (newMode === "eisenhower") {
-      setViewState((prev) => ({ ...prev, view: "eisenhower" }));
-    } else if (viewState.view === "eisenhower") {
-      setViewState((prev) => ({ ...prev, view: "all" }));
-    }
+    if (newMode) selectMode(newMode);
   };
 
   // If viewState is currently eisenhower or analytics, reflect that
@@ -45,7 +61,7 @@ export default function ViewSwitcher() {
       : viewMode;
 
   return (
-    <Box sx={{ display: "flex", alignItems: "center" }}>
+    <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
       <ToggleButtonGroup
         value={currentSelectedMode}
         exclusive
@@ -120,5 +136,94 @@ export default function ViewSwitcher() {
         </Tooltip>
       </ToggleButtonGroup>
     </Box>
+  );
+}
+
+export function MobileBottomNav() {
+  const { t } = useTranslation();
+  const [viewMode, setViewMode] = useRecoilState(taskViewModeAtom);
+  const [viewState, setViewState] = useRecoilState(viewStateAtom);
+
+  const selectMode = (newMode: TaskViewMode) => {
+    if (!newMode) return;
+    setViewMode(newMode);
+
+    if (newMode === "eisenhower") {
+      setViewState((prev) => ({ ...prev, view: "eisenhower" }));
+    } else if (
+      viewState.view === "eisenhower" ||
+      viewState.view === "analytics" ||
+      viewState.view === "trash"
+    ) {
+      setViewState((prev) => ({ ...prev, view: "all" }));
+    }
+  };
+
+  const currentSelectedMode: TaskViewMode =
+    viewState.view === "eisenhower"
+      ? "eisenhower"
+      : viewMode === "eisenhower"
+      ? "board"
+      : viewMode;
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        display: { xs: "block", md: "none" },
+        borderTop: 1,
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        flexShrink: 0,
+      }}
+    >
+      <BottomNavigation
+        showLabels
+        value={currentSelectedMode}
+        onChange={(_, val) => selectMode(val)}
+        sx={{
+          bgcolor: "transparent",
+          height: 58,
+          "& .MuiBottomNavigationAction-root": {
+            minWidth: "auto",
+            px: 1,
+            py: 0.5,
+            color: "text.secondary",
+            "&.Mui-selected": {
+              color: "primary.main",
+            },
+            "& .MuiBottomNavigationAction-label": {
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              mt: 0.25,
+              "&.Mui-selected": {
+                fontSize: "0.75rem",
+              },
+            },
+          },
+        }}
+      >
+        <BottomNavigationAction
+          label={t("navigation.boardView")}
+          value="board"
+          icon={<ViewKanban sx={{ fontSize: 22 }} />}
+        />
+        <BottomNavigationAction
+          label={t("navigation.listView")}
+          value="list"
+          icon={<ViewList sx={{ fontSize: 22 }} />}
+        />
+        <BottomNavigationAction
+          label={t("navigation.calendarView")}
+          value="calendar"
+          icon={<CalendarMonth sx={{ fontSize: 22 }} />}
+        />
+        <BottomNavigationAction
+          label={t("navigation.eisenhowerView")}
+          value="eisenhower"
+          icon={<GridView sx={{ fontSize: 22 }} />}
+        />
+      </BottomNavigation>
+    </Paper>
   );
 }

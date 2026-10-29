@@ -67,8 +67,9 @@ export default function StarredTasksCard() {
     <Paper
       elevation={0}
       sx={{
-        width: 360,
-        minWidth: 360,
+        width: { xs: "100%", sm: 450 },
+        maxWidth: "100%",
+        minWidth: { xs: "auto", sm: 360 },
         height: "calc(100% - 16px)",
         maxHeight: "calc(100% - 16px)",
         flexShrink: 0,
