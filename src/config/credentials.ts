@@ -44,6 +44,18 @@ export function getMobileClientId(): string {
   return getPlatform() === "ios" ? getIosClientId() : getAndroidClientId();
 }
 
+export function hasDedicatedMobileClientId(): boolean {
+  const desktopId = getClientId();
+  if (getPlatform() === "ios") {
+    const customIos = typeof window !== "undefined" && window.localStorage ? window.localStorage.getItem("custom_google_ios_client_id")?.trim() : "";
+    const iosId = customIos || DEFAULT_IOS_CLIENT_ID.trim();
+    return Boolean(iosId && iosId !== desktopId);
+  }
+  const customAndroid = typeof window !== "undefined" && window.localStorage ? window.localStorage.getItem("custom_google_android_client_id")?.trim() : "";
+  const androidId = customAndroid || DEFAULT_ANDROID_CLIENT_ID.trim();
+  return Boolean(androidId && androidId !== desktopId);
+}
+
 export function getMobileRedirectUri(): string {
   const clientId = getMobileClientId();
   if (clientId.endsWith(".apps.googleusercontent.com")) {

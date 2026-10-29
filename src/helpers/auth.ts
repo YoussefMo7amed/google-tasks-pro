@@ -3,7 +3,7 @@ import { cancel as cancelOAuthServer } from "@fabianlars/tauri-plugin-oauth";
 import axios from "axios";
 import { UserProfile } from "../types/googleapis";
 import { readTextFile, remove, writeTextFile } from "@tauri-apps/plugin-fs";
-import { getClientId, getClientSecret, getMobileClientId, getMobileRedirectUri } from "../config/credentials";
+import { getClientId, getClientSecret, getMobileClientId, getMobileRedirectUri, hasDedicatedMobileClientId } from "../config/credentials";
 import settings from "../config/settings";
 import { generate_oauth_port, get_access_token, get_auth_code, save_access_token, save_auth_code } from "./invoker";
 import { AccessToken } from "./commands";
@@ -86,7 +86,7 @@ export async function getAccessToken(code: string, portOverride?: number): Promi
             ? window.localStorage.getItem("pkce_code_verifier")
             : null;
 
-        if (mobile || (!portOverride && !portManager.getPort() && verifier)) {
+        if ((mobile && hasDedicatedMobileClientId()) || (!portOverride && !portManager.getPort() && verifier)) {
             const mobileClientId = getMobileClientId();
             const desktopClientId = getClientId();
             const desktopClientSecret = getClientSecret();
@@ -218,7 +218,7 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
  // to handle login to get auth
 export async function openAuthWindow() {
     // Platform branch point: Android / Mobile OAuth with PKCE & Deep-Link Redirect
-    if (isMobile()) {
+    if (isMobile() && hasDedicatedMobileClientId()) {
         const verifier = generateCodeVerifier();
         const challenge = await generateCodeChallenge(verifier);
         if (typeof window !== "undefined" && window.localStorage) {

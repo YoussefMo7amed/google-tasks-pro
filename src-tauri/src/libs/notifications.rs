@@ -89,16 +89,14 @@ impl NotificationScheduler {
             );
 
             // Primary OS notification via Tauri v2 notification plugin
-            let mut shown_via_tauri = false;
-            if let Ok(()) = app
+            let shown_via_tauri = app
                 .notification()
                 .builder()
                 .title(&notification.title)
                 .body(&notification.body)
                 .show()
-            {
-                shown_via_tauri = true;
-            }
+                .is_ok();
+            let _ = shown_via_tauri;
 
             // On macOS, fallback to osascript only if unbundled (e.g. in `tauri dev`), and play alert sound
             #[cfg(target_os = "macos")]

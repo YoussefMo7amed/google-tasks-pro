@@ -1,6 +1,5 @@
 import { onUrl } from "@fabianlars/tauri-plugin-oauth";
 import { onOpenUrl, getCurrent } from "@tauri-apps/plugin-deep-link";
-import { isMobile } from "./platform";
 
 type listnerCallback<T = any> = {
     onSucess: (data: T) => any,
@@ -59,26 +58,24 @@ export async function listen_for_auth_code(callback: listnerCallback<AuthCodeDat
         console.warn("Deep link listener registration warning:", err);
     }
 
-    // 2. Desktop OAuth loopback listener via tauri-plugin-oauth (desktop only)
-    if (!isMobile()) {
-        try {
-            const unlistenOAuth = await onUrl(async (payload) => {
-                try {
-                    console.log("Desktop OAuth payload received:", payload);
-                    if (!payload) return;
-                    const url = new URL(payload);
-                    const code = new URLSearchParams(url.search).get("code");
-                    const port = url.port ? parseInt(url.port, 10) : undefined;
-                    return callback.onSucess({ code, port });
-                } catch (err) {
-                    if (unlistenOAuth) unlistenOAuth();
-                    return callback.onError ? callback.onError(err as Error) : null;
-                }
-            });
-            unlisteners.push(unlistenOAuth);
-        } catch (err) {
-            console.warn("Desktop OAuth server listener registration warning:", err);
-        }
+    // 2. OAuth loopback listener via tauri-plugin-oauth (All platforms)
+    try {
+        const unlistenOAuth = await onUrl(async (payload) => {
+            try {
+                console.log("OAuth loopback payload received:", payload);
+                if (!payload) return;
+                const url = new URL(payload);
+                const code = new URLSearchParams(url.search).get("code");
+                const port = url.port ? parseInt(url.port, 10) : undefined;
+                return callback.onSucess({ code, port });
+            } catch (err) {
+                if (unlistenOAuth) unlistenOAuth();
+                return callback.onError ? callback.onError(err as Error) : null;
+            }
+        });
+        unlisteners.push(unlistenOAuth);
+    } catch (err) {
+        console.warn("OAuth server listener registration warning:", err);
     }
 
     return () => {

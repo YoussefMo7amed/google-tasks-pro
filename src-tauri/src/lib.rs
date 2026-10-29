@@ -63,14 +63,14 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_deep_link::init());
+        .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_oauth::init());
 
     // Register desktop-only plugins
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         builder = builder
-            .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-            .plugin(tauri_plugin_oauth::init());
+            .plugin(tauri_plugin_global_shortcut::Builder::new().build());
     }
 
     // Manage application state

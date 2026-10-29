@@ -33,6 +33,8 @@
     "log:default",
     "os:default",
     "deep-link:default",
+    "oauth:allow-start",
+    "oauth:allow-cancel",
     "fs:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",

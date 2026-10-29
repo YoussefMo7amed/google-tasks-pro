@@ -14,8 +14,6 @@
     "global-shortcut:default",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
-    "global-shortcut:allow-is-registered",
-    "oauth:allow-start",
-    "oauth:allow-cancel"
+    "global-shortcut:allow-is-registered"
   ]
 }
