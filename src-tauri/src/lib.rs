@@ -49,10 +49,11 @@ pub fn run() {
     builder = builder
         .plugin(
             tauri_plugin_log::Builder::new()
+                .level(tauri_plugin_log::log::LevelFilter::Info)
+                .level_for("jni", tauri_plugin_log::log::LevelFilter::Error)
                 .targets([
                     Target::new(TargetKind::LogDir { file_name: None }),
                     Target::new(TargetKind::Stdout),
-                    Target::new(TargetKind::Webview),
                 ])
                 .build(),
         )

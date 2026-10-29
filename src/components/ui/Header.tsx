@@ -113,7 +113,8 @@ export default function Header() {
           justifyContent: "space-between",
           minHeight: "48px !important",
           py: 0.5,
-          px: 2.5,
+          px: { xs: 1, sm: 2.5 },
+          gap: { xs: 0.5, sm: 1 },
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -141,10 +142,10 @@ export default function Header() {
 
         <ViewSwitcher />
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.35, sm: 0.75 } }}>
           {/* Undo Button */}
           <Tooltip title={canUndo ? `${t("shortcuts.undoTooltip", { shortcut: undoShortcut })}: ${getUndoLabel()}` : t("shortcuts.nothingToUndo")}>
-            <span>
+            <Box component="span" sx={{ display: { xs: canUndo ? "inline-flex" : "none", sm: "inline-flex" } }}>
               <IconButton
                 size="small"
                 disabled={!canUndo}
@@ -156,12 +157,12 @@ export default function Header() {
               >
                 <Undo sx={{ fontSize: 19, transform: isRtl ? "scaleX(-1)" : "none" }} />
               </IconButton>
-            </span>
+            </Box>
           </Tooltip>
 
           {/* Redo Button */}
           <Tooltip title={canRedo ? `${t("shortcuts.redoTooltip", { shortcut: redoShortcut })}: ${getRedoLabel()}` : t("shortcuts.nothingToRedo")}>
-            <span>
+            <Box component="span" sx={{ display: { xs: canRedo ? "inline-flex" : "none", sm: "inline-flex" } }}>
               <IconButton
                 size="small"
                 disabled={!canRedo}
@@ -173,7 +174,7 @@ export default function Header() {
               >
                 <Redo sx={{ fontSize: 19, transform: isRtl ? "scaleX(-1)" : "none" }} />
               </IconButton>
-            </span>
+            </Box>
           </Tooltip>
 
           {/* Keyboard Shortcuts Map Button */}
@@ -277,7 +278,8 @@ export default function Header() {
               borderColor: "divider",
               color: "text.primary",
               py: 0.4,
-              px: 1.5,
+              px: { xs: 0.9, sm: 1.5 },
+              minWidth: "auto",
               display: "inline-flex",
               alignItems: "center",
               gap: 0.75,

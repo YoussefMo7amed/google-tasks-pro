@@ -23,7 +23,7 @@ export default defineConfig(async () => {
   // https://tauri.studio/v1/api/config#buildconfig.beforedevcommand
   envPrefix: ["VITE_", "TAURI_"],
   build: {
-    target: process.env.TAURI_PLATFORM === "windows" ? "chrome105" : ["es2020", "chrome85", "safari14"],
+    target: process.env.TAURI_PLATFORM === "windows" ? "chrome105" : ["es2018", "chrome75", "safari13"],
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_DEBUG,
     chunkSizeWarningLimit: 800,
