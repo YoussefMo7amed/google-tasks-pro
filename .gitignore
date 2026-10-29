@@ -49,3 +49,8 @@ src-tauri/target
 
 # Serena local cache/config
 .serena/
+
+# Binary artifacts
+*.apk
+*.dmg
+screenshots/

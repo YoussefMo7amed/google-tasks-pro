@@ -5,7 +5,8 @@ use libs::notifications::{
     cancel_notification, get_notification_count, schedule_notification, NotificationScheduler,
 };
 use libs::tauri_actions::{
-    bring_to_front, greet, load_access_token, load_code, save_access_token, save_code,
+    bring_to_front, greet, load_access_token, load_code, open_external_browser, save_access_token,
+    save_code,
 };
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -197,6 +198,7 @@ pub fn run() {
             save_code,
             load_code,
             bring_to_front,
+            open_external_browser,
             // Notification commands
             schedule_notification,
             cancel_notification,

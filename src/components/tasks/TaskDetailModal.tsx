@@ -60,6 +60,7 @@ import {
 } from "../../services/history.service";
 import { recurrenceService } from "../../services/recurrence.service";
 import { useTranslation } from "../../i18n";
+import { isMobile } from "../../helpers/platform";
 
 interface TaskDetailModalProps {
   task: AppTask | null;
@@ -217,6 +218,7 @@ export default function TaskDetailModal({
   };
 
   const isCompleted = task.status === "completed";
+  const mobile = isMobile();
 
   return (
     <Dialog
@@ -224,15 +226,16 @@ export default function TaskDetailModal({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={mobile}
       PaperProps={{
         sx: {
-          borderRadius: "16px",
+          borderRadius: mobile ? 0 : "16px",
           bgcolor: "background.paper",
           backgroundImage: "none",
-          border: 1,
+          border: mobile ? 0 : 1,
           borderColor: "divider",
-          boxShadow: "0 12px 32px rgba(0,0,0,0.6)",
-          p: 1,
+          boxShadow: mobile ? "none" : "0 12px 32px rgba(0,0,0,0.6)",
+          p: mobile ? 0 : 1,
         },
       }}
     >
@@ -243,22 +246,38 @@ export default function TaskDetailModal({
           alignItems: "center",
           justifyContent: "space-between",
           px: 2,
-          pt: 1.5,
+          pt: mobile ? "max(12px, env(safe-area-inset-top))" : 1.5,
           pb: 1,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          component="button"
+          type="button"
+          onClick={() => onToggle(task)}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            p: 0.5,
+            minHeight: 44,
+            borderRadius: 1.5,
+            "&:hover": { bgcolor: "action.hover" },
+            textAlign: "start",
+          }}
+        >
           <Checkbox
             checked={isCompleted}
-            onClick={() => onToggle(task)}
             icon={<RadioButtonUnchecked sx={{ fontSize: 24 }} />}
             checkedIcon={<CheckCircle sx={{ fontSize: 24 }} color="primary" />}
-            sx={{ p: 0.5 }}
+            sx={{ p: 0.5, pointerEvents: "none" }}
           />
           <Typography
             variant="body2"
             color={isCompleted ? "primary.main" : "text.secondary"}
-            sx={{ fontWeight: 500 }}
+            sx={{ fontWeight: 600 }}
           >
             {isCompleted ? t("tasks.completed") : t("tasks.markAsCompleted")}
           </Typography>
@@ -329,7 +348,13 @@ export default function TaskDetailModal({
           >
             {t("eisenhower.title")}
           </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, auto)" },
+              gap: 1,
+            }}
+          >
             <Chip
               label={`🔴 ${t("eisenhower.q1Title")}`}
               size="small"
@@ -609,7 +634,7 @@ export default function TaskDetailModal({
 
       <Divider sx={{ mx: 2, mt: 2 }} />
 
-      <DialogActions sx={{ px: 2, py: 1.5 }}>
+      <DialogActions sx={{ px: 2, py: 1.5, pb: mobile ? "max(16px, env(safe-area-inset-bottom))" : 1.5, bgcolor: "background.paper" }}>
         <Button onClick={onClose} sx={{ textTransform: "none" }}>
           {t("common.cancel")}
         </Button>

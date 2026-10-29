@@ -1,9 +1,10 @@
+import { invoke } from "@tauri-apps/api/core";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { cancel as cancelOAuthServer } from "@fabianlars/tauri-plugin-oauth";
 import axios from "axios";
 import { UserProfile } from "../types/googleapis";
 import { readTextFile, remove, writeTextFile } from "@tauri-apps/plugin-fs";
-import { getClientId, getClientSecret, getMobileClientId, getMobileRedirectUri, hasDedicatedMobileClientId } from "../config/credentials";
+import { getClientId, getClientSecret, getMobileClientId, getMobileRedirectUri } from "../config/credentials";
 import settings from "../config/settings";
 import { generate_oauth_port, get_access_token, get_auth_code, save_access_token, save_auth_code } from "./invoker";
 import { AccessToken } from "./commands";
@@ -86,8 +87,8 @@ export async function getAccessToken(code: string, portOverride?: number): Promi
             ? window.localStorage.getItem("pkce_code_verifier")
             : null;
 
-        if ((mobile && hasDedicatedMobileClientId()) || (!portOverride && !portManager.getPort() && verifier)) {
-            const mobileClientId = getMobileClientId();
+        if (mobile || verifier || (!portOverride && !portManager.getPort())) {
+            const mobileClientId = getMobileClientId() || getClientId();
             const desktopClientId = getClientId();
             const desktopClientSecret = getClientSecret();
 
@@ -218,7 +219,7 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
  // to handle login to get auth
 export async function openAuthWindow() {
     // Platform branch point: Android / Mobile OAuth with PKCE & Deep-Link Redirect
-    if (isMobile() && hasDedicatedMobileClientId()) {
+    if (isMobile()) {
         const verifier = generateCodeVerifier();
         const challenge = await generateCodeChallenge(verifier);
         if (typeof window !== "undefined" && window.localStorage) {
@@ -227,18 +228,20 @@ export async function openAuthWindow() {
         const url = new URL(GOOGLE_OAUTH_ENDPOINT);
         url.searchParams.append("scope", SCOPE);
         url.searchParams.append("response_type", "code");
-        url.searchParams.append("client_id", getMobileClientId());
+        url.searchParams.append("client_id", getMobileClientId() || getClientId());
         url.searchParams.append("redirect_uri", getMobileRedirectUri());
         url.searchParams.append("code_challenge", challenge);
         url.searchParams.append("code_challenge_method", "S256");
         url.searchParams.append("prompt", "select_account consent");
         url.searchParams.append("access_type", "offline");
         try {
-            await openUrl(url.href);
-        } catch (openErr) {
-            console.warn("openUrl failed on mobile, attempting window.open fallback:", openErr);
-            if (typeof window !== "undefined") {
-                window.open(url.href, "_blank");
+            await invoke("open_external_browser", { url: url.href });
+        } catch (invokeErr) {
+            console.warn("invoke open_external_browser failed, falling back to openUrl:", invokeErr);
+            try {
+                await openUrl(url.href);
+            } catch (openErr) {
+                console.error("Failed to open external browser on mobile:", openErr);
             }
         }
         return;
@@ -257,13 +260,65 @@ export async function openAuthWindow() {
     url.searchParams.append("include_granted_scopes", "true");
     url.searchParams.append("state", "state_parameter_passthrough_value");
     try {
-        await openUrl(url.href);
-    } catch (openErr) {
-        console.warn("openUrl failed, attempting window.open fallback:", openErr);
-        if (typeof window !== "undefined") {
-            window.open(url.href, "_blank");
+        await invoke("open_external_browser", { url: url.href });
+    } catch {
+        try {
+            await openUrl(url.href);
+        } catch (openErr) {
+            console.warn("openUrl failed, attempting window.open fallback:", openErr);
+            if (typeof window !== "undefined") {
+                window.open(url.href, "_blank");
+            }
         }
     }
+}
+
+/**
+ * Setup deep-link listener specifically for OAuth redirects.
+ * Extracts the authorization code and exchanges it for an access token.
+ */
+export async function setupDeepLinkListener(onSuccess?: (token: AccessToken) => void): Promise<() => void> {
+    const { onOpenUrl, getCurrent } = await import("@tauri-apps/plugin-deep-link");
+    
+    const handleUrl = async (urlStr: string) => {
+        if (!urlStr || !urlStr.includes("code=")) return;
+        let code: string | null = null;
+        try {
+            const parsed = new URL(urlStr);
+            code = parsed.searchParams.get("code");
+        } catch {
+            // regex fallback
+        }
+        if (!code) {
+            const match = urlStr.match(/[?&]code=([^&#]+)/);
+            if (match) code = decodeURIComponent(match[1]);
+        }
+        if (code) {
+            try {
+                const token = await getAccessToken(code);
+                await handleLoadFrom(token);
+                if (onSuccess) onSuccess(token);
+            } catch (err) {
+                console.error("setupDeepLinkListener: Failed to exchange code for token:", err);
+            }
+        }
+    };
+
+    const unlisten = await onOpenUrl((urls: string[]) => {
+        for (const u of urls) {
+            handleUrl(u);
+        }
+    });
+
+    getCurrent().then((urls) => {
+        if (urls && urls.length > 0) {
+            for (const u of urls) {
+                handleUrl(u);
+            }
+        }
+    }).catch(() => {});
+
+    return unlisten;
 }
 
 /**
@@ -499,9 +554,17 @@ export async function handleLoadFrom(accessTokenBody: AccessToken) {
       await saveUserProfile(userProfile)
       setRecoil(userProfileState, userProfile);
 
+      if (userProfile?.email) {
+        localStorage.removeItem("is_guest_mode");
+        localStorage.setItem("current_user_email", userProfile.email);
+      }
+
       // Save to accounts vault for instant account switching
-      const { accountService } = await import("../services");
+      const { accountService, trashService, historyService, syncQueueService } = await import("../services");
       accountService.saveAccount(userProfile, accessTokenBody);
+      trashService.reloadScope();
+      historyService.reloadScope();
+      syncQueueService.reloadScope();
     }
     catch (err) {
       console.error("handleLoadFrom error:", err);
@@ -638,7 +701,7 @@ export async function handleInitialLogin() {
   }
 
 export async function switchToGoogleAccount(email: string): Promise<boolean> {
-  const { accountService, trashService, historyService, syncQueueService } = await import("../services");
+  const { accountService, trashService, historyService, syncQueueService, offlineCacheService } = await import("../services");
   const account = accountService.getAccount(email);
   if (!account) return false;
 
@@ -675,6 +738,19 @@ export async function switchToGoogleAccount(email: string): Promise<boolean> {
 
     const store = await import("../store");
     if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, false);
+
+    // Immediately load target account's cached snapshot so UI switches immediately without displaying previous account's tasks
+    if (store.taskListsAtom) {
+      const targetScope = `user_${account.email.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, "_")}`;
+      const cached = offlineCacheService.loadSnapshot(targetScope);
+      if (cached && cached.length > 0) {
+        setRecoil(store.taskListsAtom, cached);
+        historyService.syncFromTaskLists(cached);
+      } else {
+        setRecoil(store.taskListsAtom, []);
+      }
+    }
+
     if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, token.access_token);
     setRecoil(accessTokenState, token.access_token);
     setRecoil(userProfileState, profile);
@@ -696,13 +772,22 @@ export async function switchToGoogleAccount(email: string): Promise<boolean> {
 export async function switchToGuestMode(): Promise<void> {
   enterGuestMode();
   const store = await import("../store");
+  const { trashService, historyService, syncQueueService, offlineCacheService } = await import("../services");
   if (store.isGuestModeAtom) setRecoil(store.isGuestModeAtom, true);
   if (store.accessTokenAtom) setRecoil(store.accessTokenAtom, null);
   if (store.taskListsErrorAtom) setRecoil(store.taskListsErrorAtom, null);
+  if (store.taskListsAtom) {
+    const cached = offlineCacheService.loadSnapshot("guest");
+    if (cached && cached.length > 0) {
+      setRecoil(store.taskListsAtom, cached);
+      historyService.syncFromTaskLists(cached);
+    } else {
+      setRecoil(store.taskListsAtom, []);
+    }
+  }
   setRecoil(accessTokenState, null);
   setRecoil(userProfileState, null);
 
-  const { trashService, historyService, syncQueueService } = await import("../services");
   trashService.reloadScope();
   historyService.reloadScope();
   syncQueueService.reloadScope();

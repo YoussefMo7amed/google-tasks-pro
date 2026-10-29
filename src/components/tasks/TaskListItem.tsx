@@ -258,7 +258,7 @@ export default function TaskListItem({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         sx={{
-          pl: isSubtask ? 4 : 0,
+          ...(isSubtask ? (isRtl ? { pr: 4, pl: 0 } : { pl: 4, pr: 0 }) : { pl: 0, pr: 0 }),
         }}
       >
         <Box
@@ -275,10 +275,12 @@ export default function TaskListItem({
             <SubdirectoryArrowRight 
               fontSize="small" 
               sx={{ 
-                mr: 0.5, 
+                mr: isRtl ? 0 : 0.5,
+                ml: isRtl ? 0.5 : 0, 
                 mt: 0.5, 
                 color: "text.disabled",
                 fontSize: 16,
+                transform: isRtl ? "scaleX(-1)" : "none",
               }} 
             />
           )}
@@ -295,7 +297,7 @@ export default function TaskListItem({
           </ListItemIcon>
 
           {/* Title/Edit area */}
-          <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0, ...(isRtl ? { ml: 1, mr: 0 } : { mr: 1, ml: 0 }) }}>
             {isEditing ? (
               // Full edit form like Google Tasks
               <Box sx={{ width: "100%" }}>
@@ -461,7 +463,8 @@ export default function TaskListItem({
                         height: 18,
                         fontSize: "0.65rem",
                         fontWeight: 700,
-                        mr: 0.5,
+                        mr: isRtl ? 0 : 0.5,
+                        ml: isRtl ? 0.5 : 0,
                         borderRadius: "4px",
                         "& .MuiChip-label": { px: 0.6 },
                       }}

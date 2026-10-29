@@ -20,7 +20,7 @@ import {
 import { loadContextmenu } from "./helpers/windowhelper";
 import { isDesktop } from "./helpers/platform";
 import TaskPage from "./components/TaskPage";
-import { MobileBottomNav } from "./components/ui/ViewSwitcher";
+import { Header, MobileBottomNav } from "./components/layout";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import {
   activeTaskCategoryState,
@@ -31,7 +31,6 @@ import {
   loggedInSelector,
   messageState,
 } from "./config/states";
-import Header from "./components/ui/Header";
 import SplashScreen from "./components/ui/SplashScreen";
 import LoginChoice from "./components/ui/LoginChoice";
 import { Sidebar } from "./components/layout";
@@ -138,6 +137,7 @@ function App() {
                 setIsGuestMode(false);
                 fetchTaskLists(true);
               }
+              setLoading(false);
             })
             .catch((err) => {
               console.error("Failed to get access token from code:", err);
@@ -216,7 +216,8 @@ function App() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
+        height: "100%",
+        maxHeight: "100%",
         overflow: "hidden",
         bgcolor: "background.default",
       }}
@@ -263,6 +264,7 @@ function App() {
                     setIsGuestMode(false);
                     fetchTaskLists(true);
                   }
+                  setLoading(false);
                 }
                 return success;
               }}

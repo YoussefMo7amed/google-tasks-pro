@@ -8,7 +8,7 @@
 ## 1. Project Overview & Tech Stack
 
 * **Core Framework:** React 18 + TypeScript + Vite
-* **Desktop Wrapper:** Tauri v1 (Rust backend, macOS/Windows native integration)
+* **Desktop & Mobile Wrapper:** Tauri v2 (Rust backend, macOS/Windows/Linux native integration & Android APK)
 * **UI & Styling:** Material UI (MUI v7) + Emotion
 * **State Management:** Recoil (Atoms/Selectors) + Recoil Nexus + Service Layer Singletons
 * **Drag & Drop:** `@dnd-kit/core` & `@dnd-kit/sortable`
@@ -167,14 +167,14 @@ npm run build
 
 ---
 
-## 7. Roadmap: Tauri v2 & Mobile (Android APK) Migration
-* **Current Core Focus:** Ultra-stable Tauri v1.4 desktop client powering macOS (`.dmg`), Windows (`.exe`, `.msi`), and Linux (`.deb`, `.AppImage`).
-* **Planned Milestone:** Migrate to Tauri v2 in an isolated experimental branch (`feature/tauri-v2-migration`).
-* **Migration Requirements:**
-  1. Migrate plugins from v1 git branches to official v2 crates (`@tauri-apps/plugin-store`, `@tauri-apps/plugin-log`, etc.).
-  2. Convert `allowlist` in `tauri.conf.json` to the v2 Capabilities & ACL permission system (`src-tauri/capabilities/`).
-  3. Refactor `main.rs` system tray implementation from `SystemTray` to `tauri::tray::TrayIconBuilder`.
-  4. Initialize Android Studio toolchain via `tauri android init` to generate mobile `.apk` artifacts.
+## 7. Platform Status: Tauri v2 & Mobile (Android APK)
+* **Current Core Engine:** Production-ready Tauri v2 powering macOS (`.app`, `.dmg`), Windows (`.exe`, `.msi`), Linux (`.deb`, `.AppImage`), and Android (`.apk`).
+* **Android Architecture:**
+  * Package identifier: `com.youssefmohamed.googletaskspro`
+  * Responsive layout with auto-safe-area padding and bottom navigation (`MobileBottomNav.tsx`).
+  * Deep-link OAuth redirect receiver (`googletaskspro://oauth/callback`).
+  * Multi-target build script: `npm run build:apk` (arm64-v8a + armeabi-v7a universal APK).
+  * Automated GitHub Actions CI/CD release workflow in `.github/workflows/release.yml`.
 
 ---
 

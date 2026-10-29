@@ -54,6 +54,7 @@ import {
   DeleteOutline,
   Psychology,
 } from '@mui/icons-material';
+import { isMobile } from '../../helpers/platform';
 import { trashService, TrashRetention } from '../../services/trash.service';
 import { setCustomCredentials } from '../../config/credentials';
 import { CryptoVaultService } from '../../services/security/crypto-vault.service';
@@ -362,6 +363,7 @@ export default function SettingsDialog({
 
   const hourOptions = getNotificationHourOptions(language, timeFormat);
   const isCurrentLocal = selectedProviderTab === 'ollama' || selectedProviderTab === 'lm_studio';
+  const mobile = isMobile();
 
   return (
     <Dialog 
@@ -369,6 +371,7 @@ export default function SettingsDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      fullScreen={mobile}
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 3 },
@@ -378,7 +381,7 @@ export default function SettingsDialog({
         },
       }}
     >
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <DialogTitle sx={{ m: 0, p: 2, pt: mobile ? "max(16px, env(safe-area-inset-top))" : 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h6" fontWeight={700}>{t("settings.title")}</Typography>
         <IconButton
           aria-label="close"
@@ -393,9 +396,7 @@ export default function SettingsDialog({
       <Tabs
         value={activeTab}
         onChange={(_, val) => setActiveTab(val)}
-        variant="scrollable"
-        scrollButtons="auto"
-        allowScrollButtonsMobile
+        variant="fullWidth"
         sx={{ borderBottom: 1, borderColor: 'divider', px: { xs: 1, sm: 2 } }}
       >
         <Tab icon={<Notifications sx={{ fontSize: 18 }} />} iconPosition="start" label={t("settings.generalTab")} />
@@ -1157,7 +1158,7 @@ export default function SettingsDialog({
         )}
       </DialogContent>
       
-      <DialogActions sx={{ p: 2 }}>
+      <DialogActions sx={{ p: 2, pb: mobile ? "max(16px, env(safe-area-inset-bottom))" : 2, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider' }}>
         <Button onClick={onClose} disabled={saving}>
           {t("common.cancel")}
         </Button>

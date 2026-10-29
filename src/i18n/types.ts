@@ -82,7 +82,12 @@ export interface TranslationSchema {
     nextWeek: string;
     noTasks: string;
     noPendingTasks: string;
+    pending: string;
     completed: string;
+    overdue: string;
+    upcoming: string;
+    noDueDate: string;
+    unassigned: string;
     markAsCompleted: string;
     clearCompleted: string;
     deleteTask: string;

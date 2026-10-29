@@ -59,3 +59,37 @@ pub fn bring_to_front(window: tauri::WebviewWindow) {
         let _ = window;
     }
 }
+
+#[tauri::command]
+pub fn open_external_browser(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        let chooser_result = (|| -> Result<(), Box<dyn std::error::Error>> {
+            let ctx = ndk_context::android_context();
+            let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
+            let mut env = vm.attach_current_thread()?;
+            let main_class = env.find_class("com/youssefmohamed/googletaskspro/MainActivity")?;
+            let j_url = env.new_string(&url)?;
+            env.call_static_method(
+                main_class,
+                "openChooser",
+                "(Ljava/lang/String;)V",
+                &[jni::objects::JValue::Object(&j_url)],
+            )?;
+            Ok(())
+        })();
+
+        if chooser_result.is_err() {
+            use tauri_plugin_shell::ShellExt;
+            #[allow(deprecated)]
+            return app.shell().open(&url, None).map_err(|e| e.to_string());
+        }
+
+        Ok(())
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = &app;
+        open::that_detached(&url).map_err(|e| e.to_string())
+    }
+}

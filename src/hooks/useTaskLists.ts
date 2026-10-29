@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useRef } from "react";
-import { useRecoilState, useSetRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { 
   taskListsAtom, 
   taskListsLoadingAtom, 
@@ -13,6 +13,7 @@ import {
   toastAtom,
   starredTaskIdsAtom,
   isOnlineAtom,
+  accessTokenAtom,
 } from "../store";
 import { scheduleAllTaskNotifications } from "../services/notification.service";
 import { offlineCacheService } from "../services/offline-cache.service";
@@ -48,11 +49,20 @@ export function useTaskLists() {
   const setIsOnline = useSetRecoilState(isOnlineAtom);
   const setToast = useSetRecoilState(toastAtom);
   const setStarredIds = useSetRecoilState(starredTaskIdsAtom);
+  const currentToken = useRecoilValue(accessTokenAtom);
 
   const isFetchingRef = useRef(false);
   const lastFetchTimeRef = useRef<number>(0);
   const taskListsRef = useRef(taskLists);
   taskListsRef.current = taskLists;
+
+  // Reset rate limiting and in-flight fetch guard on account/token switch
+  const prevTokenRef = useRef(currentToken);
+  if (prevTokenRef.current !== currentToken) {
+    prevTokenRef.current = currentToken;
+    lastFetchTimeRef.current = 0;
+    isFetchingRef.current = false;
+  }
 
   /**
    * Fetch all task lists with offline-first caching

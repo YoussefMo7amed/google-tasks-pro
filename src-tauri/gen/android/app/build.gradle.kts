@@ -16,10 +16,10 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 36
-    namespace = "codad5.google.task"
+    namespace = "com.youssefmohamed.googletaskspro"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "true"
-        applicationId = "codad5.google.task"
+        applicationId = "com.youssefmohamed.googletaskspro"
         minSdk = 24
         targetSdk = 35
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

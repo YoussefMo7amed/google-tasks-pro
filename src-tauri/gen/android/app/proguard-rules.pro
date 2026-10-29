@@ -1,4 +1,10 @@
 # Add project specific ProGuard rules here.
+-keep class com.youssefmohamed.googletaskspro.MainActivity { *; }
+-keepclassmembers class com.youssefmohamed.googletaskspro.MainActivity {
+    public static void openChooser(java.lang.String);
+    public *;
+}
+-keep class com.youssefmohamed.googletaskspro.MainActivity$* { *; }
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 #

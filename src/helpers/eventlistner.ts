@@ -48,6 +48,30 @@ export async function listen_for_auth_code(callback: listnerCallback<AuthCodeDat
         const unlistenDeepLink = await onOpenUrl(handleDeepLinkUrls);
         unlisteners.push(unlistenDeepLink);
 
+        // Also wire fallback bridge for native Android WebView delivery
+        if (typeof window !== "undefined") {
+            (window as any).__TAURI_HANDLE_DEEP_LINK__ = (url: string) => {
+                console.log("Native Android bridge delivered deep link:", url);
+                handleDeepLinkUrls([url]);
+            };
+            const customHandler = (e: any) => {
+                if (e.detail) {
+                    console.log("CustomEvent oauth-deep-link received:", e.detail);
+                    handleDeepLinkUrls([e.detail]);
+                }
+            };
+            window.addEventListener("oauth-deep-link", customHandler);
+            if ((window as any).__PENDING_DEEP_LINK__) {
+                console.log("Found pending deep link on startup:", (window as any).__PENDING_DEEP_LINK__);
+                handleDeepLinkUrls([(window as any).__PENDING_DEEP_LINK__]);
+                delete (window as any).__PENDING_DEEP_LINK__;
+            }
+            unlisteners.push(() => {
+                delete (window as any).__TAURI_HANDLE_DEEP_LINK__;
+                window.removeEventListener("oauth-deep-link", customHandler);
+            });
+        }
+
         // Check if the app was cold-started via deep link
         getCurrent().then((urls) => {
             if (urls && urls.length > 0) {

@@ -6,7 +6,15 @@
  */
 
 import { useEffect, useState, lazy, Suspense } from "react";
-import { Box, CircularProgress, Typography, Button, Paper } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  Button,
+  Paper,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import { LockOutlined, Google } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { accessTokenSelector } from "../config/states";
@@ -23,6 +31,9 @@ const CalendarTasksView = lazy(() => import("./tasks/CalendarTasksView"));
 const TrashTasksView = lazy(() => import("./tasks/TrashTasksView"));
 
 export default function TaskPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   // Get access token from OLD auth system
   const access_token = useRecoilValue(accessTokenSelector);
   const isGuestMode = useRecoilValue(isGuestModeAtom);
@@ -48,8 +59,8 @@ export default function TaskPage() {
   // Fetch task lists when access token is available or in guest mode
   useEffect(() => {
     if (access_token || isGuestMode) {
-      console.log("TaskPage: fetching task lists");
-      fetchTaskLists();
+      console.log("TaskPage: fetching task lists for current account");
+      fetchTaskLists(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access_token, isGuestMode]);
@@ -165,6 +176,8 @@ export default function TaskPage() {
         display: "flex",
         position: "relative",
         bgcolor: "background.default",
+        pb: isMobile ? "calc(72px + env(safe-area-inset-bottom))" : 0,
+        boxSizing: "border-box",
       }}
     >
       {mountedViews.has("board") && (

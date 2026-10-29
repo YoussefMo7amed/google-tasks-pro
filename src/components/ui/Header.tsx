@@ -28,7 +28,6 @@ import { aiCopilotOpenAtom, aiCopilotMinimizedAtom, shortcutsModalOpenAtom, isGu
 import ViewSwitcher from "./ViewSwitcher";
 import { useTranslation } from "../../i18n";
 import { useUndoRedo } from "../../hooks/useUndoRedo";
-import { useTaskLists } from "../../hooks";
 import { handleLogin, exitGuestMode, switchToGoogleAccount, switchToGuestMode } from "../../helpers/auth";
 import { accountService, StoredAccount } from "../../services/account.service";
 
@@ -46,7 +45,6 @@ export default function Header() {
   const setShortcutsOpen = useSetRecoilState(shortcutsModalOpenAtom);
   const { t, language, setLanguage, supportedLanguages, isRtl } = useTranslation();
   const { canUndo, canRedo, undo, redo, getUndoLabel, getRedoLabel } = useUndoRedo();
-  const { fetchTaskLists } = useTaskLists();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [langMenuAnchor, setLangMenuAnchor] = useState<null | HTMLElement>(null);
   const [savedAccounts, setSavedAccounts] = useState<StoredAccount[]>(() => accountService.getAccounts());
@@ -71,16 +69,12 @@ export default function Header() {
 
   const handleSwitchToGoogle = async (email: string) => {
     handleMenuClose();
-    const success = await switchToGoogleAccount(email);
-    if (success) {
-      await fetchTaskLists(true);
-    }
+    await switchToGoogleAccount(email);
   };
 
   const handleSwitchToGuest = async () => {
     handleMenuClose();
     await switchToGuestMode();
-    await fetchTaskLists(true);
   };
 
   const handleRemoveAccount = (e: React.MouseEvent, email: string) => {
@@ -100,12 +94,17 @@ export default function Header() {
 
   return (
     <AppBar
-      position="static"
+      position={isMobileViewport ? "sticky" : "static"}
       elevation={0}
       sx={{
-        bgcolor: "transparent",
+        position: isMobileViewport ? "sticky" : "static",
+        top: 0,
+        zIndex: 1100,
+        bgcolor: isMobileViewport ? "background.default" : "transparent",
+        flexShrink: 0,
         borderBottom: 1,
         borderColor: "divider",
+        pt: isMobileViewport ? "max(12px, env(safe-area-inset-top))" : 0,
       }}
     >
       <Toolbar
@@ -313,6 +312,7 @@ export default function Header() {
           <Tooltip title={isGuest ? `${t("auth.guestBadge")} — ${t("auth.connectGoogleToSync")}` : (profile?.name ?? "User")}>
             <IconButton onClick={handleMenuOpen} size="small">
               <Avatar
+                key={profile?.email || "guest"}
                 sx={{
                   width: 28,
                   height: 28,
@@ -321,6 +321,7 @@ export default function Header() {
                 }}
                 src={!isGuest ? profile?.picture ?? "" : ""}
                 alt={profile?.name ?? "User"}
+                imgProps={{ referrerPolicy: "no-referrer" }}
               >
                 {isGuest ? (
                   <PersonOutline sx={{ fontSize: 18 }} />
@@ -354,6 +355,7 @@ export default function Header() {
             <Box sx={{ px: 2, py: 1.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Avatar
+                  key={`menu-${profile?.email || "guest"}`}
                   sx={{
                     width: 40,
                     height: 40,
@@ -361,6 +363,7 @@ export default function Header() {
                     color: isGuest ? "text.primary" : "primary.contrastText",
                   }}
                   src={!isGuest ? profile?.picture ?? "" : ""}
+                  imgProps={{ referrerPolicy: "no-referrer" }}
                 >
                   {isGuest ? (
                     <PersonOutline sx={{ fontSize: 22 }} />
@@ -421,7 +424,9 @@ export default function Header() {
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1 }}>
                     <Avatar
+                      key={`account-${acc.email}`}
                       src={acc.picture || ""}
+                      imgProps={{ referrerPolicy: "no-referrer" }}
                       sx={{ width: 28, height: 28, fontSize: "0.85rem" }}
                     >
                       {acc.name?.charAt(0) ?? "U"}

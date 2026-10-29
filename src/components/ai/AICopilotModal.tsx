@@ -890,6 +890,7 @@ export default function AICopilotModal({
           m: 0,
           px: 2.5,
           py: 1.5,
+          pt: isMobile ? "max(14px, env(safe-area-inset-top))" : 1.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -910,7 +911,7 @@ export default function AICopilotModal({
                   size="small"
                   label={isDefaultChatTitle(activeSession.title) ? t("ai.newChat") : activeSession.title}
                   sx={{
-                    maxWidth: 220,
+                    maxWidth: isMobile ? 120 : 220,
                     fontFamily: "Cairo, sans-serif",
                     fontSize: "0.75rem",
                     fontWeight: 600,
@@ -929,10 +930,14 @@ export default function AICopilotModal({
                 onClick={(e) => setModelMenuAnchor(e.currentTarget)}
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                    <Typography variant="caption" fontWeight={600}>
-                      {providerDisplayName}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.5 }}>•</Typography>
+                    {!isMobile && (
+                      <>
+                        <Typography variant="caption" fontWeight={600}>
+                          {providerDisplayName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.5 }}>•</Typography>
+                      </>
+                    )}
                     <Typography variant="caption" fontWeight={600} color="primary.main">
                       {activeModelOption?.label || currentSettings.model}
                     </Typography>
@@ -1945,7 +1950,7 @@ export default function AICopilotModal({
           <Divider />
 
           {/* Input Bar */}
-          <DialogActions sx={{ p: 2, gap: 1, bgcolor: "background.paper" }}>
+          <DialogActions sx={{ p: 2, pb: isMobile ? "max(16px, env(safe-area-inset-bottom))" : 2, gap: 1, bgcolor: "background.paper" }}>
             <TextField
               placeholder={t("ai.inputPlaceholder")}
               fullWidth

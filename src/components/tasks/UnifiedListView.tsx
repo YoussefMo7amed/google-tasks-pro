@@ -33,6 +33,7 @@ import {
   FolderOutlined,
   Add,
   Clear,
+  SubdirectoryArrowRight,
 } from "@mui/icons-material";
 import { useRecoilValue } from "recoil";
 import { taskListsAtom } from "../../store/atoms";
@@ -42,18 +43,18 @@ import { extractQuadrant, cleanTitleFromQuadrant } from "../../services/history.
 import TaskDetailModal from "./TaskDetailModal";
 import { useTranslation } from "../../i18n";
 
-const QUADRANT_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  Q1: { bg: "#fee2e2", color: "#dc2626", label: "Q1 عاجل ومهم" },
-  Q2: { bg: "#fef3c7", color: "#d97706", label: "Q2 مهم / تخطيط" },
-  Q3: { bg: "#e0e7ff", color: "#4f46e5", label: "Q3 عاجل / تفويض" },
-  Q4: { bg: "#f3f4f6", color: "#4b5563", label: "Q4 غير عاجل" },
+const QUADRANT_COLORS: Record<string, { bg: string; color: string }> = {
+  Q1: { bg: "#fee2e2", color: "#dc2626" },
+  Q2: { bg: "#fef3c7", color: "#d97706" },
+  Q3: { bg: "#e0e7ff", color: "#4f46e5" },
+  Q4: { bg: "#f3f4f6", color: "#4b5563" },
 };
 
 type GroupByOption = "list" | "quadrant" | "dueDate";
 type StatusFilter = "all" | "pending" | "completed";
 
 export default function UnifiedListView() {
-  const { t } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const {
     toggleTaskComplete,
@@ -119,42 +120,84 @@ export default function UnifiedListView() {
         if (!groups[key]) groups[key] = [];
         groups[key].push(item);
       }
+
+      // Re-order each list's tasks so subtasks appear directly underneath their parent task
+      for (const key of Object.keys(groups)) {
+        const listItems = groups[key];
+        const topLevel = listItems.filter((i) => !i.task.parent);
+        const subtasks = listItems.filter((i) => i.task.parent);
+        const subtaskMap = new Map<string, typeof listItems>();
+
+        for (const st of subtasks) {
+          if (st.task.parent) {
+            const existing = subtaskMap.get(st.task.parent) || [];
+            existing.push(st);
+            subtaskMap.set(st.task.parent, existing);
+          }
+        }
+
+        const ordered: typeof listItems = [];
+        for (const item of topLevel) {
+          ordered.push(item);
+          const children = subtaskMap.get(item.task.id) || [];
+          ordered.push(...children);
+        }
+
+        for (const st of subtasks) {
+          if (st.task.parent && !topLevel.find((t) => t.task.id === st.task.parent)) {
+            ordered.push(st);
+          }
+        }
+
+        groups[key] = ordered;
+      }
     } else if (groupBy === "quadrant") {
-      groups["Q1 عاجل ومهم"] = [];
-      groups["Q2 مهم / تخطيط"] = [];
-      groups["Q3 عاجل / تفويض"] = [];
-      groups["Q4 غير عاجل"] = [];
-      groups["غير مصنفة (Unassigned)"] = [];
+      const q1Key = t("eisenhower.q1Title");
+      const q2Key = t("eisenhower.q2Title");
+      const q3Key = t("eisenhower.q3Title");
+      const q4Key = t("eisenhower.q4Title");
+      const unassignedKey = t("eisenhower.unassignedTitle");
+
+      groups[q1Key] = [];
+      groups[q2Key] = [];
+      groups[q3Key] = [];
+      groups[q4Key] = [];
+      groups[unassignedKey] = [];
 
       for (const item of filteredItems) {
         const q = extractQuadrant(item.task.title);
-        if (q === "Q1") groups["Q1 عاجل ومهم"].push(item);
-        else if (q === "Q2") groups["Q2 مهم / تخطيط"].push(item);
-        else if (q === "Q3") groups["Q3 عاجل / تفويض"].push(item);
-        else if (q === "Q4") groups["Q4 غير عاجل"].push(item);
-        else groups["غير مصنفة (Unassigned)"].push(item);
+        if (q === "Q1") groups[q1Key].push(item);
+        else if (q === "Q2") groups[q2Key].push(item);
+        else if (q === "Q3") groups[q3Key].push(item);
+        else if (q === "Q4") groups[q4Key].push(item);
+        else groups[unassignedKey].push(item);
       }
     } else if (groupBy === "dueDate") {
       const today = new Date().toISOString().split("T")[0];
-      groups["متأخرة (Overdue)"] = [];
-      groups["اليوم (Today)"] = [];
-      groups["القادمة (Upcoming)"] = [];
-      groups["بدون موعد (No Due Date)"] = [];
+      const overdueKey = t("tasks.overdue");
+      const todayKey = t("tasks.today");
+      const upcomingKey = t("tasks.upcoming");
+      const noDueDateKey = t("tasks.noDueDate");
+
+      groups[overdueKey] = [];
+      groups[todayKey] = [];
+      groups[upcomingKey] = [];
+      groups[noDueDateKey] = [];
 
       for (const item of filteredItems) {
         if (!item.task.due) {
-          groups["بدون موعد (No Due Date)"].push(item);
+          groups[noDueDateKey].push(item);
         } else {
           const dueDay = item.task.due.split("T")[0];
-          if (dueDay < today) groups["متأخرة (Overdue)"].push(item);
-          else if (dueDay === today) groups["اليوم (Today)"].push(item);
-          else groups["القادمة (Upcoming)"].push(item);
+          if (dueDay < today) groups[overdueKey].push(item);
+          else if (dueDay === today) groups[todayKey].push(item);
+          else groups[upcomingKey].push(item);
         }
       }
     }
 
     return groups;
-  }, [filteredItems, groupBy]);
+  }, [filteredItems, groupBy, t]);
 
   const handleQuickAdd = async (groupKey: string) => {
     const title = quickAddText.trim();
@@ -305,29 +348,29 @@ export default function UnifiedListView() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
           <Chip
             size="small"
-            label="المعلقة"
+            label={t("tasks.pending")}
             variant={statusFilter === "pending" ? "filled" : "outlined"}
             color={statusFilter === "pending" ? "primary" : "default"}
             clickable
             onClick={() => setStatusFilter("pending")}
-            sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.75rem" }}
+            sx={{ fontSize: "0.75rem" }}
           />
           <Chip
             size="small"
-            label="المكتملة"
+            label={t("tasks.completed")}
             variant={statusFilter === "completed" ? "filled" : "outlined"}
             color={statusFilter === "completed" ? "success" : "default"}
             clickable
             onClick={() => setStatusFilter("completed")}
-            sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.75rem" }}
+            sx={{ fontSize: "0.75rem" }}
           />
           <Chip
             size="small"
-            label="الكل"
+            label={t("common.all")}
             variant={statusFilter === "all" ? "filled" : "outlined"}
             clickable
             onClick={() => setStatusFilter("all")}
-            sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.75rem" }}
+            sx={{ fontSize: "0.75rem" }}
           />
         </Box>
       </Paper>
@@ -374,12 +417,11 @@ export default function UnifiedListView() {
                   setQuickAddText("");
                 }}
                 sx={{
-                  fontFamily: "Cairo, sans-serif",
                   fontSize: "0.75rem",
                   textTransform: "none",
                 }}
               >
-                إضافة مهمة
+                {t("tasks.addTask")}
               </Button>
             </Box>
 
@@ -397,7 +439,7 @@ export default function UnifiedListView() {
                 }}
               >
                 <TextField
-                  placeholder={`إضافة مهمة جديدة في "${groupTitle}"...`}
+                  placeholder={`${t("tasks.addTask")} ("${groupTitle}")...`}
                   size="small"
                   fullWidth
                   autoFocus
@@ -409,7 +451,7 @@ export default function UnifiedListView() {
                   }}
                   inputProps={{
                     dir: "auto",
-                    style: { fontFamily: "Cairo, sans-serif", fontSize: "0.9rem" },
+                    style: { fontSize: "0.9rem" },
                   }}
                 />
                 <Button
@@ -417,16 +459,14 @@ export default function UnifiedListView() {
                   variant="contained"
                   onClick={() => handleQuickAdd(groupTitle)}
                   disabled={!quickAddText.trim()}
-                  sx={{ fontFamily: "Cairo, sans-serif" }}
                 >
-                  حفظ
+                  {t("common.save")}
                 </Button>
                 <Button
                   size="small"
                   onClick={() => setQuickAddGroup(null)}
-                  sx={{ fontFamily: "Cairo, sans-serif" }}
                 >
-                  إلغاء
+                  {t("common.cancel")}
                 </Button>
               </Paper>
             )}
@@ -444,13 +484,14 @@ export default function UnifiedListView() {
             >
               {items.length === 0 ? (
                 <Box sx={{ py: 3, textAlign: "center" }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "Cairo, sans-serif" }}>
-                    لا توجد مهام في هذا التصنيف حالياً.
+                  <Typography variant="body2" color="text.secondary">
+                    {t("tasks.noTasks")}
                   </Typography>
                 </Box>
               ) : (
                 items.map(({ task, list }) => {
                   const isCompleted = task.status === "completed";
+                  const isSubtask = !!task.parent;
                   const quadrant = extractQuadrant(task.title);
                   const cleanTitle = cleanTitleFromQuadrant(task.title);
                   // Clean notes from standalone quadrant marks [Q1]-[Q4]
@@ -470,8 +511,9 @@ export default function UnifiedListView() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        px: 2,
                         py: 1.2,
+                        px: 2,
+                        ...(isSubtask ? (isRtl ? { pr: 5 } : { pl: 5 }) : {}),
                         borderBottom: 1,
                         borderColor: "divider",
                         cursor: "pointer",
@@ -484,8 +526,21 @@ export default function UnifiedListView() {
                         },
                       }}
                     >
-                      {/* Left side: checkbox, star, title */}
+                      {/* Left side: subtask arrow, checkbox, star, title */}
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, overflow: "hidden", flex: 1 }}>
+                        {isSubtask && (
+                          <SubdirectoryArrowRight
+                            fontSize="small"
+                            sx={{
+                              fontSize: 16,
+                              color: "text.disabled",
+                              mr: isRtl ? 0 : 0.25,
+                              ml: isRtl ? 0.25 : 0,
+                              transform: isRtl ? "scaleX(-1)" : "none",
+                              flexShrink: 0,
+                            }}
+                          />
+                        )}
                         <Box
                           component="span"
                           onClick={(e) => {
@@ -623,8 +678,8 @@ export default function UnifiedListView() {
           <ListItemIcon>
             <DeleteOutline fontSize="small" color="error" />
           </ListItemIcon>
-          <ListItemText primaryTypographyProps={{ color: "error.main", fontFamily: "Cairo, sans-serif" }}>
-            حذف المهمة
+          <ListItemText primaryTypographyProps={{ color: "error.main" }}>
+            {t("tasks.deleteTask")}
           </ListItemText>
         </MenuItem>
       </Menu>

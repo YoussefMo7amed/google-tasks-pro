@@ -256,6 +256,8 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
         flexDirection: "column",
         bgcolor: "background.default",
         overflow: "hidden",
+        pt: isMobileViewport ? "max(16px, env(safe-area-inset-top))" : 0,
+        boxSizing: "border-box",
         transition: "width 0.2s ease-in-out, min-width 0.2s ease-in-out",
       }}
     >
@@ -787,7 +789,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
             borderColor: "divider",
             bgcolor: "background.default",
             pt: 1.25,
-            pb: 0.5,
+            pb: isMobileViewport ? "max(16px, env(safe-area-inset-bottom))" : 0.5,
           }}
         >
           {/* Offline & Sync Status Indicator */}
@@ -1006,7 +1008,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
       {isMobileViewport ? (
         <Drawer
           variant="temporary"
-          anchor={isRtl ? "right" : "left"}
+          anchor="left"
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           ModalProps={{ keepMounted: true }}
@@ -1015,8 +1017,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
               width: 280,
               bgcolor: "background.default",
               backgroundImage: "none",
-              pt: "env(safe-area-inset-top, 0px)",
-              pb: "env(safe-area-inset-bottom, 0px)",
+              boxSizing: "border-box",
             },
           }}
         >

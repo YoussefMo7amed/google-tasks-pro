@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Google Tasks Pro",
   "version": "../package.json",
-  "identifier": "codad5.google.task",
+  "identifier": "com.youssefmohamed.googletaskspro",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -65,7 +65,12 @@
     "deep-link": {
       "desktop": {
         "schemes": ["googletaskspro"]
-      }
+      },
+      "mobile": [
+        {
+          "scheme": ["googletaskspro", "com.googleusercontent.apps.627285327268-1ju5t3a968iklq7sutsn5hdm5e3rr0ij"]
+        }
+      ]
     }
   }
 }
