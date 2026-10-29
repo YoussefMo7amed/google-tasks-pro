@@ -10,6 +10,7 @@
     "tauri": "tauri",
     "launch:dev": "tauri dev",
     "build:app": "tauri build --bundles app",
+    "build:apk": "JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=$HOME/Library/Android/sdk NDK_HOME=$HOME/Library/Android/sdk/ndk/26.3.11579264 tauri android build --apk --target aarch64",
     "build:dmg": "tauri build --bundles app && mkdir -p src-tauri/target/release/bundle/dmg && hdiutil create -volname 'Google Tasks Pro' -srcfolder 'src-tauri/target/release/bundle/macos/Google Tasks Pro.app' -ov -format UDZO 'src-tauri/target/release/bundle/dmg/Google Tasks Pro_2.0.0_aarch64.dmg'"
   },
   "dependencies": {
