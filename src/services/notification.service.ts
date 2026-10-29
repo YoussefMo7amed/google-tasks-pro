@@ -9,7 +9,18 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import { isPermissionGranted, requestPermission } from '@tauri-apps/plugin-notification';
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+  Schedule,
+  cancel as cancelPluginNotifications,
+  cancelAll as cancelAllPluginNotifications,
+  createChannel,
+  Importance,
+  Visibility,
+} from '@tauri-apps/plugin-notification';
+import { getPlatform, isMobile } from '../helpers/platform';
 import { AppTask } from '../types/app';
 import { getNotificationHour } from './settings.service';
 
@@ -18,11 +29,43 @@ import { getNotificationHour } from './settings.service';
  */
 const scheduledTaskIds = new Set<string>();
 
+const MOBILE_CHANNEL_ID = 'task-reminders';
+let channelInitialized = false;
+
+export function hashTaskIdToNotificationId(taskId: string): number {
+  let hash = 0;
+  for (let i = 0; i < taskId.length; i++) {
+    hash = (hash * 31 + taskId.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % 2147483647 || 1;
+}
+
+async function ensureMobileNotificationChannel(): Promise<void> {
+  if (channelInitialized || getPlatform() !== 'android') return;
+  try {
+    await createChannel({
+      id: MOBILE_CHANNEL_ID,
+      name: 'Task Reminders',
+      description: 'Notifications for upcoming and due tasks',
+      importance: Importance.High,
+      visibility: Visibility.Public,
+      vibration: true,
+      lights: true,
+    });
+    channelInitialized = true;
+  } catch (err) {
+    // Android 7.0/7.1 (API 24-25) does not use notification channels; ignore gracefully
+    console.debug('Notification channel creation skipped or unsupported on this Android API level:', err);
+    channelInitialized = true;
+  }
+}
+
 /**
  * Ensure OS notification permission is granted
  */
 export async function ensureNotificationPermission(): Promise<boolean> {
   try {
+    await ensureMobileNotificationChannel();
     let granted = await isPermissionGranted();
     if (!granted) {
       const permission = await requestPermission();
@@ -76,7 +119,8 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
   }
 
   // Ensure OS notification permission is requested
-  await ensureNotificationPermission();
+  const granted = await ensureNotificationPermission();
+  if (!granted) return false;
 
   // Cancel existing first (handles updates)
   if (scheduledTaskIds.has(task.id)) {
@@ -108,6 +152,43 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
     return false;
   }
 
+  if (isMobile()) {
+    const notifId = hashTaskIdToNotificationId(task.id);
+    const title = `📋 ${task.title}`;
+    const body = task.exactTime ? `Due today at ${task.exactTime}` : 'Due today';
+
+    if (notifyAt.getTime() <= Date.now() + 5000) {
+      try {
+        sendNotification({
+          id: notifId,
+          channelId: MOBILE_CHANNEL_ID,
+          title,
+          body,
+        });
+      } catch (err) {
+        console.warn('Failed to send immediate mobile notification:', err);
+      }
+    } else {
+      try {
+        sendNotification({
+          id: notifId,
+          channelId: MOBILE_CHANNEL_ID,
+          title,
+          body,
+          schedule: Schedule.at(notifyAt, false, true),
+        });
+      } catch {
+        sendNotification({
+          id: notifId,
+          channelId: MOBILE_CHANNEL_ID,
+          title,
+          body,
+          schedule: Schedule.at(notifyAt, false, false),
+        });
+      }
+    }
+  }
+
   try {
     await invoke('schedule_notification', {
       taskId: task.id,
@@ -129,6 +210,10 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
  * Cancel a scheduled notification for a task
  */
 export async function cancelTaskNotification(taskId: string): Promise<void> {
+  if (isMobile()) {
+    await cancelPluginNotifications([hashTaskIdToNotificationId(taskId)]).catch(() => {});
+  }
+
   if (!scheduledTaskIds.has(taskId)) {
     return; // Not scheduled, nothing to cancel
   }
@@ -148,6 +233,10 @@ export async function cancelTaskNotification(taskId: string): Promise<void> {
 export async function cancelAllNotifications(): Promise<void> {
   console.debug(`Cancelling ${scheduledTaskIds.size} notifications`);
   
+  if (isMobile()) {
+    await cancelAllPluginNotifications().catch(() => {});
+  }
+
   for (const taskId of scheduledTaskIds) {
     try {
       await invoke('cancel_notification', { taskId });
