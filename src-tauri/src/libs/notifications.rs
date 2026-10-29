@@ -34,6 +34,14 @@ impl Default for NotificationScheduler {
 }
 
 impl NotificationScheduler {
+    /// Check whether there are any pending notifications without cloning
+    pub fn has_pending(&self) -> bool {
+        self.scheduled
+            .lock()
+            .map(|s| !s.is_empty())
+            .unwrap_or(false)
+    }
+
     /// Schedule a notification for a task
     pub fn schedule(&self, task_id: String, title: String, body: String, notify_at: DateTime<Utc>) {
         let notification = ScheduledNotification {
@@ -44,13 +52,13 @@ impl NotificationScheduler {
             shown: false,
         };
 
-        let mut scheduled = self.scheduled.lock().unwrap();
+        let mut scheduled = self.scheduled.lock().unwrap_or_else(|e| e.into_inner());
         scheduled.insert(task_id, notification);
     }
 
     /// Cancel a scheduled notification
     pub fn cancel(&self, task_id: &str) {
-        let mut scheduled = self.scheduled.lock().unwrap();
+        let mut scheduled = self.scheduled.lock().unwrap_or_else(|e| e.into_inner());
         scheduled.remove(task_id);
     }
 
@@ -61,7 +69,7 @@ impl NotificationScheduler {
 
         // 1. Collect due notifications and release mutex lock immediately
         let due_notifications: Vec<ScheduledNotification> = {
-            let mut scheduled = self.scheduled.lock().unwrap();
+            let mut scheduled = self.scheduled.lock().unwrap_or_else(|e| e.into_inner());
             let mut due = Vec::new();
             for n in scheduled.values_mut() {
                 if !n.shown && n.notify_at <= now {
@@ -148,26 +156,19 @@ pub fn schedule_notification(
         title, task_id, notify_at
     );
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    {
-        let _ = &app;
-        scheduler.schedule(task_id.clone(), title, body, notify_at);
-        Ok(task_id)
-    }
-
     #[cfg(any(target_os = "android", target_os = "ios"))]
-    {
-        if notify_at <= Utc::now() {
-            let _ = app
-                .notification()
-                .builder()
-                .title(&title)
-                .body(&body)
-                .show();
-        }
-        scheduler.schedule(task_id.clone(), title, body, notify_at);
-        Ok(task_id)
+    if notify_at <= Utc::now() {
+        let _ = app
+            .notification()
+            .builder()
+            .title(&title)
+            .body(&body)
+            .show();
+        return Ok(task_id);
     }
+    let _ = &app;
+    scheduler.schedule(task_id.clone(), title, body, notify_at);
+    Ok(task_id)
 }
 
 /// Cancel a scheduled notification
@@ -183,5 +184,9 @@ pub fn cancel_notification(
 /// Get count of scheduled notifications (for debugging)
 #[tauri::command]
 pub fn get_notification_count(scheduler: tauri::State<'_, NotificationScheduler>) -> usize {
-    scheduler.scheduled.lock().unwrap().len()
+    scheduler
+        .scheduled
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .len()
 }

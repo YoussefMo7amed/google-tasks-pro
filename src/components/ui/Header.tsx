@@ -14,15 +14,17 @@ import {
   Button,
   Tooltip,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { Logout, AutoAwesome, Translate, Check, Undo, Redo, KeyboardAltOutlined, Google, CloudOffOutlined, PersonOutline, Add, DeleteOutline } from "@mui/icons-material";
+import { Logout, AutoAwesome, Translate, Check, Undo, Redo, KeyboardAltOutlined, Google, CloudOffOutlined, PersonOutline, Add, DeleteOutline, Menu as MenuIcon } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
   attemptLogoutState,
   loggedInSelector,
   userProfileSelector,
 } from "../../config/states";
-import { aiCopilotOpenAtom, aiCopilotMinimizedAtom, shortcutsModalOpenAtom, isGuestModeAtom } from "../../store";
+import { aiCopilotOpenAtom, aiCopilotMinimizedAtom, shortcutsModalOpenAtom, isGuestModeAtom, mobileSidebarOpenAtom } from "../../store";
 import ViewSwitcher from "./ViewSwitcher";
 import { useTranslation } from "../../i18n";
 import { useUndoRedo } from "../../hooks/useUndoRedo";
@@ -31,6 +33,9 @@ import { handleLogin, exitGuestMode, switchToGoogleAccount, switchToGuestMode } 
 import { accountService, StoredAccount } from "../../services/account.service";
 
 export default function Header() {
+  const theme = useTheme();
+  const isMobileViewport = useMediaQuery(theme.breakpoints.down("md"));
+  const setMobileSidebarOpen = useSetRecoilState(mobileSidebarOpenAtom);
   const loggedIn = useRecoilValue(loggedInSelector);
   const profile = useRecoilValue(userProfileSelector);
   const isGuest = useRecoilValue(isGuestModeAtom);
@@ -111,9 +116,28 @@ export default function Header() {
           px: 2.5,
         }}
       >
-        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: 0.5 }}>
-          {t("navigation.tasks")}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {isMobileViewport && (
+            <IconButton
+              size="small"
+              onClick={() => setMobileSidebarOpen(true)}
+              sx={{ color: "text.primary" }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{
+              fontWeight: 600,
+              letterSpacing: 0.5,
+              display: { xs: "none", sm: "block" },
+            }}
+          >
+            {t("navigation.tasks")}
+          </Typography>
+        </Box>
 
         <ViewSwitcher />
 
@@ -160,13 +184,23 @@ export default function Header() {
               sx={{
                 color: "text.primary",
                 p: 0.6,
+                display: { xs: "none", md: "inline-flex" },
               }}
             >
               <KeyboardAltOutlined sx={{ fontSize: 19 }} />
             </IconButton>
           </Tooltip>
 
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.25, height: 20, alignSelf: "center" }} />
+          <Divider
+            orientation="vertical"
+            flexItem
+            sx={{
+              mx: 0.25,
+              height: 20,
+              alignSelf: "center",
+              display: { xs: "none", md: "block" },
+            }}
+          />
 
           {/* Language Switcher */}
           <Tooltip title={language === "en" ? "تبديل إلى العربية" : "Switch to English"}>
@@ -254,7 +288,9 @@ export default function Header() {
             }}
           >
             <AutoAwesome sx={{ color: "primary.main", fontSize: "1.1rem" }} />
-            <span>{t("navigation.aiCopilot")}</span>
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+              {t("navigation.aiCopilot")}
+            </Box>
             <Box
               component="span"
               sx={{
@@ -265,6 +301,7 @@ export default function Header() {
                 fontSize: "0.7rem",
                 color: "text.secondary",
                 fontWeight: 700,
+                display: { xs: "none", sm: "inline" },
               }}
             >
               ⌘K

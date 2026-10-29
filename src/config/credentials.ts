@@ -1,4 +1,5 @@
 import { CryptoVaultService } from "../services/security/crypto-vault.service";
+import { getPlatform } from "../helpers/platform";
 
 export const DEFAULT_CLIENT_ID =
   (import.meta.env.VITE_GOOGLE_CLIENT_ID ?? (typeof process !== "undefined" ? (process.env?.VITE_GOOGLE_CLIENT_ID as string) : "") ?? "") as string;
@@ -6,6 +7,8 @@ export const DEFAULT_CLIENT_SECRET =
   (import.meta.env.VITE_GOOGLE_CLIENT_SECRET ?? (typeof process !== "undefined" ? (process.env?.VITE_GOOGLE_CLIENT_SECRET as string) : "") ?? "") as string;
 export const DEFAULT_ANDROID_CLIENT_ID =
   (import.meta.env.VITE_GOOGLE_ANDROID_CLIENT_ID ?? "") as string;
+export const DEFAULT_IOS_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_IOS_CLIENT_ID ?? "") as string;
 
 export function getClientId(): string {
   if (typeof window !== "undefined" && window.localStorage) {
@@ -26,8 +29,23 @@ export function getAndroidClientId(): string {
   return getClientId();
 }
 
+export function getIosClientId(): string {
+  if (typeof window !== "undefined" && window.localStorage) {
+    const custom = window.localStorage.getItem("custom_google_ios_client_id");
+    if (custom && custom.trim()) return custom.trim();
+  }
+  if (DEFAULT_IOS_CLIENT_ID && DEFAULT_IOS_CLIENT_ID.trim()) {
+    return DEFAULT_IOS_CLIENT_ID.trim();
+  }
+  return getAndroidClientId();
+}
+
+export function getMobileClientId(): string {
+  return getPlatform() === "ios" ? getIosClientId() : getAndroidClientId();
+}
+
 export function getMobileRedirectUri(): string {
-  const clientId = getAndroidClientId();
+  const clientId = getMobileClientId();
   if (clientId.endsWith(".apps.googleusercontent.com")) {
     const prefix = clientId.replace(".apps.googleusercontent.com", "");
     return `com.googleusercontent.apps.${prefix}:/oauth2redirect`;

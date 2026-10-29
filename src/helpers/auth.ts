@@ -3,7 +3,7 @@ import { cancel as cancelOAuthServer } from "@fabianlars/tauri-plugin-oauth";
 import axios from "axios";
 import { UserProfile } from "../types/googleapis";
 import { readTextFile, remove, writeTextFile } from "@tauri-apps/plugin-fs";
-import { getClientId, getClientSecret, getAndroidClientId, getMobileRedirectUri } from "../config/credentials";
+import { getClientId, getClientSecret, getMobileClientId, getMobileRedirectUri } from "../config/credentials";
 import settings from "../config/settings";
 import { generate_oauth_port, get_access_token, get_auth_code, save_access_token, save_auth_code } from "./invoker";
 import { AccessToken } from "./commands";
@@ -87,19 +87,19 @@ export async function getAccessToken(code: string, portOverride?: number): Promi
             : null;
 
         if (mobile || (!portOverride && !portManager.getPort() && verifier)) {
-            const androidClientId = getAndroidClientId();
+            const mobileClientId = getMobileClientId();
             const desktopClientId = getClientId();
             const desktopClientSecret = getClientSecret();
 
             const data: Record<string, string | undefined> = {
                 code,
-                client_id: androidClientId,
+                client_id: mobileClientId,
                 redirect_uri: getMobileRedirectUri(),
                 grant_type: "authorization_code",
                 code_verifier: verifier || undefined,
             };
 
-            if (androidClientId === desktopClientId && desktopClientSecret) {
+            if (mobileClientId === desktopClientId && desktopClientSecret) {
                 data.client_secret = desktopClientSecret;
             }
 
@@ -142,17 +142,17 @@ export async function refreshAccessToken(refreshToken: string) : Promise<AccessT
     }
     try {
         const mobile = isMobile();
-        const androidClientId = getAndroidClientId();
+        const mobileClientId = getMobileClientId();
         const desktopClientId = getClientId();
         const desktopClientSecret = getClientSecret();
 
         const data: Record<string, string | undefined> = {
             refresh_token: refreshToken,
-            client_id: mobile ? androidClientId : desktopClientId,
+            client_id: mobile ? mobileClientId : desktopClientId,
             grant_type: "refresh_token",
         };
 
-        if (!mobile || (androidClientId === desktopClientId && desktopClientSecret)) {
+        if (!mobile || (mobileClientId === desktopClientId && desktopClientSecret)) {
             data.client_secret = desktopClientSecret;
         }
 
@@ -227,7 +227,7 @@ export async function openAuthWindow() {
         const url = new URL(GOOGLE_OAUTH_ENDPOINT);
         url.searchParams.append("scope", SCOPE);
         url.searchParams.append("response_type", "code");
-        url.searchParams.append("client_id", getAndroidClientId());
+        url.searchParams.append("client_id", getMobileClientId());
         url.searchParams.append("redirect_uri", getMobileRedirectUri());
         url.searchParams.append("code_challenge", challenge);
         url.searchParams.append("code_challenge_method", "S256");

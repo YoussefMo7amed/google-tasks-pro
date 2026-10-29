@@ -18,6 +18,7 @@ import {
   exitGuestMode,
 } from "./helpers/auth";
 import { loadContextmenu } from "./helpers/windowhelper";
+import { isDesktop } from "./helpers/platform";
 import TaskPage from "./components/TaskPage";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import {
@@ -110,13 +111,15 @@ function App() {
       onSucess: ({ code, port }) => {
         console.log(code, "code generated", "port:", port);
         // Bring desktop app to front and focus immediately
-        invoke("bring_to_front").catch(console.warn);
-        import("@tauri-apps/api/webviewWindow").then(({ getCurrentWebviewWindow }) => {
-          const appWindow = getCurrentWebviewWindow();
-          appWindow.show().catch(console.warn);
-          appWindow.unminimize().catch(console.warn);
-          appWindow.setFocus().catch(console.warn);
-        }).catch(console.warn);
+        if (isDesktop()) {
+          invoke("bring_to_front").catch(console.warn);
+          import("@tauri-apps/api/webviewWindow").then(({ getCurrentWebviewWindow }) => {
+            const appWindow = getCurrentWebviewWindow();
+            appWindow.show().catch(console.warn);
+            appWindow.unminimize().catch(console.warn);
+            appWindow.setFocus().catch(console.warn);
+          }).catch(console.warn);
+        }
 
         if (code) {
           saveAuthCode(code).then(() => {

@@ -181,7 +181,9 @@ pub fn run() {
                 loop {
                     std::thread::sleep(std::time::Duration::from_secs(5));
                     let scheduler = app_handle.state::<NotificationScheduler>();
-                    scheduler.check_and_notify(&app_handle);
+                    if scheduler.has_pending() {
+                        scheduler.check_and_notify(&app_handle);
+                    }
                 }
             });
 

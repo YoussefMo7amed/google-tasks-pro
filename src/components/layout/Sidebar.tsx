@@ -26,6 +26,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Drawer,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { AppTaskList, SidebarView } from "../../types/app";
 import {
@@ -53,7 +56,7 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, aiCopilotMinimizedAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom, toastAtom } from "../../store";
+import { viewStateAtom, starredTaskIdsAtom, aiCopilotOpenAtom, aiCopilotMinimizedAtom, settingsOpenAtom, settingsActiveTabAtom, taskViewModeAtom, shortcutsModalOpenAtom, addCategoryOpenAtom, isGuestModeAtom, toastAtom, mobileSidebarOpenAtom } from "../../store";
 import { useTaskLists, useTrash, useServices } from "../../hooks";
 import { syncQueueService } from "../../services/sync-queue.service";
 import AddCategoryDialog from "../ui/AddCategoryDialog";
@@ -66,7 +69,11 @@ interface SidebarProps {
 
 export default function Sidebar({ onViewChange }: SidebarProps) {
   const { t, isRtl } = useTranslation();
+  const theme = useTheme();
+  const isMobileViewport = useMediaQuery(theme.breakpoints.down("md"));
+  const [mobileOpen, setMobileOpen] = useRecoilState(mobileSidebarOpenAtom);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const effectiveCollapsed = isMobileViewport ? false : isCollapsed;
   const [listsExpanded, setListsExpanded] = useState(true);
   const [showAddCategory, setShowAddCategory] = useRecoilState(addCategoryOpenAtom);
   const setShowSettings = useSetRecoilState(settingsOpenAtom);
@@ -167,6 +174,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   }, [fetchTaskLists]);
 
   const handleViewAll = () => {
+    if (isMobileViewport) setMobileOpen(false);
     setViewState({ view: "all", activeListId: undefined, activeListIndex: -1 });
     if (taskViewMode === "eisenhower") {
       setTaskViewMode("board");
@@ -175,6 +183,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   };
 
   const handleViewStarred = () => {
+    if (isMobileViewport) setMobileOpen(false);
     setViewState({ view: "starred", activeListId: undefined, activeListIndex: -2 });
     if (taskViewMode === "eisenhower") {
       setTaskViewMode("board");
@@ -183,12 +192,14 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   };
 
   const handleViewEisenhower = () => {
+    if (isMobileViewport) setMobileOpen(false);
     setViewState({ view: "eisenhower", activeListId: undefined, activeListIndex: -3 });
     setTaskViewMode("eisenhower");
     onViewChange?.("eisenhower");
   };
 
   const handleViewAnalytics = () => {
+    if (isMobileViewport) setMobileOpen(false);
     setViewState({ view: "analytics", activeListId: undefined, activeListIndex: -4 });
     onViewChange?.("analytics");
   };
@@ -196,6 +207,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   const { count: trashCount } = useTrash();
 
   const handleViewTrash = () => {
+    if (isMobileViewport) setMobileOpen(false);
     setViewState({ view: "trash", activeListId: undefined, activeListIndex: -5 });
     if (taskViewMode === "eisenhower") {
       setTaskViewMode("board");
@@ -204,6 +216,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
   };
 
   const handleListClick = (listId: string, index: number) => {
+    if (isMobileViewport) setMobileOpen(false);
     setViewState({ view: "list", activeListId: listId, activeListIndex: index });
     if (taskViewMode === "eisenhower") {
       setTaskViewMode("board");
@@ -228,88 +241,89 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
     }
     return count;
   }, [taskLists, starredIds]);
-  const sidebarWidth = isCollapsed ? 64 : 260;
+  const sidebarWidth = effectiveCollapsed ? 64 : 260;
 
-  return (
-    <>
-      <Box
-        sx={{
-          width: sidebarWidth,
-          minWidth: sidebarWidth,
-          height: "100%",
-          borderRight: isRtl ? 0 : 1,
-          borderLeft: isRtl ? 1 : 0,
-          borderColor: "divider",
-          display: "flex",
-          flexDirection: "column",
-          bgcolor: "background.default",
-          overflow: "hidden",
-          transition: "width 0.2s ease-in-out, min-width 0.2s ease-in-out",
-        }}
-      >
-        {/* Collapse Toggle */}
+  const sidebarContent = (
+    <Box
+      sx={{
+        width: isMobileViewport ? 280 : sidebarWidth,
+        minWidth: isMobileViewport ? 280 : sidebarWidth,
+        height: "100%",
+        borderRight: isMobileViewport ? 0 : isRtl ? 0 : 1,
+        borderLeft: isMobileViewport ? 0 : isRtl ? 1 : 0,
+        borderColor: "divider",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.default",
+        overflow: "hidden",
+        transition: "width 0.2s ease-in-out, min-width 0.2s ease-in-out",
+      }}
+    >
+      {/* Collapse Toggle */}
+      {!isMobileViewport && (
         <Box
           sx={{
             display: "flex",
-            justifyContent: isCollapsed ? "center" : isRtl ? "flex-start" : "flex-end",
+            justifyContent: effectiveCollapsed ? "center" : isRtl ? "flex-start" : "flex-end",
             p: 1,
           }}
         >
-          <Tooltip title={isCollapsed ? t("navigation.expandSidebar") : t("navigation.collapseSidebar")}>
+          <Tooltip title={effectiveCollapsed ? t("navigation.expandSidebar") : t("navigation.collapseSidebar")}>
             <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)}>
-              {isCollapsed ? (isRtl ? <ChevronLeft fontSize="small" /> : <ChevronRight fontSize="small" />) : (isRtl ? <ChevronRight fontSize="small" /> : <ChevronLeft fontSize="small" />)}
+              {effectiveCollapsed ? (isRtl ? <ChevronLeft fontSize="small" /> : <ChevronRight fontSize="small" />) : (isRtl ? <ChevronRight fontSize="small" /> : <ChevronLeft fontSize="small" />)}
             </IconButton>
           </Tooltip>
         </Box>
+      )}
 
-        {/* Create Button */}
-        {!isCollapsed && (
-          <Box sx={{ px: 2, pb: 2 }}>
-            <Button
-              variant="contained"
-              onClick={() => setShowAddCategory(true)}
-              sx={{
-                borderRadius: "28px",
-                textTransform: "none",
-                py: 1.25,
-                px: 2.75,
-                fontWeight: 600,
-                fontSize: "0.9rem",
-                bgcolor: "background.paper",
-                color: "primary.main",
-                border: 1,
-                borderColor: "divider",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                "&:hover": {
-                  bgcolor: "action.hover",
-                  borderColor: "primary.main",
-                },
-              }}
-            >
-              <Add fontSize="small" />
-              <span>{t("common.create")}</span>
-            </Button>
-          </Box>
-        )}
+      {/* Create Button */}
+      {!effectiveCollapsed && (
+        <Box sx={{ px: 2, pb: 2 }}>
+          <Button
+            variant="contained"
+            onClick={() => setShowAddCategory(true)}
+            sx={{
+              borderRadius: "28px",
+              textTransform: "none",
+              py: 1.25,
+              px: 2.75,
+              fontWeight: 600,
+              fontSize: "0.9rem",
+              bgcolor: "background.paper",
+              color: "primary.main",
+              border: 1,
+              borderColor: "divider",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              "&:hover": {
+                bgcolor: "action.hover",
+                borderColor: "primary.main",
+              },
+            }}
+          >
+            <Add fontSize="small" />
+            <span>{t("common.create")}</span>
+          </Button>
+        </Box>
+      )}
 
-        {/* Middle Scrollable Section: Navigation & Lists */}
-        <Box
-          sx={{
-            flex: 1,
-            overflowY: "auto",
-            overflowX: "hidden",
-            scrollbarWidth: "thin",
-            "&::-webkit-scrollbar": { width: 4 },
-            "&::-webkit-scrollbar-thumb": {
-              bgcolor: "action.disabled",
-              borderRadius: 2,
-            },
-          }}
-        >
-          {isCollapsed ? (
+      {/* Middle Scrollable Section: Navigation & Lists */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          scrollbarWidth: "thin",
+          "&::-webkit-scrollbar": { width: 4 },
+          "&::-webkit-scrollbar-thumb": {
+            bgcolor: "action.disabled",
+            borderRadius: 2,
+          },
+        }}
+      >
+        {effectiveCollapsed ? (
             /* Collapsed Mode Icons */
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, py: 1 }}>
               <Tooltip title={t("navigation.createList")} placement={isRtl ? "left" : "right"}>
@@ -960,13 +974,13 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
             }}
             sx={{
               py: 0.8,
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
+              justifyContent: effectiveCollapsed ? 'center' : 'flex-start',
             }}
           >
-            <ListItemIcon sx={{ minWidth: isCollapsed ? 0 : 36 }}>
+            <ListItemIcon sx={{ minWidth: effectiveCollapsed ? 0 : 36 }}>
               <Settings fontSize="small" />
             </ListItemIcon>
-            {!isCollapsed && (
+            {!effectiveCollapsed && (
               <ListItemText
                 primary={t("settings.title")}
                 primaryTypographyProps={{
@@ -978,6 +992,30 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
           </ListItemButton>
         </Box>
       </Box>
+  );
+
+  return (
+    <>
+      {isMobileViewport ? (
+        <Drawer
+          variant="temporary"
+          anchor={isRtl ? "right" : "left"}
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          PaperProps={{
+            sx: {
+              width: 280,
+              bgcolor: "background.default",
+              backgroundImage: "none",
+            },
+          }}
+        >
+          {sidebarContent}
+        </Drawer>
+      ) : (
+        sidebarContent
+      )}
 
       <AddCategoryDialog
         open={showAddCategory}

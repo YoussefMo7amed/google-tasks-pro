@@ -98,6 +98,11 @@ export const appReadyAtom = atom<boolean>({
   default: false,
 });
 
+export const mobileSidebarOpenAtom = atom<boolean>({
+  key: "mobileSidebarOpen",
+  default: false,
+});
+
 // =============================================================================
 // Starred Task IDs (local)
 // =============================================================================

@@ -85,8 +85,8 @@ export default function ViewSwitcher() {
       >
         <Tooltip title={t("navigation.boardView")}>
           <ToggleButton value="board" aria-label={t("navigation.boardView")}>
-            <ViewKanban sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
-            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+            <ViewKanban sx={{ fontSize: 18, ...(isRtl ? { ml: { xs: 0, sm: 0.75 } } : { mr: { xs: 0, sm: 0.75 } }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit", display: { xs: "none", sm: "inline" } }}>
               {t("navigation.boardView")}
             </Typography>
           </ToggleButton>
@@ -94,8 +94,8 @@ export default function ViewSwitcher() {
 
         <Tooltip title={t("navigation.listView")}>
           <ToggleButton value="list" aria-label={t("navigation.listView")}>
-            <ViewList sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
-            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+            <ViewList sx={{ fontSize: 18, ...(isRtl ? { ml: { xs: 0, sm: 0.75 } } : { mr: { xs: 0, sm: 0.75 } }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit", display: { xs: "none", sm: "inline" } }}>
               {t("navigation.listView")}
             </Typography>
           </ToggleButton>
@@ -103,8 +103,8 @@ export default function ViewSwitcher() {
 
         <Tooltip title={t("navigation.calendarView")}>
           <ToggleButton value="calendar" aria-label={t("navigation.calendarView")}>
-            <CalendarMonth sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
-            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+            <CalendarMonth sx={{ fontSize: 18, ...(isRtl ? { ml: { xs: 0, sm: 0.75 } } : { mr: { xs: 0, sm: 0.75 } }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit", display: { xs: "none", sm: "inline" } }}>
               {t("navigation.calendarView")}
             </Typography>
           </ToggleButton>
@@ -112,8 +112,8 @@ export default function ViewSwitcher() {
 
         <Tooltip title={t("navigation.eisenhowerView")}>
           <ToggleButton value="eisenhower" aria-label={t("navigation.eisenhowerView")}>
-            <GridView sx={{ fontSize: 18, ...(isRtl ? { ml: 0.75 } : { mr: 0.75 }) }} />
-            <Typography variant="caption" sx={{ fontWeight: "inherit" }}>
+            <GridView sx={{ fontSize: 18, ...(isRtl ? { ml: { xs: 0, sm: 0.75 } } : { mr: { xs: 0, sm: 0.75 } }) }} />
+            <Typography variant="caption" sx={{ fontWeight: "inherit", display: { xs: "none", sm: "inline" } }}>
               {t("navigation.eisenhowerView")}
             </Typography>
           </ToggleButton>
