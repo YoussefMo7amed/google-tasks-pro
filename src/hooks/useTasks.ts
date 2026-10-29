@@ -307,8 +307,6 @@ export function useTasks() {
    * Toggle task completion
    */
   const toggleTaskComplete = useCallback(async (listId: string, taskId: string, isUndoRedoAction = false): Promise<boolean> => {
-    if (!service) return false;
-
     // Optimistic update
     const currentTask = taskLists.find(l => l.id === listId)?.tasks.find(t => t.id === taskId);
     if (!currentTask) return false;
@@ -352,15 +350,17 @@ export function useTasks() {
       });
     }
 
-    const isOffline = !navigator.onLine || taskId.startsWith("temp_");
+    const isOffline = !service || !navigator.onLine || taskId.startsWith("temp_");
     if (isOffline) {
-      syncQueueService.enqueue("TOGGLE_COMPLETE", listId, {}, taskId);
+      if (service) {
+        syncQueueService.enqueue("TOGGLE_COMPLETE", listId, {}, taskId);
+      }
       setTaskLists(prev => {
         offlineCacheService.saveSnapshot(prev);
         return prev;
       });
       setToast({ 
-        title: newStatus === "completed" ? `${t("tasks.taskCompletedToast")} (offline 💾)` : t("tasks.taskUncheckedToast"), 
+        title: newStatus === "completed" ? `${t("tasks.taskCompletedToast")} 🎉` : t("tasks.taskUncheckedToast"), 
         type: newStatus === "completed" ? "success" : "info" 
       });
       return true;
@@ -408,9 +408,8 @@ export function useTasks() {
    * Toggle task starred status
    */
   const toggleTaskStar = useCallback(async (listId: string, taskId: string, isUndoRedoAction = false): Promise<boolean> => {
-    if (!service) return false;
-
     const currentTask = taskLists.find(l => l.id === listId)?.tasks.find(t => t.id === taskId);
+    if (!currentTask) return false;
 
     // Optimistic update
     const wasStarred = starredIds.has(taskId);
@@ -442,7 +441,9 @@ export function useTasks() {
     }
 
     try {
-      await service.toggleStar(listId, taskId);
+      if (service) {
+        await service.toggleStar(listId, taskId);
+      }
       return true;
     } catch (err) {
       // Revert optimistic update

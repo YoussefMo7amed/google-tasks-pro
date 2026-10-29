@@ -233,7 +233,14 @@ export async function openAuthWindow() {
         url.searchParams.append("code_challenge_method", "S256");
         url.searchParams.append("prompt", "select_account consent");
         url.searchParams.append("access_type", "offline");
-        await openUrl(url.href);
+        try {
+            await openUrl(url.href);
+        } catch (openErr) {
+            console.warn("openUrl failed on mobile, attempting window.open fallback:", openErr);
+            if (typeof window !== "undefined") {
+                window.open(url.href, "_blank");
+            }
+        }
         return;
     }
 
@@ -249,7 +256,14 @@ export async function openAuthWindow() {
     url.searchParams.append("redirect_uri", getLocalHostUrl(port));
     url.searchParams.append("include_granted_scopes", "true");
     url.searchParams.append("state", "state_parameter_passthrough_value");
-    await openUrl(url.href);
+    try {
+        await openUrl(url.href);
+    } catch (openErr) {
+        console.warn("openUrl failed, attempting window.open fallback:", openErr);
+        if (typeof window !== "undefined") {
+            window.open(url.href, "_blank");
+        }
+    }
 }
 
 /**

@@ -26,6 +26,8 @@ import {
   MenuItem,
   ListItemIcon,
   Switch,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Close,
@@ -48,6 +50,7 @@ import {
   KeyboardArrowDown,
   ShieldOutlined,
   Psychology,
+  MoreVert,
 } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
 import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom, aiCopilotMinimizedAtom, aiSettingsAtom } from "../../store";
@@ -138,6 +141,9 @@ export default function AICopilotModal({
   // Sizing & UI controls
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useRecoilState(aiCopilotMinimizedAtom);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -862,22 +868,22 @@ export default function AICopilotModal({
       <Dialog
         open={open && !isMinimized}
         onClose={onClose}
-      fullScreen={isMaximized}
-      maxWidth={isMaximized ? false : showHistory ? "lg" : "md"}
-      fullWidth
-      PaperProps={{
-        sx: {
-          height: isMaximized ? "100vh" : "85vh",
-          maxHeight: isMaximized ? "100vh" : "90vh",
-          display: "flex",
-          flexDirection: "column",
-          borderRadius: isMaximized ? 0 : 3,
-          m: isMaximized ? 0 : 2,
-          overflow: "hidden",
-          transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-        },
-      }}
-    >
+        fullScreen={isMaximized || isMobile}
+        maxWidth={isMaximized || isMobile ? false : showHistory ? "lg" : "md"}
+        fullWidth
+        PaperProps={{
+          sx: {
+            height: isMaximized || isMobile ? "100vh" : "85vh",
+            maxHeight: isMaximized || isMobile ? "100vh" : "90vh",
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: isMaximized || isMobile ? 0 : 3,
+            m: isMaximized || isMobile ? 0 : 2,
+            overflow: "hidden",
+            transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+          },
+        }}
+      >
       {/* Top Header */}
       <DialogTitle
         sx={{
@@ -959,59 +965,112 @@ export default function AICopilotModal({
 
         {/* Header Actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <Tooltip title={t("ai.newChat")}>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Add />}
-              onClick={handleNewChat}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontSize: "0.82rem",
-                px: 1.5,
-                py: 0.4,
-              }}
-            >
-              {t("ai.newChat")}
-            </Button>
-          </Tooltip>
+          {/* Mobile compact header actions */}
+          {isMobile ? (
+            <>
+              <Tooltip title={t("ai.newChat")}>
+                <IconButton size="small" color="primary" onClick={handleNewChat}>
+                  <Add fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-          <Tooltip title={showHistory ? t("ai.hideHistory") : t("ai.showHistory")}>
-            <IconButton
-              size="small"
-              color={showHistory ? "primary" : "default"}
-              onClick={() => setShowHistory((prev) => !prev)}
-            >
-              <History fontSize="small" />
-            </IconButton>
-          </Tooltip>
+              <Tooltip title={showHistory ? t("ai.hideHistory") : t("ai.showHistory")}>
+                <IconButton
+                  size="small"
+                  color={showHistory ? "primary" : "default"}
+                  onClick={() => setShowHistory((prev) => !prev)}
+                >
+                  <History fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-          <Tooltip title={t("ai.minimizeToWidget")}>
-            <IconButton size="small" onClick={() => setIsMinimized(true)}>
-              <Remove fontSize="small" />
-            </IconButton>
-          </Tooltip>
+              <IconButton
+                size="small"
+                onClick={(e) => setMobileMenuAnchor(e.currentTarget)}
+              >
+                <MoreVert fontSize="small" />
+              </IconButton>
 
-          <Tooltip title={isMaximized ? t("ai.restoreSize") : t("ai.maximize")}>
-            <IconButton size="small" onClick={() => setIsMaximized((prev) => !prev)}>
-              {isMaximized ? (
-                <FullscreenExit fontSize="small" />
-              ) : (
-                <Fullscreen fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip>
+              <Menu
+                anchorEl={mobileMenuAnchor}
+                open={Boolean(mobileMenuAnchor)}
+                onClose={() => setMobileMenuAnchor(null)}
+                PaperProps={{ sx: { minWidth: 160, borderRadius: 2 } }}
+              >
+                <MenuItem
+                  onClick={() => {
+                    setMobileMenuAnchor(null);
+                    handleOpenAISettings();
+                  }}
+                >
+                  <ListItemIcon>
+                    <Tune fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary={t("ai.settings")} />
+                </MenuItem>
+              </Menu>
 
-          <Tooltip title={t("ai.settings")}>
-            <IconButton size="small" onClick={handleOpenAISettings}>
-              <Tune fontSize="small" />
-            </IconButton>
-          </Tooltip>
+              <IconButton size="small" onClick={onClose}>
+                <Close fontSize="small" />
+              </IconButton>
+            </>
+          ) : (
+            <>
+              <Tooltip title={t("ai.newChat")}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Add />}
+                  onClick={handleNewChat}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontSize: "0.82rem",
+                    px: 1.5,
+                    py: 0.4,
+                  }}
+                >
+                  {t("ai.newChat")}
+                </Button>
+              </Tooltip>
 
-          <IconButton size="small" onClick={onClose}>
-            <Close fontSize="small" />
-          </IconButton>
+              <Tooltip title={showHistory ? t("ai.hideHistory") : t("ai.showHistory")}>
+                <IconButton
+                  size="small"
+                  color={showHistory ? "primary" : "default"}
+                  onClick={() => setShowHistory((prev) => !prev)}
+                >
+                  <History fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={t("ai.minimizeToWidget")}>
+                <IconButton size="small" onClick={() => setIsMinimized(true)}>
+                  <Remove fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={isMaximized ? t("ai.restoreSize") : t("ai.maximize")}>
+                <IconButton size="small" onClick={() => setIsMaximized((prev) => !prev)}>
+                  {isMaximized ? (
+                    <FullscreenExit fontSize="small" />
+                  ) : (
+                    <Fullscreen fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={t("ai.settings")}>
+                <IconButton size="small" onClick={handleOpenAISettings}>
+                  <Tune fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <IconButton size="small" onClick={onClose}>
+                <Close fontSize="small" />
+              </IconButton>
+            </>
+          )}
         </Box>
       </DialogTitle>
 

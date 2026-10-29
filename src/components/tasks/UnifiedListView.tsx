@@ -486,15 +486,20 @@ export default function UnifiedListView() {
                     >
                       {/* Left side: checkbox, star, title */}
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, overflow: "hidden", flex: 1 }}>
-                        <Checkbox
-                          size="small"
-                          checked={isCompleted}
+                        <Box
+                          component="span"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleTaskComplete(list.id, task.id);
                           }}
-                          sx={{ p: 0.5, flexShrink: 0 }}
-                        />
+                          sx={{ display: "inline-flex", p: 0.5, flexShrink: 0, cursor: "pointer" }}
+                        >
+                          <Checkbox
+                            size="small"
+                            checked={isCompleted}
+                            sx={{ p: 0 }}
+                          />
+                        </Box>
 
                         <IconButton
                           size="small"

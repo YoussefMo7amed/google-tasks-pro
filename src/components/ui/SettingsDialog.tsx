@@ -393,7 +393,10 @@ export default function SettingsDialog({
       <Tabs
         value={activeTab}
         onChange={(_, val) => setActiveTab(val)}
-        sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={{ borderBottom: 1, borderColor: 'divider', px: { xs: 1, sm: 2 } }}
       >
         <Tab icon={<Notifications sx={{ fontSize: 18 }} />} iconPosition="start" label={t("settings.generalTab")} />
         <Tab icon={<SmartToy sx={{ fontSize: 18 }} />} iconPosition="start" label={t("settings.aiTab")} />
@@ -857,6 +860,7 @@ export default function SettingsDialog({
                   }}
                   variant="scrollable"
                   scrollButtons="auto"
+                  allowScrollButtonsMobile
                 >
                   {ALL_PROVIDERS.map((prov) => {
                     const isPrimary = aiSettings.provider === prov;
