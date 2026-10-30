@@ -2,13 +2,14 @@
 
 # 🚀 Google Tasks Pro
 
-**A powerful, modern, offline-first desktop client for Google Tasks with Guest Mode, Multi-Account Switcher, AI Copilot, Eisenhower Matrix, Calendar, Recycle Bin, and bilingual Arabic/English support.**
+**A powerful, modern, offline-first desktop & mobile client for Google Tasks with native Android APK, Guest Mode, Multi-Account Switcher, AI Copilot, Eisenhower Matrix, Calendar, Recycle Bin, and bilingual Arabic/English support.**
 
-Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material UI (MUI v7)** • **Recoil**
+Built with **Tauri v2 (Rust)** • **React 18** • **TypeScript** • **Material UI (MUI v7)** • **Recoil**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/YoussefMo7amed/google-tasks-pro/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/YoussefMo7amed/google-tasks-pro/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
-[![Tauri](https://img.shields.io/badge/Tauri-1.4-orange.svg)](https://tauri.app)
+[![Tauri](https://img.shields.io/badge/Tauri-v2-orange.svg)](https://tauri.app)
+[![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20Android-blueviolet.svg)](https://github.com/YoussefMo7amed/google-tasks-pro/releases)
 [![i18n](https://img.shields.io/badge/i18n-English%20%7C%20العربية-purple.svg)](src/i18n/)
 
 <br/><br/>
@@ -70,6 +71,12 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 ---
 
 ## ✨ Features Overview
+
+### 📱 Native Android Mobile App Support (Tauri v2)
+* **First-Class Mobile Experience:** High-performance native Android application (`.apk`) powered by Tauri v2 with instant local launch.
+* **Responsive Touch Navigation:** Seamless bottom navigation bar (**Board**, **List**, **Calendar**, **Eisenhower**) with full safe-area inset & notch accommodation.
+* **Deep-Link Google OAuth:** Direct, modern authentication receiver (`googletaskspro://oauth/callback`) for effortless login via Chrome/Brave mobile browsers.
+* **Full Mobile Offline Storage:** Local snapshots and offline mutation queue persist directly on your device.
 
 ### 👤 Guest Mode & Offline Independence (No Google Sign-In Required)
 * **Instant Start Without Account:** Use Google Tasks Pro as a standalone local productivity suite immediately without needing to connect a Google account.
@@ -155,7 +162,7 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 | Layer | Technology | Details |
 |---|---|---|
 | **Frontend** | React 18, TypeScript, Vite | Modern component-driven reactive UI |
-| **Desktop Shell** | Tauri v1 (Rust) | Ultra-lightweight native wrapper (<15MB RAM) |
+| **Desktop & Mobile Shell** | Tauri v2 (Rust) | Ultra-lightweight native wrapper (<15MB RAM on desktop, native Android APK) |
 | **UI & Theming** | Material UI (MUI v7), Emotion | Static theme singletons for zero allocations |
 | **State Management** | Recoil + Service Layer Singletons | Clean separation of business logic and UI state |
 | **Drag & Drop** | `@dnd-kit/core` & `@dnd-kit/sortable` | Smooth task reordering and list manipulation |
@@ -166,13 +173,14 @@ Built with **Tauri (Rust)** • **React 18** • **TypeScript** • **Material U
 
 ## 📥 Getting Started
 
-### 🚀 Download & Install (Pre-built Desktop Apps)
+### 🚀 Download & Install (Pre-built Apps)
 
-Get the latest official installer for your operating system from the **[Releases](https://github.com/YoussefMo7amed/google-tasks-pro/releases)** page:
-* 🍏 **macOS Apple Silicon (M1/M2/M3/M4):** `Google.Tasks.Pro_2.0.0_aarch64.dmg`
-* 🍎 **macOS Intel (x86_64):** `Google.Tasks.Pro_2.0.0_x64.dmg`
-* 🪟 **Windows (x64):** `Google.Tasks.Pro_2.0.0_x64-setup.exe` or `.msi`
-* 🐧 **Linux (x64):** `google-tasks-pro_2.0.0_amd64.deb` or `.AppImage`
+Get the latest official installer for your operating system or mobile device from the **[Releases](https://github.com/YoussefMo7amed/google-tasks-pro/releases)** page:
+* 📱 **Android Universal APK (arm64 & armv7):** `GoogleTasksPro_v2.1.0_universal.apk`
+* 🍏 **macOS Apple Silicon (M1/M2/M3/M4):** `Google Tasks Pro_2.1.0_aarch64.dmg`
+* 🍎 **macOS Intel (x86_64):** `Google Tasks Pro_2.1.0_x64.dmg`
+* 🪟 **Windows (x64):** `Google Tasks Pro_2.1.0_x64-setup.exe` or `.msi`
+* 🐧 **Linux (x64):** `google-tasks-pro_2.1.0_amd64.deb` or `.AppImage`
 
 > [!TIP]
 > **macOS Gatekeeper Note:** Since this is an open-source project without a \$99/yr Apple Developer certificate, macOS Gatekeeper may show: *"Google Tasks Pro is damaged and can't be opened"*.
@@ -214,6 +222,9 @@ npm run build
 
 # Package native desktop application (macOS .dmg / Windows .msi)
 npm run build:app
+
+# Build universal Android APK (arm64-v8a + armeabi-v7a)
+npm run build:apk
 ```
 
 ---
