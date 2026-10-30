@@ -97,7 +97,6 @@ jobs:
           prerelease: false
 
   android:
-    needs: release
     permissions:
       contents: write
     runs-on: ubuntu-latest
