@@ -696,8 +696,6 @@ export async function handleInitialLogin() {
     trashService.reloadScope();
     historyService.reloadScope();
     syncQueueService.reloadScope();
-
-    pushNotification(`Welcome back ${profile.name}`);
   }
 
 export async function switchToGoogleAccount(email: string): Promise<boolean> {

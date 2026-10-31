@@ -141,6 +141,26 @@ export default function TaskDetailModal({
     }
   }, [task]);
 
+  // Handle Android/Browser back navigation to close modal instead of exiting app
+  useEffect(() => {
+    if (!open) return;
+
+    window.history.pushState({ modal: "task-detail" }, "");
+
+    const handlePopState = () => {
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (window.history.state?.modal === "task-detail") {
+        window.history.back();
+      }
+    };
+  }, [open, onClose]);
+
   if (!task) return null;
 
   // Find subtasks belonging to this task across lists
