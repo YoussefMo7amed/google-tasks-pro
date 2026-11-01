@@ -605,7 +605,7 @@ export default function SettingsDialog({
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
               <Link
-                href="https://github.com/codad5/google-task-desktop"
+                href="https://github.com/YoussefMo7amed/google-tasks-pro"
                 target="_blank"
                 rel="noreferrer"
                 underline="hover"
@@ -625,16 +625,6 @@ export default function SettingsDialog({
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               <Chip
                 size="small"
-                label="codad5"
-                component="a"
-                href="https://github.com/codad5"
-                target="_blank"
-                clickable
-                variant="outlined"
-                sx={{ fontSize: '0.75rem', height: 26 }}
-              />
-              <Chip
-                size="small"
                 label="Youssef Mohamed"
                 component="a"
                 href="https://github.com/YoussefMo7amed"
@@ -643,6 +633,16 @@ export default function SettingsDialog({
                 color="primary"
                 variant="outlined"
                 sx={{ fontSize: '0.75rem', height: 26, fontWeight: 600 }}
+              />
+              <Chip
+                size="small"
+                label="codad5"
+                component="a"
+                href="https://github.com/codad5"
+                target="_blank"
+                clickable
+                variant="outlined"
+                sx={{ fontSize: '0.75rem', height: 26 }}
               />
             </Box>
           </Box>

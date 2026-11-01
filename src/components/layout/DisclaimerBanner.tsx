@@ -22,7 +22,7 @@ export default function DisclaimerBanner() {
       >
         This is an open-source project • Not affiliated with or endorsed by Google •{" "}
         <Link
-          href="https://github.com/codad5/google-task-desktop"
+          href="https://github.com/YoussefMo7amed/google-tasks-pro"
           target="_blank"
           rel="noopener noreferrer"
           color="primary"

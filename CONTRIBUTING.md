@@ -1,6 +1,6 @@
-# Contributing to Google Task Desktop
+# Contributing to Google Tasks Pro
 
-First off, thank you for considering contributing to Google Task Desktop! 🎉
+First off, thank you for considering contributing to Google Tasks Pro! 🎉
 
 ## Table of Contents
 
@@ -38,8 +38,8 @@ This project adheres to a Code of Conduct. By participating, you are expected to
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/google-task-desktop.git
-cd google-task-desktop
+git clone https://github.com/YOUR_USERNAME/google-tasks-pro.git
+cd google-tasks-pro
 
 # Install dependencies
 npm install
