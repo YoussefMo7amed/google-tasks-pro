@@ -457,9 +457,11 @@ async function recordAiDemo() {
   }
   await new Promise(r => setTimeout(r, 1800));
 
-  console.log("10. Scene 7: Moving to close button and returning to Board View...");
+  console.log("10. Scene 7: Moving to close button, closing dialog, and returning to Board View...");
   const closeBtnBox = await page.evaluate(() => {
-    const closeBtn = document.querySelector('.MuiDialogTitle-root button');
+    const titleButtons = Array.from(document.querySelectorAll('.MuiDialogTitle-root button'));
+    // The Close button is the last button in DialogTitle
+    const closeBtn = titleButtons.find(b => b.querySelector('[data-testid="CloseIcon"]')) || titleButtons[titleButtons.length - 1];
     if (closeBtn) {
       const rect = closeBtn.getBoundingClientRect();
       return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
@@ -469,16 +471,48 @@ async function recordAiDemo() {
 
   if (closeBtnBox) {
     await page.mouse.move(closeBtnBox.x, closeBtnBox.y, { steps: 14 });
-    await page.mouse.click(closeBtnBox.x, closeBtnBox.y);
-  } else {
-    await page.keyboard.press('Escape');
+    await new Promise(r => setTimeout(r, 120));
+    await page.mouse.down();
+    await new Promise(r => setTimeout(r, 80));
+    await page.mouse.up();
   }
 
-  // Display the board with the newly created task
-  await page.mouse.move(600, 300, { steps: 14 });
-  await new Promise(r => setTimeout(r, 2200));
+  // Ensure dialog closes cleanly
+  await page.evaluate(() => {
+    const titleButtons = Array.from(document.querySelectorAll('.MuiDialogTitle-root button'));
+    const closeBtn = titleButtons.find(b => b.querySelector('[data-testid="CloseIcon"]')) || titleButtons[titleButtons.length - 1];
+    if (closeBtn) closeBtn.click();
+  });
+  await page.keyboard.press('Escape');
+  await new Promise(r => setTimeout(r, 800));
 
-  console.log("11. Finalizing video encoding...");
+  console.log("11. Scene 8: Showing the newly added task on the board...");
+  const newTaskBox = await page.evaluate(() => {
+    const elements = Array.from(document.querySelectorAll('*'));
+    const taskEl = elements.find(el => el.textContent && el.textContent.includes('Run Automated Release Validation') && el.clientHeight > 20 && el.clientHeight < 200);
+    if (taskEl) {
+      const rect = taskEl.getBoundingClientRect();
+      taskEl.style.transition = 'all 0.4s ease';
+      taskEl.style.outline = '2px solid #1a73e8';
+      taskEl.style.boxShadow = '0 0 16px rgba(26, 115, 232, 0.45)';
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+    return null;
+  });
+
+  if (newTaskBox) {
+    await page.mouse.move(newTaskBox.x, newTaskBox.y, { steps: 20 });
+    await new Promise(r => setTimeout(r, 2200));
+  } else {
+    await page.mouse.move(500, 320, { steps: 16 });
+    await new Promise(r => setTimeout(r, 2200));
+  }
+
+  // Hover over the board column to highlight the completed sync
+  await page.mouse.move(750, 260, { steps: 16 });
+  await new Promise(r => setTimeout(r, 2000));
+
+  console.log("12. Finalizing video encoding...");
   isRecording = false;
   clearInterval(timer);
   await client.send('Page.stopScreencast');
