@@ -14,7 +14,7 @@ Built with **Tauri v2 (Rust)** • **React 18** • **TypeScript** • **Materia
 
 <br/><br/>
 
-<img src="docs/screenshots/01-board-view.png" alt="Google Tasks Pro Board View" width="100%" />
+<img src="docs/demo.gif" alt="Google Tasks Pro Walkthrough Demo" width="100%" />
 
 </div>
 
@@ -61,6 +61,10 @@ Built with **Tauri v2 (Rust)** • **React 18** • **TypeScript** • **Materia
 
 ### 🤖 Multi-Provider AI Copilot & 1-Click Task Breakdown
 *Conversational AI assistant that understands your tasks, organizes schedules, and generates actionable task items.*
+<br/>
+<img src="docs/ai-demo.gif" alt="AI Copilot Interactive Demo" width="95%" />
+
+<br/><br/>
 
 | AI Chat & Contextual Planning | 1-Click Action Execution & Subtasks |
 | :---: | :---: |
