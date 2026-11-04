@@ -66,6 +66,36 @@ Built with **Tauri v2 (Rust)** • **React 18** • **TypeScript** • **Materia
 | :---: | :---: |
 | <img src="docs/screenshots/06-ai-copilot-chat.png" alt="AI Copilot Chat" width="100%" /> | <img src="docs/screenshots/07-ai-copilot-actions.png" alt="AI Copilot Actions" width="100%" /> |
 
+<br/><br/>
+
+### 📱 Native Android Mobile App (Tauri v2)
+*Responsive touch layout, safe-area inset padding, and seamless bottom navigation.*
+
+| Mobile Board View | Mobile Eisenhower Matrix | Mobile Calendar Agenda |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/09-mobile-board-view.png" alt="Mobile Board View" width="100%" /> | <img src="docs/screenshots/10-mobile-eisenhower.png" alt="Mobile Eisenhower" width="100%" /> | <img src="docs/screenshots/11-mobile-calendar.png" alt="Mobile Calendar" width="100%" /> |
+
+<br/><br/>
+
+### 🌐 Full Bilingual Arabic (العربية) Native RTL Mode
+*True bidirectional UI layout, mirrored sidebar, right-to-left task progression, and Cairo typography.*
+<br/>
+<img src="docs/screenshots/08-arabic-rtl-view.png" alt="Arabic RTL View" width="95%" />
+
+<br/><br/>
+
+### 👤 Multi-Account Switcher & Guest Offline Mode
+*1-click profile switching between multiple Google accounts and isolated Guest mode with zero cloud leakage.*
+<br/>
+<img src="docs/screenshots/13-account-switcher.png" alt="Account Switcher and Guest Mode" width="95%" />
+
+<br/><br/>
+
+### 🗑️ Smart Recycle Bin & Retention Timer (Trash)
+*Deleted task protection with configurable auto-clean expiration timer and one-click cloud restoration.*
+<br/>
+<img src="docs/screenshots/12-trash-view.png" alt="Trash and Recycle Bin" width="95%" />
+
 </div>
 
 ---

@@ -53,4 +53,6 @@ src-tauri/target
 # Binary artifacts
 *.apk
 *.dmg
-screenshots/
+# Test screenshots directory (root only)
+/screenshots/
+docs/screenshots/archive_old/
