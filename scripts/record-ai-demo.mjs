@@ -180,16 +180,64 @@ async function recordAiDemo() {
   });
 
   const page = await browser.newPage();
+  page.on('console', msg => {
+    if (msg.type() === 'error' || msg.text().includes('Mocking') || msg.text().includes('ai')) {
+      console.log('BROWSER LOG:', msg.text());
+    }
+  });
 
-  // Intercept network requests for AI responses
+  // Mock fetch at browser level to avoid CORS "failed to fetch"
+  await page.evaluateOnNewDocument((aiText) => {
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const url = String(args[0] || "");
+      if (url.includes('generateContent') || url.includes('generativelanguage.googleapis.com')) {
+        console.log("Mocking generateContent response via evaluateOnNewDocument fetch");
+        await new Promise(r => setTimeout(r, 700));
+        return new Response(JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: aiText }],
+              },
+            },
+          ],
+        }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+      return originalFetch.apply(this, args);
+    };
+  }, simulatedAiResponse);
+
+  // Intercept network requests for AI responses with full CORS headers as backup
   await page.setRequestInterception(true);
   page.on('request', async (req) => {
-    if (req.url().includes('generateContent') || req.url().includes('googleapis.com')) {
-      console.log("-> Intercepted Gemini generateContent request. Simulating response...");
-      await new Promise(r => setTimeout(r, 750));
+    const url = req.url();
+    if (url.includes('generateContent') || url.includes('generativelanguage.googleapis.com')) {
+      console.log("-> Intercepted Gemini generateContent request:", req.method(), url);
+      if (req.method() === 'OPTIONS') {
+        await req.respond({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': '*',
+            'access-control-allow-methods': 'GET, POST, OPTIONS',
+            'access-control-allow-headers': '*',
+          },
+        });
+        return;
+      }
+      await new Promise(r => setTimeout(r, 700));
       await req.respond({
         status: 200,
         contentType: 'application/json',
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-headers': '*',
+        },
         body: JSON.stringify({
           candidates: [
             {
