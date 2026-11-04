@@ -255,6 +255,9 @@ npm run build:app
 
 # Build universal Android APK (arm64-v8a + armeabi-v7a)
 npm run build:apk
+
+# Regenerate high-resolution showcase screenshots anytime
+npm run screenshot:showcase
 ```
 
 ---
