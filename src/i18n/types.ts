@@ -58,6 +58,8 @@ export interface TranslationSchema {
     collapseSidebar: string;
     tasks: string;
     trash: string;
+    previousLists: string;
+    nextLists: string;
   };
   sync: {
     offlineMode: string;

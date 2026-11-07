@@ -538,7 +538,7 @@ export default function Header() {
                   sx={{ borderRadius: 1.5, mx: 0.5, my: 0.25 }}
                 >
                   <ListItemIcon sx={{ minWidth: 36 }}>
-                    <Logout fontSize="small" />
+                    <Logout fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : "none" }} />
                   </ListItemIcon>
                   <ListItemText primary={t("auth.exitGuestMode")} primaryTypographyProps={{ variant: "body2" }} />
                 </MenuItem>
@@ -551,7 +551,7 @@ export default function Header() {
                 sx={{ borderRadius: 1.5, mx: 0.5, my: 0.25 }}
               >
                 <ListItemIcon sx={{ minWidth: 36 }}>
-                  <Logout fontSize="small" />
+                  <Logout fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : "none" }} />
                 </ListItemIcon>
                 <ListItemText primary={t("auth.signOut")} primaryTypographyProps={{ variant: "body2" }} />
               </MenuItem>

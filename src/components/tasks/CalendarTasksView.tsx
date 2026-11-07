@@ -111,7 +111,7 @@ function parseDueDate(dueStr?: string | null): string | null {
 }
 
 export default function CalendarTasksView() {
-  const { t, language } = useTranslation();
+  const { t, language, isRtl } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const taskLists = useRecoilValue(taskListsAtom);
@@ -308,7 +308,7 @@ export default function CalendarTasksView() {
         {/* Month Navigation & Title */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconButton size="small" onClick={handlePrevMonth} sx={{ border: 1, borderColor: "divider" }} title={language === "ar" ? "الشهر السابق" : "Previous month"}>
-            <ChevronLeft />
+            {isRtl ? <ChevronRight /> : <ChevronLeft />}
           </IconButton>
           
           <Typography
@@ -323,7 +323,7 @@ export default function CalendarTasksView() {
           </Typography>
 
           <IconButton size="small" onClick={handleNextMonth} sx={{ border: 1, borderColor: "divider" }} title={language === "ar" ? "الشهر التالي" : "Next month"}>
-            <ChevronRight />
+            {isRtl ? <ChevronLeft /> : <ChevronRight />}
           </IconButton>
 
           <Button

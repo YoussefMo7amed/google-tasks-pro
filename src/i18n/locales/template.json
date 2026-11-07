@@ -39,7 +39,9 @@
     "eisenhowerView": "Eisenhower",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
-    "tasks": "Tasks"
+    "tasks": "Tasks",
+    "previousLists": "Previous lists",
+    "nextLists": "Next lists"
   },
   "sync": {
     "offlineMode": "Offline Mode",

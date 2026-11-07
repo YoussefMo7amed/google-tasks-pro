@@ -43,6 +43,8 @@ export const en: TranslationSchema = {
     collapseSidebar: "Collapse sidebar",
     tasks: "Tasks",
     trash: "Trash / Deleted",
+    previousLists: "Previous lists",
+    nextLists: "Next lists",
   },
   sync: {
     offlineMode: "Offline Mode",

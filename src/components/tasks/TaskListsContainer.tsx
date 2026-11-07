@@ -10,7 +10,7 @@
  */
 
 import { useRef, useState, useEffect } from "react";
-import { Box, IconButton, Typography, CircularProgress, Paper, Button, Alert } from "@mui/material";
+import { Box, IconButton, Typography, CircularProgress, Paper, Button, Alert, Tooltip } from "@mui/material";
 import { ChevronLeft, ChevronRight, LockOutlined, Google, Close } from "@mui/icons-material";
 import { handleLogin } from "../../helpers/auth";
 import {
@@ -42,7 +42,7 @@ import TaskListItem from "./TaskListItem";
 import { useTranslation } from "../../i18n";
 
 export default function TaskListsContainer() {
-  const { t } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const { taskLists, loading, error, fetchTaskLists, reorderTaskLists } = useTaskLists();
   const { moveTaskToList, reorderTasksLocally } = useTasks();
@@ -326,29 +326,32 @@ export default function TaskListsContainer() {
       )}
 
       {/* Left scroll button */}
-      <IconButton
-        onClick={() => scroll("left")}
-        sx={{
-          position: "absolute",
-          left: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 10,
-          bgcolor: "background.paper",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          border: 1,
-          borderColor: "divider",
-          opacity: 0.85,
-          display: { xs: "none", md: "inline-flex" },
-          "&:hover": {
-            opacity: 1,
+      <Tooltip title={isRtl ? t("navigation.nextLists") : t("navigation.previousLists")}>
+        <IconButton
+          aria-label={isRtl ? t("navigation.nextLists") : t("navigation.previousLists")}
+          onClick={() => scroll("left")}
+          sx={{
+            position: "absolute",
+            left: 10,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
             bgcolor: "background.paper",
-          },
-        }}
-        size="small"
-      >
-        <ChevronLeft />
-      </IconButton>
+            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+            border: 1,
+            borderColor: "divider",
+            opacity: 0.85,
+            display: { xs: "none", md: "inline-flex" },
+            "&:hover": {
+              opacity: 1,
+              bgcolor: "background.paper",
+            },
+          }}
+          size="small"
+        >
+          <ChevronLeft />
+        </IconButton>
+      </Tooltip>
 
       <DndContext
         sensors={sensors}
@@ -435,29 +438,32 @@ export default function TaskListsContainer() {
       </DndContext>
 
       {/* Right scroll button */}
-      <IconButton
-        onClick={() => scroll("right")}
-        sx={{
-          position: "absolute",
-          right: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 10,
-          bgcolor: "background.paper",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          border: 1,
-          borderColor: "divider",
-          opacity: 0.85,
-          display: { xs: "none", md: "inline-flex" },
-          "&:hover": {
-            opacity: 1,
+      <Tooltip title={isRtl ? t("navigation.previousLists") : t("navigation.nextLists")}>
+        <IconButton
+          aria-label={isRtl ? t("navigation.previousLists") : t("navigation.nextLists")}
+          onClick={() => scroll("right")}
+          sx={{
+            position: "absolute",
+            right: 10,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
             bgcolor: "background.paper",
-          },
-        }}
-        size="small"
-      >
-        <ChevronRight />
-      </IconButton>
+            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+            border: 1,
+            borderColor: "divider",
+            opacity: 0.85,
+            display: { xs: "none", md: "inline-flex" },
+            "&:hover": {
+              opacity: 1,
+              bgcolor: "background.paper",
+            },
+          }}
+          size="small"
+        >
+          <ChevronRight />
+        </IconButton>
+      </Tooltip>
     </Box>
   );
 }

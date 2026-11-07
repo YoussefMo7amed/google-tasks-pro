@@ -603,13 +603,13 @@ export default function TaskListItem({
           )}
           {!isSubtask && onIndent && (
             <MenuItem onClick={handleIndent}>
-              <MenuItemIcon><FormatIndentIncrease fontSize="small" /></MenuItemIcon>
+              <MenuItemIcon><FormatIndentIncrease fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : "none" }} /></MenuItemIcon>
               <ListItemText>{t("tasks.indent")}</ListItemText>
             </MenuItem>
           )}
           {isSubtask && onUnindent && (
             <MenuItem onClick={handleUnindent}>
-              <MenuItemIcon><FormatIndentDecrease fontSize="small" /></MenuItemIcon>
+              <MenuItemIcon><FormatIndentDecrease fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : "none" }} /></MenuItemIcon>
               <ListItemText>{t("tasks.unindent")}</ListItemText>
             </MenuItem>
           )}

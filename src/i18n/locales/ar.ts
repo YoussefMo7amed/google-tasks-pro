@@ -43,6 +43,8 @@ export const ar: TranslationSchema = {
     collapseSidebar: "طي الشريط الجانبي",
     tasks: "المهام",
     trash: "المهام المحذوفة",
+    previousLists: "القوائم السابقة",
+    nextLists: "القوائم التالية",
   },
   sync: {
     offlineMode: "وضع العمل دون اتصال",

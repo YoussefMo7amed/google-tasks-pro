@@ -1976,7 +1976,7 @@ export default function AICopilotModal({
               disabled={loading || !input.trim()}
               sx={{ minWidth: 48, height: 40, px: 2 }}
             >
-              {loading ? <CircularProgress size={20} color="inherit" /> : <Send />}
+              {loading ? <CircularProgress size={20} color="inherit" /> : <Send sx={{ transform: isRtl ? "scaleX(-1)" : "none" }} />}
             </Button>
           </DialogActions>
         </Box>
