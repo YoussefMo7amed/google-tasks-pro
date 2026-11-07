@@ -353,7 +353,6 @@ export default function EisenhowerMatrixView() {
                 variant={expandedQuadrant === quad.id ? "filled" : "outlined"}
                 onClick={() => setExpandedQuadrant(quad.id)}
                 sx={{
-                  fontFamily: "Cairo, sans-serif",
                   fontWeight: 700,
                   fontSize: "0.8rem",
                   borderColor: quad.color,

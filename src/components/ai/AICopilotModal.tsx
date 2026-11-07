@@ -951,10 +951,10 @@ export default function AICopilotModal({
                         }
                         color={currentSettings.enableThinking !== false && (activeModelOption.tag === "thinking" || activeModelOption.tag === "deep_thinking") ? "primary" : "default"}
                         variant={currentSettings.enableThinking === false ? "outlined" : "filled"}
-                        sx={{ height: 16, fontSize: '0.6rem', ml: 0.3 }}
+                        sx={{ height: 16, fontSize: '0.6rem', marginInlineStart: 0.3 }}
                       />
                     )}
-                    <KeyboardArrowDown sx={{ fontSize: 14, ml: 0.2, opacity: 0.7 }} />
+                    <KeyboardArrowDown sx={{ fontSize: 14, marginInlineStart: 0.2, opacity: 0.7 }} />
                   </Box>
                 }
                 sx={{
@@ -1213,7 +1213,8 @@ export default function AICopilotModal({
             <Box
               sx={{
                 width: 270,
-                borderRight: 1,
+                borderRight: isRtl ? 0 : 1,
+                borderLeft: isRtl ? 1 : 0,
                 borderColor: "divider",
                 bgcolor: "action.hover",
                 display: "flex",
@@ -1277,7 +1278,8 @@ export default function AICopilotModal({
                         sx={{
                           borderRadius: 2,
                           py: 1,
-                          pr: 4,
+                          paddingInlineEnd: 4,
+                          paddingInlineStart: 1.5,
                           "&.Mui-selected": {
                             bgcolor: "primary.main",
                             color: "primary.contrastText",
@@ -1290,7 +1292,7 @@ export default function AICopilotModal({
                         <ChatBubbleOutline
                           sx={{
                             fontSize: 16,
-                            mr: 1,
+                            marginInlineEnd: 1,
                             opacity: isActive ? 1 : 0.6,
                           }}
                         />

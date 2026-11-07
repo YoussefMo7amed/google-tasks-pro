@@ -181,7 +181,7 @@ export default function SyncGuestTasksModal({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        {loading && <CircularProgress size={22} sx={{ mr: 1 }} />}
+        {loading && <CircularProgress size={22} sx={{ marginInlineEnd: 1 }} />}
         <Button onClick={onClose} disabled={loading} color="inherit">
           {t("common.cancel")}
         </Button>

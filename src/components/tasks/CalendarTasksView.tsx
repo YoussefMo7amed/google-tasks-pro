@@ -267,7 +267,6 @@ export default function CalendarTasksView() {
         overflowY: "auto",
         overflowX: "hidden",
         bgcolor: "background.default",
-        fontFamily: "Cairo, sans-serif",
         boxSizing: "border-box",
       }}
     >
@@ -309,7 +308,7 @@ export default function CalendarTasksView() {
             startIcon={<Today sx={{ fontSize: 16 }} />}
             onClick={handleGoToday}
             sx={{
-              ml: 1,
+              marginInlineStart: 1,
               borderRadius: "10px",
               textTransform: "none",
               fontWeight: 600,
@@ -332,7 +331,6 @@ export default function CalendarTasksView() {
                   bgcolor: "#fee2e2",
                   color: "#dc2626",
                   fontWeight: 700,
-                  fontFamily: "Cairo, sans-serif",
                 }}
               />
             </Tooltip>
@@ -346,7 +344,6 @@ export default function CalendarTasksView() {
               bgcolor: "#dbeafe",
               color: "#1d4ed8",
               fontWeight: 600,
-              fontFamily: "Cairo, sans-serif",
             }}
           />
 
@@ -355,14 +352,14 @@ export default function CalendarTasksView() {
             label={`${allTasksWithList.length} ${t("calendar.showingBadge")}`}
             size="small"
             variant="outlined"
-            sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 600 }}
+            sx={{ fontWeight: 600 }}
           />
         </Box>
 
         {/* Filters */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: { xs: "100%", sm: "auto" }, mt: { xs: 0.5, sm: 0 } }}>
           <FormControl size="small" sx={{ minWidth: 140, flex: { xs: 1, sm: "initial" } }}>
-            <InputLabel id="calendar-list-select-label" sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.85rem" }}>
+            <InputLabel id="calendar-list-select-label" sx={{ fontSize: "0.85rem" }}>
               {t("tasks.list")}
             </InputLabel>
             <Select
@@ -370,13 +367,13 @@ export default function CalendarTasksView() {
               value={selectedListId}
               label={t("tasks.list")}
               onChange={(e) => setSelectedListId(e.target.value)}
-              sx={{ borderRadius: "10px", fontSize: "0.85rem", fontFamily: "Cairo, sans-serif" }}
+              sx={{ borderRadius: "10px", fontSize: "0.85rem" }}
             >
-              <MenuItem value="all" sx={{ fontFamily: "Cairo, sans-serif" }}>
+              <MenuItem value="all">
                 {t("calendar.allLists")}
               </MenuItem>
               {allLists.map((list) => (
-                <MenuItem key={list.id} value={list.id} sx={{ fontFamily: "Cairo, sans-serif" }}>
+                <MenuItem key={list.id} value={list.id}>
                   {list.title}
                 </MenuItem>
               ))}
@@ -389,7 +386,6 @@ export default function CalendarTasksView() {
             color={showCompleted ? "primary" : "inherit"}
             onClick={() => setShowCompleted(!showCompleted)}
             sx={{
-              fontFamily: "Cairo, sans-serif",
               borderRadius: "10px",
               textTransform: "none",
               fontSize: "0.78rem",
@@ -688,7 +684,6 @@ export default function CalendarTasksView() {
                             sx={{
                               flex: 1,
                               minWidth: 0,
-                              fontFamily: "Cairo, sans-serif",
                               fontWeight: 500,
                               fontSize: "0.76rem",
                               textDecoration: isDone ? "line-through" : "none",
@@ -730,7 +725,7 @@ export default function CalendarTasksView() {
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <EventNote sx={{ fontSize: 20, color: "primary.main" }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontFamily: "Cairo, sans-serif" }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                 {selectedDateKey === todayStr
                   ? t("calendar.todayWithDate", { date: selectedDateKey })
                   : selectedDateKey}
@@ -835,7 +830,7 @@ export default function CalendarTasksView() {
         fullWidth
         PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}
       >
-        <DialogTitle sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 700, pb: 1 }}>
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
           {t("calendar.addTaskForDate", { date: quickAddDate || "" })}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
@@ -851,13 +846,11 @@ export default function CalendarTasksView() {
               }
             }}
             size="small"
-            InputProps={{ sx: { fontFamily: "Cairo, sans-serif" } }}
-            InputLabelProps={{ sx: { fontFamily: "Cairo, sans-serif" } }}
             inputProps={{ dir: "auto" }}
           />
 
           <FormControl fullWidth size="small">
-            <InputLabel id="quick-add-list-label" sx={{ fontFamily: "Cairo, sans-serif" }}>
+            <InputLabel id="quick-add-list-label">
               {t("tasks.list")}
             </InputLabel>
             <Select
@@ -865,10 +858,9 @@ export default function CalendarTasksView() {
               value={quickAddListId}
               label={t("tasks.list")}
               onChange={(e) => setQuickAddListId(e.target.value)}
-              sx={{ fontFamily: "Cairo, sans-serif" }}
             >
               {allLists.map((l) => (
-                <MenuItem key={l.id} value={l.id} sx={{ fontFamily: "Cairo, sans-serif" }}>
+                <MenuItem key={l.id} value={l.id}>
                   {l.title}
                 </MenuItem>
               ))}
@@ -876,14 +868,14 @@ export default function CalendarTasksView() {
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setQuickAddDate(null)} sx={{ fontFamily: "Cairo, sans-serif" }}>
+          <Button onClick={() => setQuickAddDate(null)}>
             {t("common.cancel")}
           </Button>
           <Button
             variant="contained"
             onClick={handleSaveQuickAdd}
             disabled={!quickAddTitle.trim()}
-            sx={{ fontFamily: "Cairo, sans-serif", borderRadius: "8px" }}
+            sx={{ borderRadius: "8px" }}
           >
             {t("tasks.addTask")}
           </Button>

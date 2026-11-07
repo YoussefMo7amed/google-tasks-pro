@@ -53,7 +53,7 @@ import { trashService, historyService, syncQueueService } from "./services";
 loadContextmenu();
 
 function App() {
-  const { t } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const [loading, setLoading] = useRecoilState<boolean>(authLoadingState);
   const activeCategoryValue = useRecoilValue(activeTaskCategoryState);
   const loggedIn = useRecoilValue(loggedInSelector);
@@ -323,7 +323,7 @@ function App() {
         open={!!toastMessage}
         autoHideDuration={6000}
         onClose={handleCloseToast}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
       >
         <Alert
           onClose={handleCloseToast}

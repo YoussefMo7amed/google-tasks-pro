@@ -20,6 +20,7 @@ import {
   TableContainer,
   Paper,
 } from "@mui/material";
+import { useTranslation } from "../../i18n";
 
 interface MarkdownViewerProps {
   content: string;
@@ -69,7 +70,7 @@ const parseTableRow = (line: string): string[] => {
   return trimmed.split("|").map((cell) => cell.trim());
 };
 
-const parseAlignments = (sepLine: string): ("left" | "center" | "right")[] => {
+const parseAlignments = (sepLine: string): ("left" | "center" | "right" | undefined)[] => {
   const parts = parseTableRow(sepLine);
   return parts.map((part) => {
     const trimmed = part.trim();
@@ -77,18 +78,20 @@ const parseAlignments = (sepLine: string): ("left" | "center" | "right")[] => {
     const endsColon = trimmed.endsWith(":");
     if (startsColon && endsColon) return "center";
     if (endsColon) return "right";
-    return "left";
+    if (startsColon) return "left";
+    return undefined;
   });
 };
 
 export default function MarkdownViewer({ content, isUser = false }: MarkdownViewerProps) {
+  const { isRtl } = useTranslation();
+
   // If user message, render as simple formatted text
   if (isUser) {
     return (
       <Typography
         variant="body2"
         sx={{
-          fontFamily: "Cairo, sans-serif",
           fontSize: "0.95rem",
           lineHeight: 1.6,
           unicodeBidi: "plaintext",
@@ -121,8 +124,8 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           sx={{
             m: 0,
             mb: 1.5,
-            pl: isNumberedList ? 3 : 2.5,
-            pr: 1,
+            paddingInlineStart: isNumberedList ? 24 : 20,
+            paddingInlineEnd: 8,
             display: "flex",
             flexDirection: "column",
             gap: 0.5,
@@ -227,10 +230,9 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
                 {headers.map((h, hIdx) => (
                   <TableCell
                     key={`th_${hIdx}`}
-                    align={alignments[hIdx] || "left"}
+                    align={alignments[hIdx] || (isRtl ? "right" : "left")}
                     sx={{
                       fontWeight: 700,
-                      fontFamily: "Cairo, sans-serif",
                       fontSize: "0.85rem",
                       color: "primary.main",
                       borderBottom: 2,
@@ -257,9 +259,8 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
                   {row.map((cell, cIdx) => (
                     <TableCell
                       key={`td_${rIdx}_${cIdx}`}
-                      align={alignments[cIdx] || "left"}
+                      align={alignments[cIdx] || (isRtl ? "right" : "left")}
                       sx={{
-                        fontFamily: "Cairo, sans-serif",
                         fontSize: "0.85rem",
                         borderBottom: 1,
                         borderColor: "divider",
@@ -299,7 +300,6 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           variant="subtitle1"
           dir="auto"
           sx={{
-            fontFamily: "Cairo, sans-serif",
             fontWeight: 700,
             fontSize: "1.05rem",
             color: "primary.main",
@@ -322,7 +322,6 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           variant="h6"
           dir="auto"
           sx={{
-            fontFamily: "Cairo, sans-serif",
             fontWeight: 700,
             fontSize: "1.15rem",
             color: "primary.main",
@@ -345,7 +344,6 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           variant="h5"
           dir="auto"
           sx={{
-            fontFamily: "Cairo, sans-serif",
             fontWeight: 800,
             fontSize: "1.25rem",
             color: "primary.main",
@@ -367,21 +365,20 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
         <Box
           key={`quote_${i}`}
           sx={{
-            borderLeft: "3px solid",
+            borderInlineStart: "3px solid",
             borderColor: "primary.main",
-            pl: 2,
-            pr: 1,
+            paddingInlineStart: 16,
+            paddingInlineEnd: 8,
             py: 0.5,
             my: 1,
             bgcolor: "action.hover",
-            borderRadius: "0 8px 8px 0",
+            borderRadius: isRtl ? "8px 0 0 8px" : "0 8px 8px 0",
           }}
           dir="auto"
         >
           <Typography
             variant="body2"
             sx={{
-              fontFamily: "Cairo, sans-serif",
               fontStyle: "italic",
               color: "text.secondary",
             }}
@@ -408,7 +405,6 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           variant="body2"
           dir="auto"
           sx={{
-            fontFamily: "Cairo, sans-serif",
             fontSize: "0.92rem",
             lineHeight: 1.6,
             unicodeBidi: "plaintext",
@@ -435,7 +431,6 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           variant="body2"
           dir="auto"
           sx={{
-            fontFamily: "Cairo, sans-serif",
             fontSize: "0.92rem",
             lineHeight: 1.6,
             unicodeBidi: "plaintext",
@@ -461,7 +456,6 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
         variant="body2"
         dir="auto"
         sx={{
-          fontFamily: "Cairo, sans-serif",
           fontSize: "0.93rem",
           lineHeight: 1.7,
           mb: 1,

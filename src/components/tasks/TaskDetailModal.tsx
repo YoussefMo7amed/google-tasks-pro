@@ -93,7 +93,7 @@ export default function TaskDetailModal({
   onMove,
   onAddSubtask,
 }: TaskDetailModalProps) {
-  const { t, language } = useTranslation();
+  const { t, language, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
 
   const [title, setTitle] = useState("");
@@ -674,7 +674,8 @@ export default function TaskDetailModal({
         open={Boolean(timeAnchorEl)}
         anchorEl={timeAnchorEl}
         onClose={() => setTimeAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5, minWidth: 220 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -706,7 +707,8 @@ export default function TaskDetailModal({
         open={Boolean(repeatAnchorEl)}
         anchorEl={repeatAnchorEl}
         onClose={() => setRepeatAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2.5, width: 300, display: "flex", flexDirection: "column", gap: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>

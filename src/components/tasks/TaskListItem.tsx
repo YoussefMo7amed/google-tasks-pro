@@ -325,7 +325,7 @@ export default function TaskListItem({
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder={t("tasks.details")}
+                  placeholder={t("tasks.taskDetailsPlaceholder")}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   variant="standard"
@@ -413,7 +413,8 @@ export default function TaskListItem({
                   open={Boolean(dateAnchorEl)}
                   anchorEl={dateAnchorEl}
                   onClose={() => setDateAnchorEl(null)}
-                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                  anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+                  transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
                 >
                   <Box sx={{ p: 2 }}>
                     <TextField
@@ -579,8 +580,8 @@ export default function TaskListItem({
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleCloseMenu}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "left" : "right" }}
+          transformOrigin={{ vertical: "top", horizontal: isRtl ? "left" : "right" }}
         >
           {onOpenDetail && (
             <MenuItem
@@ -632,8 +633,8 @@ export default function TaskListItem({
           anchorEl={moveAnchorEl}
           open={Boolean(moveAnchorEl)}
           onClose={() => setMoveAnchorEl(null)}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          anchorOrigin={{ vertical: "top", horizontal: isRtl ? "left" : "right" }}
+          transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
         >
           {otherLists.length === 0 ? (
             <MenuItem disabled>
@@ -709,7 +710,7 @@ export default function TaskListItem({
   // Wrap with tooltip if it's a subtask
   if (isSubtask && parentTaskTitle) {
     return (
-      <Tooltip title={`${t("tasks.subtaskOf")}: ${parentTaskTitle}`} placement="left">
+      <Tooltip title={`${t("tasks.subtaskOf")}: ${parentTaskTitle}`} placement={isRtl ? "right" : "left"}>
         <Box>{taskContent}</Box>
       </Tooltip>
     );

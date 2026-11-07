@@ -209,7 +209,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         InputProps={{
           disableUnderline: true,
           startAdornment: (
-            <Box sx={{ mr: 1, color: "text.secondary", display: "flex", alignItems: "center" }}>
+            <Box sx={{ marginInlineEnd: 1, color: "text.secondary", display: "flex", alignItems: "center" }}>
               ≡
             </Box>
           ),
@@ -385,7 +385,8 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         open={Boolean(dateAnchorEl)}
         anchorEl={dateAnchorEl}
         onClose={() => setDateAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2, minWidth: 200 }}>
           <TextField
@@ -411,7 +412,8 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         open={Boolean(timeAnchorEl)}
         anchorEl={timeAnchorEl}
         onClose={() => setTimeAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5, minWidth: 220 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -443,7 +445,8 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         open={Boolean(repeatAnchorEl)}
         anchorEl={repeatAnchorEl}
         onClose={() => setRepeatAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2.5, width: 300, display: "flex", flexDirection: "column", gap: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>

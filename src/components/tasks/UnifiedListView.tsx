@@ -398,7 +398,7 @@ export default function UnifiedListView() {
                 <Typography
                   variant="subtitle1"
                   fontWeight={700}
-                  sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.98rem" }}
+                  sx={{ fontSize: "0.98rem" }}
                 >
                   {groupTitle}
                 </Typography>
@@ -572,7 +572,6 @@ export default function UnifiedListView() {
                             variant="body2"
                             title={cleanTitle}
                             sx={{
-                              fontFamily: "Cairo, sans-serif",
                               fontSize: "0.92rem",
                               fontWeight: 600,
                               textDecoration: isCompleted ? "line-through" : "none",
@@ -591,7 +590,6 @@ export default function UnifiedListView() {
                               color="text.secondary"
                               title={cleanNotes}
                               sx={{
-                                fontFamily: "Cairo, sans-serif",
                                 display: "-webkit-box",
                                 WebkitLineClamp: 1,
                                 WebkitBoxOrient: "vertical",
@@ -608,7 +606,7 @@ export default function UnifiedListView() {
                       </Box>
 
                       {/* Right side: badges & actions */}
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, ml: 1.5 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, marginInlineStart: 1.5 }}>
                         {/* List Name Badge (if not grouped by list) */}
                         {groupBy !== "list" && (
                           <Chip
@@ -618,7 +616,6 @@ export default function UnifiedListView() {
                             sx={{
                               height: 22,
                               fontSize: "0.72rem",
-                              fontFamily: "Cairo, sans-serif",
                             }}
                           />
                         )}
