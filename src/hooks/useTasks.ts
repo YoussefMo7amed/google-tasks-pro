@@ -20,7 +20,7 @@ import { offlineCacheService } from "../services/offline-cache.service";
 import { syncQueueService } from "../services/sync-queue.service";
 import { undoRedoService } from "../services/undo-redo.service";
 import { trashService } from "../services/trash.service";
-import { useTranslation } from "../i18n";
+import { useTranslation, I18nService } from "../i18n";
 
 export function useTasks() {
   const { t } = useTranslation();
@@ -243,8 +243,8 @@ export function useTasks() {
         undoRedoService.push({
           id: `create_${created.id}_${Date.now()}`,
           type: "CREATE_TASK",
-          description: `Create "${created.title}"`,
-          descriptionAr: `إنشاء "${created.title}"`,
+          description: I18nService.translate("en", "tasks.actionCreate", { title: created.title }),
+          descriptionAr: I18nService.translate("ar", "tasks.actionCreate", { title: created.title }),
           undo: async () => {
             await deleteTaskRef.current?.(created.listId, created.id, true);
           },
@@ -282,8 +282,8 @@ export function useTasks() {
         undoRedoService.push({
           id: `create_${created.id}_${Date.now()}`,
           type: "CREATE_TASK",
-          description: `Create "${created.title}"`,
-          descriptionAr: `إنشاء "${created.title}"`,
+          description: I18nService.translate("en", "tasks.actionCreate", { title: created.title }),
+          descriptionAr: I18nService.translate("ar", "tasks.actionCreate", { title: created.title }),
           undo: async () => {
             await deleteTaskRef.current?.(created.listId, created.id, true);
           },
@@ -338,8 +338,12 @@ export function useTasks() {
       undoRedoService.push({
         id: `toggle_${taskId}_${Date.now()}`,
         type: "TOGGLE_COMPLETE",
-        description: isCompletedNow ? `Complete "${taskTitle}"` : `Uncheck "${taskTitle}"`,
-        descriptionAr: isCompletedNow ? `إكمال "${taskTitle}"` : `إلغاء إكمال "${taskTitle}"`,
+        description: isCompletedNow
+          ? I18nService.translate("en", "tasks.actionComplete", { title: taskTitle })
+          : I18nService.translate("en", "tasks.actionUncomplete", { title: taskTitle }),
+        descriptionAr: isCompletedNow
+          ? I18nService.translate("ar", "tasks.actionComplete", { title: taskTitle })
+          : I18nService.translate("ar", "tasks.actionUncomplete", { title: taskTitle }),
         undo: async () => {
           await toggleCompleteRef.current?.(listId, taskId, true);
         },
@@ -428,8 +432,12 @@ export function useTasks() {
       undoRedoService.push({
         id: `star_${taskId}_${Date.now()}`,
         type: "STAR_TASK",
-        description: willBeStarred ? `Star "${taskTitle}"` : `Unstar "${taskTitle}"`,
-        descriptionAr: willBeStarred ? `تمييز بنجمة "${taskTitle}"` : `إزالة النجمة عن "${taskTitle}"`,
+        description: willBeStarred
+          ? I18nService.translate("en", "tasks.actionStar", { title: taskTitle })
+          : I18nService.translate("en", "tasks.actionUnstar", { title: taskTitle }),
+        descriptionAr: willBeStarred
+          ? I18nService.translate("ar", "tasks.actionStar", { title: taskTitle })
+          : I18nService.translate("ar", "tasks.actionUnstar", { title: taskTitle }),
         undo: async () => {
           await toggleStarRef.current?.(listId, taskId, true);
         },
@@ -449,11 +457,11 @@ export function useTasks() {
       // Revert optimistic update
       setStarredIds(starredIds);
       updateTaskInState(listId, taskId, task => ({ ...task, isStarred: wasStarred }));
-      const message = err instanceof Error ? err.message : "Failed to star task";
-      setToast({ title: "Error", body: message, type: "error" });
+      const message = err instanceof Error ? err.message : "";
+      setToast({ title: t("common.error"), body: message, type: "error" });
       return false;
     }
-  }, [service, starredIds, setStarredIds, updateTaskInState, setToast]);
+  }, [service, starredIds, setStarredIds, updateTaskInState, setToast, t]);
   toggleStarRef.current = toggleTaskStar;
 
   /**
@@ -468,8 +476,8 @@ export function useTasks() {
       undoRedoService.push({
         id: `delete_${taskId}_${Date.now()}`,
         type: "DELETE_TASK",
-        description: `Delete "${savedTask.title}"`,
-        descriptionAr: `حذف "${savedTask.title}"`,
+        description: I18nService.translate("en", "tasks.actionDelete", { title: savedTask.title }),
+        descriptionAr: I18nService.translate("ar", "tasks.actionDelete", { title: savedTask.title }),
         undo: async () => {
           trashService.permanentDelete(savedTask.id);
           await restoreTaskRef.current?.(listId, savedTask);
@@ -557,8 +565,8 @@ export function useTasks() {
       setToast({ title: t("tasks.completedClearedToast"), type: "success" });
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to clear tasks";
-      setToast({ title: "Error", body: message, type: "error" });
+      const message = err instanceof Error ? err.message : t("tasks.failedToClearTasks");
+      setToast({ title: t("common.error"), body: message, type: "error" });
       return false;
     }
   }, [service, setTaskLists, setToast, t]);
@@ -725,8 +733,8 @@ export function useTasks() {
       setToast({ title: t("tasks.taskUnindentedToast"), type: "info" });
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to unindent task";
-      setToast({ title: "Error", body: message, type: "error" });
+      const message = err instanceof Error ? err.message : t("tasks.failedToUnindent");
+      setToast({ title: t("common.error"), body: message, type: "error" });
       return false;
     }
   }, [service, updateTaskInState, setToast, t]);
@@ -758,8 +766,8 @@ export function useTasks() {
       setToast({ title: t("tasks.taskIndentedToast"), type: "info" });
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to indent task";
-      setToast({ title: "Error", body: message, type: "error" });
+      const message = err instanceof Error ? err.message : t("tasks.failedToIndent");
+      setToast({ title: t("common.error"), body: message, type: "error" });
       return false;
     }
   }, [service, taskLists, updateTaskInState, setToast, t]);
@@ -788,8 +796,8 @@ export function useTasks() {
       undoRedoService.push({
         id: `update_${taskId}_${Date.now()}`,
         type: "UPDATE_TASK",
-        description: `Edit "${title}"`,
-        descriptionAr: `تعديل "${title}"`,
+        description: I18nService.translate("en", "tasks.actionEdit", { title }),
+        descriptionAr: I18nService.translate("ar", "tasks.actionEdit", { title }),
         undo: async () => {
           await updateTaskRef.current?.(listId, taskId, oldTitle, oldNotes, oldDue, oldExactTime, oldRecurrence, true);
         },

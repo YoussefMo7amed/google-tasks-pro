@@ -384,7 +384,7 @@ export default function SettingsDialog({
       <DialogTitle sx={{ m: 0, p: 2, pt: mobile ? "max(16px, env(safe-area-inset-top))" : 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant="h6" fontWeight={700}>{t("settings.title")}</Typography>
         <IconButton
-          aria-label="close"
+          aria-label={t("common.close")}
           onClick={onClose}
           size="small"
           sx={{ color: 'text.secondary' }}
@@ -493,7 +493,7 @@ export default function SettingsDialog({
                     await invoke("schedule_notification", {
                       taskId: `test_ping_${Date.now()}`,
                       title: "Google Tasks Pro",
-                      body: language === "ar" ? "🔔 تم بنجاح! نظام الإشعارات يعمل بكفاءة تامة." : "🔔 Test Successful! Notifications are working properly.",
+                      body: t("settings.testNotificationBody"),
                       notifyAtIso: new Date(Date.now() + 2000).toISOString(),
                     });
                   } catch (e) {
@@ -502,7 +502,7 @@ export default function SettingsDialog({
                 }}
                 sx={{ borderRadius: 2, textTransform: "none", fontSize: "0.8rem", py: 0.5, px: 1.5 }}
               >
-                {language === "ar" ? "تجربة إشعار فوري (خلال ثانيتين)" : "Test Notification (in 2 seconds)"}
+                {t("settings.testNotificationBtn")}
               </Button>
             </Box>
 

@@ -1,6 +1,9 @@
 import { Box, Typography, Link } from "@mui/material";
+import { useTranslation } from "../../i18n";
 
 export default function DisclaimerBanner() {
+  const { t } = useTranslation();
+
   return (
     <Box
       sx={{
@@ -20,7 +23,7 @@ export default function DisclaimerBanner() {
         color="text.secondary"
         sx={{ fontSize: "0.7rem" }}
       >
-        This is an open-source project • Not affiliated with or endorsed by Google •{" "}
+        {t("common.disclaimer")}
         <Link
           href="https://github.com/YoussefMo7amed/google-tasks-pro"
           target="_blank"
@@ -29,7 +32,7 @@ export default function DisclaimerBanner() {
           underline="hover"
           sx={{ fontSize: "inherit" }}
         >
-          View on GitHub
+          {t("common.viewOnGitHub")}
         </Link>
       </Typography>
     </Box>

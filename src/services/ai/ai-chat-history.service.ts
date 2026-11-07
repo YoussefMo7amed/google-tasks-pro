@@ -7,6 +7,7 @@
  */
 
 import { AICopilotMessage } from "./types";
+import { I18nService } from "../../i18n";
 
 export interface AIChatSession {
   id: string;
@@ -33,10 +34,7 @@ const ACTIVE_SESSION_ID_KEY = "google_tasks_ai_active_session_id";
 export const getInitialWelcomeMessage = (language = "ar"): AICopilotMessage => ({
   id: "welcome",
   role: "assistant",
-  content:
-    language === "ar"
-      ? "مرحباً! أنا مساعدك الذكي للمهام (AI Copilot). يمكنني مساعدتك في تخطيط أهدافك، تفكيكها إلى مهام فرعية، وترتيبها تلقائياً وفق مصفوفة أيزنهاور. كيف يمكنني مساعدتك اليوم؟"
-      : "Hello! I am your AI Task Copilot. I can help you plan your goals, break them down into actionable subtasks, and organize them into the Eisenhower Matrix. How can I help you today?",
+  content: I18nService.translate(language === "ar" ? "ar" : "en", "ai.initialWelcomeMessage"),
   timestamp: Date.now(),
 });
 
@@ -96,7 +94,7 @@ export class AIChatHistoryService {
    * Create a new session
    */
   public static createSession(title?: string, language = "ar"): AIChatSession {
-    const defaultTitle = language === "ar" ? "محادثة جديدة" : "New Chat";
+    const defaultTitle = I18nService.translate(language === "ar" ? "ar" : "en", "ai.newChat");
     const sessionTitle = title || defaultTitle;
     const session: AIChatSession = {
       id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,

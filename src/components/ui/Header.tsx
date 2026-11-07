@@ -203,7 +203,7 @@ export default function Header() {
           />
 
           {/* Language Switcher */}
-          <Tooltip title={language === "en" ? "تبديل إلى العربية" : "Switch to English"}>
+          <Tooltip title={t("settings.switchLanguage")}>
             <Button
               size="small"
               variant="outlined"
@@ -309,7 +309,7 @@ export default function Header() {
             </Box>
           </Button>
 
-          <Tooltip title={isGuest ? `${t("auth.guestBadge")} — ${t("auth.connectGoogleToSync")}` : (profile?.name ?? "User")}>
+          <Tooltip title={isGuest ? `${t("auth.guestBadge")} — ${t("auth.connectGoogleToSync")}` : (profile?.name ?? t("common.user"))}>
             <IconButton onClick={handleMenuOpen} size="small">
               <Avatar
                 key={profile?.email || "guest"}
@@ -320,7 +320,7 @@ export default function Header() {
                   color: isGuest ? "text.primary" : "primary.contrastText",
                 }}
                 src={!isGuest ? profile?.picture ?? "" : ""}
-                alt={profile?.name ?? "User"}
+                alt={profile?.name ?? t("common.user")}
                 imgProps={{ referrerPolicy: "no-referrer" }}
               >
                 {isGuest ? (

@@ -13,8 +13,10 @@ import { Logout, Add } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { attemptLogoutState, userProfileSelector } from "../../config/states";
 import AddCategoryDialog from "./AddCategoryDialog";
+import { useTranslation } from "../../i18n";
 
 export default function LoggedInHeader() {
+  const { t } = useTranslation();
   const profile = useRecoilValue(userProfileSelector);
   const setAttemptLogout = useSetRecoilState(attemptLogoutState);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -47,14 +49,14 @@ export default function LoggedInHeader() {
         }}
         variant="outlined"
       >
-        New List
+        {t("tasks.newList")}
       </Button>
 
       <IconButton onClick={handleMenuOpen} size="small">
         <Avatar
           sx={{ width: 32, height: 32 }}
           src={profile?.picture ?? ""}
-          alt={profile?.name ?? "User"}
+          alt={profile?.name ?? t("common.user")}
         >
           {profile?.name?.charAt(0) ?? "U"}
         </Avatar>
@@ -97,7 +99,7 @@ export default function LoggedInHeader() {
           <ListItemIcon>
             <Logout fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Sign out" />
+          <ListItemText primary={t("auth.signOut")} />
         </MenuItem>
       </Menu>
 

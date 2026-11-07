@@ -5,6 +5,7 @@
  */
 
 import { Store } from '@tauri-apps/plugin-store';
+import { I18nService, LanguageCode } from '../i18n';
 
 const SETTINGS_STORE = '.settings.dat';
 const SETTINGS_KEY = 'appSettings';
@@ -108,10 +109,10 @@ export function formatHour(
 ): string {
   const pad = (n: number) => n.toString().padStart(2, '0');
   const time24 = `${pad(hour)}:00`;
-  const isAr = language === 'ar';
+  const lang: LanguageCode = language === 'ar' ? 'ar' : 'en';
   
   // Localized AM/PM
-  const period = hour >= 12 ? (isAr ? 'م' : 'PM') : (isAr ? 'ص' : 'AM');
+  const period = I18nService.translate(lang, hour >= 12 ? 'common.pm' : 'common.am');
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   const time12 = `${displayHour}:00 ${period}`;
 

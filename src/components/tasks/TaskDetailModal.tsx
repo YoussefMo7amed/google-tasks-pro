@@ -60,6 +60,7 @@ import {
 } from "../../services/history.service";
 import { recurrenceService } from "../../services/recurrence.service";
 import { useTranslation } from "../../i18n";
+import { getWeekdayInitials } from "../../i18n/dateUtils";
 import { isMobile } from "../../helpers/platform";
 
 interface TaskDetailModalProps {
@@ -740,7 +741,7 @@ export default function TaskDetailModal({
           {repeatFreq === "weekly" && (
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", gap: 0.5, mt: 0.5 }}>
-                {(language === "ar" ? ["ح", "ن", "ث", "ر", "خ", "ج", "س"] : ["S", "M", "T", "W", "T", "F", "S"]).map((dayName, index) => {
+                {getWeekdayInitials(language).map((dayName, index) => {
                   const isSelected = repeatDays.includes(index);
                   return (
                     <Button

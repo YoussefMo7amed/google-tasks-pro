@@ -53,7 +53,6 @@ import { useTranslation } from "../../i18n";
 interface QuadrantConfig {
   id: QuadrantType;
   title: string;
-  arabicTitle: string;
   subtitle: string;
   color: string;
   badgeBg: string;
@@ -64,7 +63,6 @@ const QUADRANTS: QuadrantConfig[] = [
   {
     id: "Q1",
     title: "Urgent & Important",
-    arabicTitle: "هام وعاجل (افعل فوراً)",
     subtitle: "Crises, deadlines & pressing issues",
     color: "#f28b82",
     badgeBg: "rgba(242, 139, 130, 0.15)",
@@ -73,7 +71,6 @@ const QUADRANTS: QuadrantConfig[] = [
   {
     id: "Q2",
     title: "Important, Not Urgent",
-    arabicTitle: "هام وغير عاجل (خطط وركز)",
     subtitle: "Deep work, goals, planning & learning",
     color: "#8ab4f8",
     badgeBg: "rgba(138, 180, 248, 0.15)",
@@ -82,7 +79,6 @@ const QUADRANTS: QuadrantConfig[] = [
   {
     id: "Q3",
     title: "Urgent, Not Important",
-    arabicTitle: "عاجل وغير هام (فوض)",
     subtitle: "Interruptions, some emails & quick favors",
     color: "#fdd663",
     badgeBg: "rgba(253, 214, 99, 0.15)",
@@ -91,7 +87,6 @@ const QUADRANTS: QuadrantConfig[] = [
   {
     id: "Q4",
     title: "Not Urgent & Not Important",
-    arabicTitle: "غير هام وغير عاجل (تخلص منه)",
     subtitle: "Time wasters, trivia & distractions",
     color: "#c58af9",
     badgeBg: "rgba(197, 138, 249, 0.15)",
@@ -544,10 +539,10 @@ export default function EisenhowerMatrixView() {
                 {tasks.length === 0 ? (
                   <Box sx={{ py: 4, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">
-                      No tasks in this quadrant
+                      {t("tasks.noTasks")}
                     </Typography>
                     <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: "block" }}>
-                      {q.subtitle}
+                      {t(`eisenhower.${q.id.toLowerCase()}Subtitle`)}
                     </Typography>
                   </Box>
                 ) : (

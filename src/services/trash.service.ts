@@ -6,6 +6,7 @@
 
 import { AppTask } from "../types/app";
 import { getActiveStorageScope } from "../helpers/storage-scope";
+import { I18nService } from "../i18n";
 
 export type TrashRetention = "1d" | "3d" | "7d" | "30d" | "never" | "custom";
 
@@ -188,7 +189,7 @@ class TrashService {
       id: `trash_${task.id}_${Date.now()}`,
       task: { ...task },
       originalListId: task.listId,
-      originalListTitle: originalListTitle || "My Tasks",
+      originalListTitle: originalListTitle || I18nService.translate(I18nService.loadLanguage(), "tasks.defaultListName"),
       deletedAt: nowIso,
       expiresAt: calculateExpiresAt(nowIso, this.settings),
     };

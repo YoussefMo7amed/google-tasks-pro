@@ -20,7 +20,7 @@ import TaskListItem from "./TaskListItem";
 import { useTranslation } from "../../i18n";
 
 export default function StarredTasksCard() {
-  const { t, language, isRtl } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
   const { toggleTaskComplete, toggleTaskStar, deleteTask, moveTaskToList } = useTasks();
@@ -37,14 +37,11 @@ export default function StarredTasksCard() {
   });
 
   const getTasksCountLabel = (count: number) => {
-    if (language === "ar") {
-      if (count === 0) return "لا توجد مهام";
-      if (count === 1) return "مهمة واحدة";
-      if (count === 2) return "مهمتان";
-      if (count >= 3 && count <= 10) return `${count} مهام`;
-      return `${count} مهمة`;
-    }
-    return `${count} ${count === 1 ? "task" : "tasks"}`;
+    if (count === 0) return t("tasks.noTasks");
+    if (count === 1) return t("tasks.taskCountOne");
+    if (count === 2) return t("tasks.taskCountTwo");
+    if (count >= 3 && count <= 10) return t("tasks.taskCountFew", { count });
+    return t("tasks.taskCountMany", { count });
   };
 
   const handleTaskToggle = async (task: AppTask) => {

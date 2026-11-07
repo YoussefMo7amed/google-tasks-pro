@@ -325,7 +325,7 @@ export default function TaskListItem({
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder="Details"
+                  placeholder={t("tasks.details")}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   variant="standard"
@@ -396,7 +396,7 @@ export default function TaskListItem({
                 {/* Save/Cancel buttons - hidden, save on blur or clicking elsewhere */}
                 <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1, gap: 1 }}>
                   <Button size="small" onClick={handleEditCancel} sx={{ textTransform: "none" }}>
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <Button 
                     size="small" 
@@ -404,7 +404,7 @@ export default function TaskListItem({
                     onClick={handleEditSave}
                     sx={{ textTransform: "none" }}
                   >
-                    Save
+                    {t("common.save")}
                   </Button>
                 </Box>
 

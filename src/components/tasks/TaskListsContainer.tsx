@@ -228,10 +228,10 @@ export default function TaskListsContainer() {
               <LockOutlined sx={{ fontSize: 32, color: "error.main" }} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
-              انتهت جلسة تسجيل الدخول
+              {t("auth.sessionExpiredTitle")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              انتهت صلاحية جلسة Google Tasks. يرجى تسجيل الدخول مرة أخرى لمزامنة مهامك وتحديثها.
+              {t("auth.sessionExpiredDescription")}
             </Typography>
             <Button
               variant="contained"
@@ -240,7 +240,7 @@ export default function TaskListsContainer() {
               onClick={() => handleLogin(true)}
               sx={{ mt: 1, borderRadius: 2 }}
             >
-              تسجيل الدخول مع Google
+              {t("auth.signInWithGoogle")}
             </Button>
           </Paper>
         ) : (
@@ -254,7 +254,7 @@ export default function TaskListsContainer() {
     return (
       <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Typography color="text.secondary">
-          No task lists yet. Create one to get started!
+          {t("tasks.noLists")}
         </Typography>
       </Box>
     );
@@ -309,7 +309,7 @@ export default function TaskListsContainer() {
                 <IconButton
                   size="small"
                   color="inherit"
-                  aria-label="close"
+                  aria-label={t("common.close")}
                   onClick={() => setListsError(null)}
                   sx={{ p: 0.5 }}
                 >
