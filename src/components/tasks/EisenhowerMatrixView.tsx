@@ -36,6 +36,7 @@ import {
   Fullscreen,
   FullscreenExit,
   GridView,
+  SubdirectoryArrowRight,
 } from "@mui/icons-material";
 import { useRecoilValue } from "recoil";
 import { taskListsAtom } from "../../store";
@@ -45,6 +46,7 @@ import {
   QuadrantType,
   extractQuadrant,
   applyQuadrantToTitle,
+  cleanTitleFromQuadrant,
 } from "../../services/history.service";
 import TaskListItem from "./TaskListItem";
 import TaskDetailModal from "./TaskDetailModal";
@@ -95,7 +97,7 @@ const QUADRANTS: QuadrantConfig[] = [
 ];
 
 export default function EisenhowerMatrixView() {
-  const { t } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const {
     createTask,
@@ -112,6 +114,14 @@ export default function EisenhowerMatrixView() {
   const [quickInput, setQuickInput] = useState<{ [key in QuadrantType]?: string }>({});
   const [expandedQuadrant, setExpandedQuadrant] = useState<QuadrantType | null>(null);
 
+  // Map of all tasks across all lists by ID for instant parent resolution
+  const taskMap = new Map<string, AppTask>();
+  for (const list of taskLists) {
+    for (const t of list.tasks) {
+      taskMap.set(t.id, t);
+    }
+  }
+
   // Flatten active tasks
   const allTasks: { task: AppTask; listTitle: string }[] = [];
   for (const list of taskLists) {
@@ -121,6 +131,24 @@ export default function EisenhowerMatrixView() {
       }
     }
   }
+
+  // Resolve quadrant with parent inheritance for subtasks
+  const resolveQuadrant = (task: AppTask): QuadrantType | undefined => {
+    // 1. Direct tag on task takes precedence
+    const directQ = extractQuadrant(task.title);
+    if (directQ) return directQ;
+
+    // 2. If it's a subtask, inherit quadrant from parent
+    if (task.parent) {
+      const parentTask = taskMap.get(task.parent);
+      if (parentTask) {
+        const parentQ = extractQuadrant(parentTask.title);
+        if (parentQ) return parentQ;
+      }
+    }
+
+    return undefined;
+  };
 
   // Group by quadrant
   const qTasks: { [key in QuadrantType]: { task: AppTask; listTitle: string }[] } = {
@@ -132,7 +160,7 @@ export default function EisenhowerMatrixView() {
   const unassignedTasks: { task: AppTask; listTitle: string }[] = [];
 
   for (const item of allTasks) {
-    const q = extractQuadrant(item.task.title);
+    const q = resolveQuadrant(item.task);
     if (q) {
       qTasks[q].push(item);
     } else {
@@ -258,8 +286,39 @@ export default function EisenhowerMatrixView() {
                     {task.title}
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {listTitle}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5, overflow: "hidden", minWidth: 0 }}
+                    >
+                      {task.parent && taskMap.get(task.parent) ? (
+                        <>
+                          <SubdirectoryArrowRight
+                            sx={{
+                              fontSize: 13,
+                              color: "text.secondary",
+                              transform: isRtl ? "scaleX(-1)" : "none",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              color: "inherit",
+                              maxWidth: 110,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {cleanTitleFromQuadrant(taskMap.get(task.parent)!.title)}
+                          </span>
+                          <span>•</span>
+                        </>
+                      ) : null}
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {listTitle}
+                      </span>
                     </Typography>
                     <Box sx={{ display: "flex", gap: 0.5 }}>
                       {(["Q1", "Q2", "Q3", "Q4"] as QuadrantType[]).map((q) => (
@@ -535,32 +594,174 @@ export default function EisenhowerMatrixView() {
                   scrollbarWidth: "thin",
                 }}
               >
-                {tasks.length === 0 ? (
-                  <Box sx={{ py: 4, textAlign: "center" }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("tasks.noTasks")}
-                    </Typography>
-                    <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: "block" }}>
-                      {t(`eisenhower.${q.id.toLowerCase()}Subtitle`)}
-                    </Typography>
-                  </Box>
-                ) : (
-                  tasks.map(({ task }) => (
-                    <TaskListItem
-                      key={task.id}
-                      task={task}
-                      onToggle={() => toggleTaskComplete(task.listId, task.id)}
-                      onStar={() => toggleTaskStar(task.listId, task.id)}
-                      onDelete={() => deleteTask(task.listId, task.id)}
-                      onMove={(t, toListId) => moveTaskToList(t.listId, t.id, toListId)}
-                      onUpdate={(t, title, notes, due) =>
-                        updateTask(t.listId, t.id, title, notes, due)
-                      }
-                      onAddSubtask={(t, stTitle) => createSubtask(t.listId, t.id, stTitle)}
-                      onOpenDetail={setDetailTask}
-                    />
-                  ))
-                )}
+                {(() => {
+                  if (tasks.length === 0) {
+                    return (
+                      <Box sx={{ py: 4, textAlign: "center" }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {t("tasks.noTasks")}
+                        </Typography>
+                        <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: "block" }}>
+                          {t(`eisenhower.${q.id.toLowerCase()}Subtitle`)}
+                        </Typography>
+                      </Box>
+                    );
+                  }
+
+                  // 1. Separate into top-level tasks and subtasks
+                  const topLevel = tasks.filter((i) => !i.task.parent || !taskMap.has(i.task.parent));
+                  const subtasks = tasks.filter((i) => !!i.task.parent && taskMap.has(i.task.parent));
+
+                  // Subtasks whose parent is in topLevel (same quadrant)
+                  const sameQuadrantChildrenMap = new Map<string, typeof tasks>();
+                  // Subtasks whose parent is in a DIFFERENT quadrant or list
+                  const crossQuadrantMap = new Map<string, typeof tasks>();
+
+                  for (const st of subtasks) {
+                    const parentId = st.task.parent!;
+                    if (topLevel.some((p) => p.task.id === parentId)) {
+                      const list = sameQuadrantChildrenMap.get(parentId) || [];
+                      list.push(st);
+                      sameQuadrantChildrenMap.set(parentId, list);
+                    } else {
+                      const list = crossQuadrantMap.get(parentId) || [];
+                      list.push(st);
+                      crossQuadrantMap.set(parentId, list);
+                    }
+                  }
+
+                  return (
+                    <>
+                      {/* Top-level tasks and their co-quadrant subtasks */}
+                      {topLevel.map(({ task }) => {
+                        const children = sameQuadrantChildrenMap.get(task.id) || [];
+                        const cleanParentTitle = cleanTitleFromQuadrant(task.title);
+
+                        return (
+                          <Box key={task.id} sx={{ mb: 0.5 }}>
+                            <TaskListItem
+                              task={task}
+                              onToggle={() => toggleTaskComplete(task.listId, task.id)}
+                              onStar={() => toggleTaskStar(task.listId, task.id)}
+                              onDelete={() => deleteTask(task.listId, task.id)}
+                              onMove={(t, toListId) => moveTaskToList(t.listId, t.id, toListId)}
+                              onUpdate={(t, title, notes, due) => updateTask(t.listId, t.id, title, notes, due)}
+                              onAddSubtask={(t, stTitle) => createSubtask(t.listId, t.id, stTitle)}
+                              onOpenDetail={setDetailTask}
+                            />
+                            {children.map((child) => (
+                              <Box key={child.task.id} sx={{ marginInlineStart: 2 }}>
+                                <TaskListItem
+                                  task={child.task}
+                                  parentTaskTitle={cleanParentTitle}
+                                  onToggle={() => toggleTaskComplete(child.task.listId, child.task.id)}
+                                  onStar={() => toggleTaskStar(child.task.listId, child.task.id)}
+                                  onDelete={() => deleteTask(child.task.listId, child.task.id)}
+                                  onMove={(t, toListId) => moveTaskToList(t.listId, t.id, toListId)}
+                                  onUpdate={(t, title, notes, due) => updateTask(t.listId, t.id, title, notes, due)}
+                                  onAddSubtask={(t, stTitle) => createSubtask(t.listId, t.id, stTitle)}
+                                  onOpenDetail={setDetailTask}
+                                />
+                              </Box>
+                            ))}
+                          </Box>
+                        );
+                      })}
+
+                      {/* Cross-quadrant subtasks (parent is in a different quadrant or completed) */}
+                      {Array.from(crossQuadrantMap.entries()).map(([parentId, orphanChildren]) => {
+                        const parentTask = taskMap.get(parentId);
+                        const parentCleanTitle = parentTask ? cleanTitleFromQuadrant(parentTask.title) : t("tasks.defaultListName");
+                        const parentQ = parentTask ? extractQuadrant(parentTask.title) : undefined;
+
+                        return (
+                          <Box key={`cross_group_${parentId}`} sx={{ mt: 1.5, mb: 1 }}>
+                            <Box
+                              onClick={() => parentTask && setDetailTask(parentTask)}
+                              sx={{
+                                py: 0.6,
+                                px: 1.25,
+                                mb: 0.5,
+                                borderRadius: "8px",
+                                bgcolor: "action.hover",
+                                border: "1px dashed",
+                                borderColor: "divider",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 1,
+                                cursor: parentTask ? "pointer" : "default",
+                                transition: "background-color 0.15s ease",
+                                "&:hover": parentTask ? { bgcolor: "action.selected" } : {},
+                              }}
+                            >
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0, overflow: "hidden" }}>
+                                <SubdirectoryArrowRight
+                                  fontSize="small"
+                                  sx={{
+                                    color: "text.secondary",
+                                    fontSize: 16,
+                                    transform: isRtl ? "scaleX(-1)" : "none",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, flexShrink: 0 }}>
+                                  {t("tasks.subtaskOf")}:
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  dir="auto"
+                                  sx={{
+                                    fontWeight: 700,
+                                    color: "primary.main",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {parentCleanTitle}
+                                </Typography>
+                              </Box>
+                              {parentQ && (
+                                <Chip
+                                  size="small"
+                                  label={parentQ}
+                                  color={
+                                    parentQ === "Q1"
+                                      ? "error"
+                                      : parentQ === "Q2"
+                                      ? "primary"
+                                      : parentQ === "Q3"
+                                      ? "warning"
+                                      : "default"
+                                  }
+                                  variant="outlined"
+                                  sx={{ height: 18, fontSize: "0.62rem", fontWeight: 700, flexShrink: 0 }}
+                                />
+                              )}
+                            </Box>
+
+                            {orphanChildren.map((child) => (
+                              <Box key={child.task.id} sx={{ marginInlineStart: 1 }}>
+                                <TaskListItem
+                                  task={child.task}
+                                  parentTaskTitle={parentCleanTitle}
+                                  onToggle={() => toggleTaskComplete(child.task.listId, child.task.id)}
+                                  onStar={() => toggleTaskStar(child.task.listId, child.task.id)}
+                                  onDelete={() => deleteTask(child.task.listId, child.task.id)}
+                                  onMove={(t, toListId) => moveTaskToList(t.listId, t.id, toListId)}
+                                  onUpdate={(t, title, notes, due) => updateTask(t.listId, t.id, title, notes, due)}
+                                  onAddSubtask={(t, stTitle) => createSubtask(t.listId, t.id, stTitle)}
+                                  onOpenDetail={setDetailTask}
+                                />
+                              </Box>
+                            ))}
+                          </Box>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
               </Box>
             </Paper>
           );
