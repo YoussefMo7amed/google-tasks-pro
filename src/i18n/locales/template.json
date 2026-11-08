@@ -284,6 +284,7 @@
     "copyResponse": "Copy entire response",
     "processingRequest": "Processing your request with AI...",
     "switchModel": "Switch Model",
+    "configureApiKey": "Configure API Key",
     "quickSwitchToBackup": "Switch to Backup ({model})",
     "highDemandNotice": "Model is currently experiencing high demand. Click below to retry with backup agent:",
     "connectionSuccessWithModel": "Connected to {provider} ({model}) successfully!",

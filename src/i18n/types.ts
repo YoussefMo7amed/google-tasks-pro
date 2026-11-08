@@ -300,6 +300,7 @@ export interface TranslationSchema {
     copyResponse: string;
     processingRequest: string;
     switchModel: string;
+    configureApiKey: string;
     quickSwitchToBackup: string;
     highDemandNotice: string;
     connectionSuccessWithModel: string;

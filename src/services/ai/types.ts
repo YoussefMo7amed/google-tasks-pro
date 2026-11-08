@@ -135,6 +135,9 @@ export interface AICopilotMessage {
   content: string;
   actions?: AICopilotAction[];
   timestamp: number;
+  isError?: boolean;
+  errorType?: string;
+  retryPrompt?: string;
 }
 
 export interface TaskContextSnapshot {

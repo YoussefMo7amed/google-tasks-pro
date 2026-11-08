@@ -51,6 +51,8 @@ import {
   ShieldOutlined,
   Psychology,
   MoreVert,
+  Refresh,
+  VpnKeyOutlined,
 } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
 import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom, aiCopilotMinimizedAtom, aiSettingsAtom } from "../../store";
@@ -467,6 +469,9 @@ export default function AICopilotModal({
             ? `⚠️ ${friendlyError}\n\n💡 *${t("ai.highDemandNotice")}*`
             : `⚠️ ${friendlyError}`,
         timestamp: Date.now(),
+        isError: true,
+        errorType: parsed.type,
+        retryPrompt: trimmed,
       };
       const finalMessages = [...newMessages, errorMessage];
       setMessages(finalMessages);
@@ -483,6 +488,28 @@ export default function AICopilotModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetry = (msgToRetry?: AICopilotMessage) => {
+    let textToRetry = msgToRetry?.retryPrompt;
+    if (!textToRetry) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "user") {
+          textToRetry = messages[i].content;
+          break;
+        }
+      }
+    }
+    if (!textToRetry) return;
+
+    if (msgToRetry) {
+      const filtered = messages.filter((m) => m.id !== msgToRetry.id);
+      setMessages(filtered);
+      AIChatHistoryService.updateSession(activeSessionId, filtered);
+      setSessions(AIChatHistoryService.loadSessions());
+    }
+
+    handleSend(textToRetry);
   };
 
   // Granular Action Selection Helpers
@@ -1436,6 +1463,8 @@ export default function AICopilotModal({
                 pendingIndices.length > 0 &&
                 pendingIndices.every((i) => currentSelected.has(i));
 
+              const isErrorMessage = !isUser && (Boolean(msg.isError) || msg.id.startsWith("error_") || msg.content.startsWith("⚠️"));
+
               return (
                 <Box
                   key={msg.id}
@@ -1456,7 +1485,7 @@ export default function AICopilotModal({
                       bgcolor: isUser ? "primary.main" : "background.paper",
                       color: isUser ? "primary.contrastText" : "text.primary",
                       border: isUser ? "none" : "1px solid",
-                      borderColor: "divider",
+                      borderColor: isErrorMessage ? "warning.main" : "divider",
                       position: "relative",
                     }}
                   >
@@ -1473,12 +1502,12 @@ export default function AICopilotModal({
                           borderColor: "divider",
                         }}
                       >
-                        <AutoAwesome sx={{ fontSize: 16, color: "primary.main" }} />
+                        <AutoAwesome sx={{ fontSize: 16, color: isErrorMessage ? "warning.main" : "primary.main" }} />
                         <Typography
                           variant="caption"
                           sx={{
                             fontWeight: 700,
-                            color: "primary.main",
+                            color: isErrorMessage ? "warning.main" : "primary.main",
                             fontFamily: "Cairo, sans-serif",
                           }}
                         >
@@ -1490,59 +1519,160 @@ export default function AICopilotModal({
                     {/* Markdown rendering with Cairo font & RTL/LTR support */}
                     <MarkdownViewer content={msg.content} isUser={isUser} />
 
-                    {/* Assistant message action footer (Copy response - ChatGPT/Gemini style) */}
+                    {/* Assistant message action footer */}
                     {!isUser && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "flex-start",
-                          alignItems: "center",
-                          gap: 1,
-                          mt: 1.5,
-                          pt: 0.75,
-                          borderTop: "1px dashed",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleCopy(msg.id, msg.content)}
-                            sx={{
-                              p: 0.6,
-                              color: isCopied ? "success.main" : "text.secondary",
-                              "&:hover": {
-                                color: "text.primary",
-                                bgcolor: "action.hover",
-                              },
-                            }}
-                          >
-                            {isCopied ? (
-                              <Check sx={{ fontSize: 16 }} />
-                            ) : (
-                              <ContentCopy sx={{ fontSize: 16 }} />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    )}
-
-                    {/* Quick switch to backup button on capacity error */}
-                    {msg.content.includes(t("ai.highDemandNotice")) && currentSettings.backupEnabled && currentSettings.backupModel && (
-                      <Box sx={{ mt: 1.5, pt: 1, borderTop: '1px dashed', borderColor: 'divider', display: 'flex', gap: 1 }}>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="secondary"
-                          startIcon={<ShieldOutlined sx={{ fontSize: 16 }} />}
-                          onClick={() => {
-                            handleQuickSwitchToBackup();
+                      isErrorMessage ? (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            mt: 1.5,
+                            pt: 1,
+                            borderTop: "1px dashed",
+                            borderColor: "divider",
                           }}
-                          sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.78rem' }}
                         >
-                          {t("ai.quickSwitchToBackup")} ({currentSettings.backupModel})
-                        </Button>
-                      </Box>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                            {/* Retry Button */}
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="primary"
+                              startIcon={<Refresh sx={{ fontSize: 16 }} />}
+                              onClick={() => handleRetry(msg)}
+                              disabled={loading}
+                              sx={{
+                                borderRadius: 2,
+                                fontSize: "0.78rem",
+                                fontWeight: 600,
+                                textTransform: "none",
+                                py: 0.4,
+                                px: 1.5,
+                              }}
+                            >
+                              {t("common.retry")}
+                            </Button>
+
+                            {/* Configure Key (if auth/permission error) */}
+                            {(msg.errorType === "auth_failed" || msg.content.includes("API key") || msg.content.includes("مفتاح")) && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="warning"
+                                startIcon={<VpnKeyOutlined sx={{ fontSize: 16 }} />}
+                                onClick={handleOpenAISettings}
+                                sx={{
+                                  borderRadius: 2,
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  textTransform: "none",
+                                  py: 0.4,
+                                  px: 1.5,
+                                }}
+                              >
+                                {t("ai.configureApiKey")}
+                              </Button>
+                            )}
+
+                            {/* Switch to Backup (if configured and capacity error) */}
+                            {currentSettings.backupEnabled && currentSettings.backupModel ? (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="secondary"
+                                startIcon={<ShieldOutlined sx={{ fontSize: 16 }} />}
+                                onClick={handleQuickSwitchToBackup}
+                                sx={{
+                                  borderRadius: 2,
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  textTransform: "none",
+                                  py: 0.4,
+                                  px: 1.5,
+                                }}
+                              >
+                                {t("ai.quickSwitchToBackup", { model: currentSettings.backupModel })}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<Tune sx={{ fontSize: 16 }} />}
+                                onClick={(e) => setModelMenuAnchor(e.currentTarget)}
+                                sx={{
+                                  borderRadius: 2,
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  textTransform: "none",
+                                  py: 0.4,
+                                  px: 1.5,
+                                }}
+                              >
+                                {t("ai.switchModel")}
+                              </Button>
+                            )}
+                          </Box>
+
+                          {/* Copy Error Message */}
+                          <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCopy(msg.id, msg.content)}
+                              sx={{
+                                p: 0.6,
+                                color: isCopied ? "success.main" : "text.secondary",
+                                "&:hover": {
+                                  color: "text.primary",
+                                  bgcolor: "action.hover",
+                                },
+                              }}
+                            >
+                              {isCopied ? (
+                                <Check sx={{ fontSize: 16 }} />
+                              ) : (
+                                <ContentCopy sx={{ fontSize: 16 }} />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "flex-start",
+                            alignItems: "center",
+                            gap: 1,
+                            mt: 1.5,
+                            pt: 0.75,
+                            borderTop: "1px dashed",
+                            borderColor: "divider",
+                          }}
+                        >
+                          <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCopy(msg.id, msg.content)}
+                              sx={{
+                                p: 0.6,
+                                color: isCopied ? "success.main" : "text.secondary",
+                                "&:hover": {
+                                  color: "text.primary",
+                                  bgcolor: "action.hover",
+                                },
+                              }}
+                            >
+                              {isCopied ? (
+                                <Check sx={{ fontSize: 16 }} />
+                              ) : (
+                                <ContentCopy sx={{ fontSize: 16 }} />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      )
                     )}
                   </Paper>
 

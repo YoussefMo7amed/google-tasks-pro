@@ -285,6 +285,7 @@ export const ar: TranslationSchema = {
     copyResponse: "نسخ الإجابة بالكامل",
     processingRequest: "جاري معالجة طلبك وفحص المهام بالذكاء الاصطناعي...",
     switchModel: "تبديل النموذج",
+    configureApiKey: "إعداد مفتاح API",
     quickSwitchToBackup: "التبديل إلى الاحتياطي ({model})",
     highDemandNotice: "النموذج يواجه ضغطاً كبيراً حالياً. انقر أدناه للمتابعة بالوكيل الاحتياطي:",
     connectionSuccessWithModel: "تم الاتصال بنجاح بـ {provider} ({model})!",
