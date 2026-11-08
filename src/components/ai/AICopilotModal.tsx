@@ -163,10 +163,13 @@ export default function AICopilotModal({
   const [modelMenuAnchor, setModelMenuAnchor] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      const fresh = AISettingsService.load();
+      setCurrentSettings(fresh);
+    } else {
       setIsMinimized(false);
     }
-  }, [open, setIsMinimized]);
+  }, [open, setCurrentSettings, setIsMinimized]);
 
   const isLocalProvider = currentSettings.provider === "ollama" || currentSettings.provider === "lm_studio";
   const hasKey = Boolean(currentSettings.apiKey && currentSettings.apiKey.trim().length > 0);
