@@ -1490,13 +1490,14 @@ export default function AICopilotModal({
                     {/* Markdown rendering with Cairo font & RTL/LTR support */}
                     <MarkdownViewer content={msg.content} isUser={isUser} />
 
-                    {/* Assistant message action footer (Copy response) */}
+                    {/* Assistant message action footer (Copy response - ChatGPT/Gemini style) */}
                     {!isUser && (
                       <Box
                         sx={{
                           display: "flex",
-                          justifyContent: isRtl ? "flex-start" : "flex-end",
+                          justifyContent: "flex-start",
                           alignItems: "center",
+                          gap: 1,
                           mt: 1.5,
                           pt: 0.75,
                           borderTop: "1px dashed",
@@ -1504,32 +1505,24 @@ export default function AICopilotModal({
                         }}
                       >
                         <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
-                          <Button
+                          <IconButton
                             size="small"
-                            variant="text"
-                            startIcon={
-                              isCopied ? (
-                                <Check sx={{ fontSize: 16 }} />
-                              ) : (
-                                <ContentCopy sx={{ fontSize: 16 }} />
-                              )
-                            }
                             onClick={() => handleCopy(msg.id, msg.content)}
                             sx={{
+                              p: 0.6,
                               color: isCopied ? "success.main" : "text.secondary",
-                              fontSize: "0.78rem",
-                              py: 0.25,
-                              px: 1,
-                              borderRadius: 1.5,
-                              textTransform: "none",
                               "&:hover": {
                                 color: "text.primary",
                                 bgcolor: "action.hover",
                               },
                             }}
                           >
-                            {isCopied ? t("common.copied") : t("ai.copyResponse")}
-                          </Button>
+                            {isCopied ? (
+                              <Check sx={{ fontSize: 16 }} />
+                            ) : (
+                              <ContentCopy sx={{ fontSize: 16 }} />
+                            )}
+                          </IconButton>
                         </Tooltip>
                       </Box>
                     )}
