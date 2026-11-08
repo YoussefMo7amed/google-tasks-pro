@@ -94,6 +94,11 @@ export interface TranslationSchema {
     today: string;
     tomorrow: string;
     nextWeek: string;
+    thisWeek: string;
+    thisMonth: string;
+    allDates: string;
+    filterByDate: string;
+    status: string;
     noTasks: string;
     noPendingTasks: string;
     pending: string;
