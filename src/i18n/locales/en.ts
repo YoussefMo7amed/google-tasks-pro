@@ -113,6 +113,8 @@ export const en: TranslationSchema = {
     noTaskAboveToIndent: "No task above to indent under",
     completedClearedToast: "Completed tasks cleared",
     subtaskOf: "Subtask of",
+    expandAll: "Expand all",
+    collapseAll: "Collapse all",
     moveToList: "Move to list",
     noOtherLists: "No other lists",
     starredTasks: "Starred Tasks",

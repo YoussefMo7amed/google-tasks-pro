@@ -22,6 +22,8 @@ import {
   ListItemIcon,
   ListItemText,
   Button,
+  Collapse,
+  Tooltip,
 } from "@mui/material";
 import {
   Search,
@@ -34,6 +36,10 @@ import {
   Add,
   Clear,
   SubdirectoryArrowRight,
+  KeyboardArrowDown,
+  KeyboardArrowRight,
+  UnfoldMore,
+  UnfoldLess,
 } from "@mui/icons-material";
 import { useRecoilValue } from "recoil";
 import { taskListsAtom } from "../../store/atoms";
@@ -78,6 +84,56 @@ export default function UnifiedListView() {
   // Quick add input state per group
   const [quickAddGroup, setQuickAddGroup] = useState<string | null>(null);
   const [quickAddText, setQuickAddText] = useState("");
+
+  const COLLAPSED_GROUPS_STORAGE_KEY = "unified_list_collapsed_groups";
+
+  // Collapsed groups state with localStorage persistence
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const saved = window.localStorage.getItem(COLLAPSED_GROUPS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return new Set(parsed);
+        }
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+    return new Set<string>();
+  });
+
+  const toggleGroupCollapse = (groupKey: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem(COLLAPSED_GROUPS_STORAGE_KEY, JSON.stringify(Array.from(next)));
+        }
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const handleToggleAllCollapse = (allKeys: string[]) => {
+    const isAllCollapsed = allKeys.length > 0 && allKeys.every((k) => collapsedGroups.has(k));
+    const next = isAllCollapsed ? new Set<string>() : new Set(allKeys);
+    setCollapsedGroups(next);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(COLLAPSED_GROUPS_STORAGE_KEY, JSON.stringify(Array.from(next)));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  };
 
   // Flatten all tasks with their list info
   const allTasksWithList = useMemo(() => {
@@ -344,34 +400,62 @@ export default function UnifiedListView() {
           />
         </Box>
 
-        {/* Status filter */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <Chip
-            size="small"
-            label={t("tasks.pending")}
-            variant={statusFilter === "pending" ? "filled" : "outlined"}
-            color={statusFilter === "pending" ? "primary" : "default"}
-            clickable
-            onClick={() => setStatusFilter("pending")}
-            sx={{ fontSize: "0.75rem" }}
-          />
-          <Chip
-            size="small"
-            label={t("tasks.completed")}
-            variant={statusFilter === "completed" ? "filled" : "outlined"}
-            color={statusFilter === "completed" ? "success" : "default"}
-            clickable
-            onClick={() => setStatusFilter("completed")}
-            sx={{ fontSize: "0.75rem" }}
-          />
-          <Chip
-            size="small"
-            label={t("common.all")}
-            variant={statusFilter === "all" ? "filled" : "outlined"}
-            clickable
-            onClick={() => setStatusFilter("all")}
-            sx={{ fontSize: "0.75rem" }}
-          />
+        {/* Status filter & Collapse All */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <Chip
+              size="small"
+              label={t("tasks.pending")}
+              variant={statusFilter === "pending" ? "filled" : "outlined"}
+              color={statusFilter === "pending" ? "primary" : "default"}
+              clickable
+              onClick={() => setStatusFilter("pending")}
+              sx={{ fontSize: "0.75rem" }}
+            />
+            <Chip
+              size="small"
+              label={t("tasks.completed")}
+              variant={statusFilter === "completed" ? "filled" : "outlined"}
+              color={statusFilter === "completed" ? "success" : "default"}
+              clickable
+              onClick={() => setStatusFilter("completed")}
+              sx={{ fontSize: "0.75rem" }}
+            />
+            <Chip
+              size="small"
+              label={t("common.all")}
+              variant={statusFilter === "all" ? "filled" : "outlined"}
+              clickable
+              onClick={() => setStatusFilter("all")}
+              sx={{ fontSize: "0.75rem" }}
+            />
+          </Box>
+
+          {/* Expand / Collapse All Toggle Button */}
+          {(() => {
+            const allGroupKeys = Object.keys(groupedTasks);
+            const isAllCollapsed = allGroupKeys.length > 0 && allGroupKeys.every((k) => collapsedGroups.has(k));
+            return (
+              <Tooltip title={isAllCollapsed ? t("tasks.expandAll") : t("tasks.collapseAll")}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleToggleAllCollapse(allGroupKeys)}
+                  sx={{
+                    p: 0.75,
+                    border: 1,
+                    borderColor: "divider",
+                    color: "text.secondary",
+                    "&:hover": {
+                      color: "text.primary",
+                      bgcolor: "action.hover",
+                    },
+                  }}
+                >
+                  {isAllCollapsed ? <UnfoldMore fontSize="small" /> : <UnfoldLess fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            );
+          })()}
         </Box>
       </Paper>
 
@@ -380,9 +464,10 @@ export default function UnifiedListView() {
         if (items.length === 0 && groupBy !== "list") return null;
 
         const isAddingInThisGroup = quickAddGroup === groupTitle;
+        const isCollapsed = collapsedGroups.has(groupTitle);
 
         return (
-          <Box key={groupTitle} sx={{ mb: 3 }}>
+          <Box key={groupTitle} sx={{ mb: 2.5 }}>
             {/* Group Header */}
             <Box
               sx={{
@@ -393,7 +478,40 @@ export default function UnifiedListView() {
                 px: 1,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                onClick={() => toggleGroupCollapse(groupTitle)}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  cursor: "pointer",
+                  userSelect: "none",
+                  py: 0.5,
+                  px: 0.75,
+                  borderRadius: 2,
+                  transition: "background-color 0.15s ease",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleGroupCollapse(groupTitle);
+                  }}
+                  sx={{
+                    p: 0.25,
+                    color: "text.secondary",
+                  }}
+                >
+                  {isCollapsed ? (
+                    <KeyboardArrowRight sx={{ fontSize: 20, transform: isRtl ? "scaleX(-1)" : "none" }} />
+                  ) : (
+                    <KeyboardArrowDown sx={{ fontSize: 20 }} />
+                  )}
+                </IconButton>
                 <FolderOutlined fontSize="small" sx={{ color: "primary.main" }} />
                 <Typography
                   variant="subtitle1"
@@ -415,6 +533,7 @@ export default function UnifiedListView() {
                 onClick={() => {
                   setQuickAddGroup(groupTitle);
                   setQuickAddText("");
+                  if (isCollapsed) toggleGroupCollapse(groupTitle);
                 }}
                 sx={{
                   fontSize: "0.75rem",
@@ -424,6 +543,9 @@ export default function UnifiedListView() {
                 {t("tasks.addTask")}
               </Button>
             </Box>
+
+            {/* Collapsible Group Content */}
+            <Collapse in={!isCollapsed} timeout="auto">
 
             {/* Quick Add Bar */}
             {isAddingInThisGroup && (
@@ -660,6 +782,7 @@ export default function UnifiedListView() {
                 })
               )}
             </Paper>
+            </Collapse>
           </Box>
         );
       })}

@@ -128,6 +128,8 @@ export interface TranslationSchema {
     noTaskAboveToIndent: string;
     completedClearedToast: string;
     subtaskOf: string;
+    expandAll: string;
+    collapseAll: string;
     moveToList: string;
     noOtherLists: string;
     starredTasks: string;

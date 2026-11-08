@@ -113,6 +113,8 @@ export const ar: TranslationSchema = {
     noTaskAboveToIndent: "لا توجد مهمة سابقة لتحويل هذه المهمة كتابعة لها",
     completedClearedToast: "تم مسح المهام المكتملة بنجاح",
     subtaskOf: "مهمة فرعية من",
+    expandAll: "توسيع الكل",
+    collapseAll: "طي الكل",
     moveToList: "نقل إلى قائمة أخرى",
     noOtherLists: "لا توجد قوائم أخرى",
     starredTasks: "المهام المميزة بنجمة",
