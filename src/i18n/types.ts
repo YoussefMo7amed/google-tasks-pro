@@ -460,6 +460,8 @@ export interface TranslationSchema {
     invalidAuthCode: string;
     chooseAccount: string;
     loginRequired: string;
+    desktopAppRequired: string;
+    browserNotice: string;
   };
   calendar: {
     today: string;

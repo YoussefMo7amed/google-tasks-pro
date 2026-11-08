@@ -445,6 +445,8 @@ export const ar: TranslationSchema = {
     invalidAuthCode: "رمز التفويض غير صالح أو منتهي الصلاحية. يرجى المحاولة مجدداً.",
     chooseAccount: "اختر حساباً",
     loginRequired: "تسجيل الدخول مطلوب",
+    desktopAppRequired: "يتطلب تسجيل الدخول عبر Google تشغيل تطبيق سطح المكتب (npm run tauri dev). يمكنك الاستمرار كضيف للتجربة في المتصفح.",
+    browserNotice: "أنت الآن في وضع المتصفح التجريبي. لمزامنة مهام Google، شغّل تطبيق سطح المكتب عبر npm run tauri dev، أو استمر كضيف للتجربة محلياً.",
   },
   calendar: {
     today: "اليوم",

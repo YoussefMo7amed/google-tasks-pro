@@ -12,7 +12,7 @@ import { setRecoil } from "recoil-nexus";
 import { accessTokenState, activeCategoryTasksState, activeTaskCategoryState, authLoadingState, messageState, userProfileState } from "../config/states";
 import { pushNotification } from "./windowhelper";
 import { cancelAllNotifications } from "../services/notification.service";
-import { isMobile } from "./platform";
+import { isMobile, isTauri } from "./platform";
 import { I18nService } from "../i18n";
 
 const DEFAULT_DIRECTORY = settings.fs.DEFAULT_DIRECTORY;
@@ -219,6 +219,11 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
 
  // to handle login to get auth
 export async function openAuthWindow() {
+    if (!isTauri()) {
+        const lang = I18nService.loadLanguage();
+        throw new Error(I18nService.translate(lang, "auth.desktopAppRequired"));
+    }
+
     // Platform branch point: Android / Mobile OAuth with PKCE & Deep-Link Redirect
     if (isMobile()) {
         const verifier = generateCodeVerifier();

@@ -339,7 +339,7 @@ function App() {
           {toastMessage && toastMessage.body && (
             <>
               <br />
-              {toastMessage.body}
+              <bdi style={{ unicodeBidi: "plaintext", display: "inline-block" }}>{toastMessage.body}</bdi>
             </>
           )}
         </Alert>

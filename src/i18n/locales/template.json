@@ -443,7 +443,9 @@
     "authErrorTitle": "Authentication Error",
     "invalidAuthCode": "Invalid or expired authorization code. Please try again.",
     "chooseAccount": "Choose an account",
-    "loginRequired": "Login required"
+    "loginRequired": "Login required",
+    "desktopAppRequired": "Google Sign-In requires the desktop application runtime (npm run tauri dev). You can use Guest Mode to test in the browser.",
+    "browserNotice": "You are in browser preview mode. To sign in with Google, run the desktop app via npm run tauri dev, or continue as Guest to test locally."
   },
   "calendar": {
     "today": "Today",
