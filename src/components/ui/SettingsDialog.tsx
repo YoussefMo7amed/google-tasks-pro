@@ -7,9 +7,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { invoke } from '@tauri-apps/api/core';
-import { settingsActiveTabAtom, aiSettingsAtom } from '../../store';
+import { settingsActiveTabAtom, aiSettingsAtom, toastAtom } from '../../store';
 import {
   Dialog,
   DialogTitle,
@@ -106,6 +106,7 @@ export default function SettingsDialog({
   const [timeFormat, setTimeFormat] = useState<TimeFormatPreference>('both');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const setToast = useSetRecoilState(toastAtom);
 
   // Trash Settings state
   const [trashRetention, setTrashRetention] = useState<TrashRetention>(() => trashService.getSettings().retention);
@@ -345,14 +346,72 @@ export default function SettingsDialog({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updated = await saveSettings({ notificationHour, timeFormat });
-      AISettingsService.save(aiSettings);
+      // 1. Auto-commit any pending key input in the active provider tab if user didn't click "Add Key"
+      let latestAiSettings: AISettings = { ...aiSettings };
+      const pendingKey = newKeyInput.trim();
+      if (pendingKey) {
+        const curConfig: ProviderConfig = latestAiSettings.providers?.[selectedProviderTab] || {
+          provider: selectedProviderTab,
+          apiKey: '',
+          apiKeys: [],
+          model: DEFAULT_MODELS[selectedProviderTab],
+          baseUrl: DEFAULT_BASE_URLS[selectedProviderTab],
+          temperature: 0.7,
+        };
+        const existing = curConfig.apiKeys || (curConfig.apiKey ? [curConfig.apiKey] : []);
+        if (!existing.includes(pendingKey)) {
+          const updatedKeys = [...existing, pendingKey];
+          const updatedConfig: ProviderConfig = {
+            ...curConfig,
+            apiKeys: updatedKeys,
+            apiKey: updatedKeys[0],
+          };
+          const updatedProviders: Record<AIProviderType, ProviderConfig> = {
+            ...(latestAiSettings.providers || {}),
+            [selectedProviderTab]: updatedConfig,
+          } as Record<AIProviderType, ProviderConfig>;
+
+          const isPrimary = latestAiSettings.provider === selectedProviderTab;
+          const isBackup = latestAiSettings.backupProvider === selectedProviderTab;
+
+          latestAiSettings = {
+            ...latestAiSettings,
+            providers: updatedProviders,
+            ...(isPrimary ? { apiKey: updatedConfig.apiKey, apiKeys: updatedConfig.apiKeys } : {}),
+            ...(isBackup ? { backupApiKey: updatedConfig.apiKey, backupApiKeys: updatedConfig.apiKeys } : {}),
+          };
+          setNewKeyInput('');
+        }
+      }
+
+      // 2. Persist AI settings immediately to encrypted vault & update Recoil state
+      AISettingsService.save(latestAiSettings);
+      setAiSettings(latestAiSettings);
+
+      // 3. Persist Trash retention settings
       trashService.updateSettings({
         retention: trashRetention,
         customDays: Math.max(1, Number(trashCustomDays) || 1),
       });
+
+      // 4. Persist Custom Google OAuth credentials
       setCustomCredentials(customClientId.trim(), customClientSecret.trim());
-      onSettingsChange?.(updated);
+
+      // 5. Persist general app preferences (safe with internal localStorage fallback)
+      let updated: AppSettings | undefined;
+      try {
+        updated = await saveSettings({ notificationHour, timeFormat });
+        onSettingsChange?.(updated);
+      } catch (err) {
+        console.warn('Failed to save general app settings:', err);
+      }
+
+      // 6. Provide user confirmation toast and close dialog
+      setToast({
+        title: t("settings.savedSuccessfully"),
+        body: "",
+        type: "success",
+      });
       onClose();
     } catch (error) {
       console.error('Failed to save settings:', error);

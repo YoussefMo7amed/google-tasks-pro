@@ -353,6 +353,7 @@ export interface TranslationSchema {
   settings: {
     title: string;
     saveChanges: string;
+    savedSuccessfully: string;
     generalTab: string;
     aiTab: string;
     language: string;

@@ -338,6 +338,7 @@ export const en: TranslationSchema = {
   settings: {
     title: "Settings & Integrations",
     saveChanges: "Save Changes",
+    savedSuccessfully: "Settings saved successfully",
     generalTab: "General",
     aiTab: "AI Assistant",
     language: "Application Language",

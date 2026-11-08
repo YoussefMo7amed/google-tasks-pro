@@ -338,6 +338,7 @@ export const ar: TranslationSchema = {
   settings: {
     title: "الإعدادات والتكاملات",
     saveChanges: "حفظ التغييرات",
+    savedSuccessfully: "تم حفظ الإعدادات بنجاح",
     generalTab: "عام",
     aiTab: "الذكاء الاصطناعي",
     language: "لغة التطبيق",
