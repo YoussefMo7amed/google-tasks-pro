@@ -121,14 +121,13 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
         <Box
           key={`list_${blocks.length}`}
           component={isNumberedList ? "ol" : "ul"}
+          dir={isRtl ? "rtl" : "ltr"}
           sx={{
             m: 0,
             mb: 1.5,
-            paddingInlineStart: isNumberedList ? 24 : 20,
-            paddingInlineEnd: 8,
-            display: "flex",
-            flexDirection: "column",
-            gap: 0.5,
+            paddingInlineStart: isNumberedList ? "28px" : "24px",
+            paddingInlineEnd: "8px",
+            textAlign: isRtl ? "right" : "left",
           }}
         >
           {listItems}
@@ -403,11 +402,12 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           key={`li_${i}`}
           component="li"
           variant="body2"
-          dir="auto"
           sx={{
             fontSize: "0.92rem",
             lineHeight: 1.6,
             unicodeBidi: "plaintext",
+            textAlign: isRtl ? "right" : "left",
+            mb: 0.5,
           }}
         >
           {renderInlineFormatted(itemText)}
@@ -429,11 +429,12 @@ export default function MarkdownViewer({ content, isUser = false }: MarkdownView
           key={`nli_${i}`}
           component="li"
           variant="body2"
-          dir="auto"
           sx={{
             fontSize: "0.92rem",
             lineHeight: 1.6,
             unicodeBidi: "plaintext",
+            textAlign: isRtl ? "right" : "left",
+            mb: 0.5,
           }}
         >
           {renderInlineFormatted(numberedMatch[2])}

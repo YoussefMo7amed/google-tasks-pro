@@ -1460,54 +1460,79 @@ export default function AICopilotModal({
                       position: "relative",
                     }}
                   >
-                    {/* Top row inside assistant bubble: label and copy button */}
+                    {/* Top row inside assistant bubble: label */}
                     {!isUser && (
                       <Box
                         sx={{
                           display: "flex",
-                          justifyContent: "space-between",
                           alignItems: "center",
+                          gap: 0.75,
                           mb: 1,
                           pb: 0.75,
                           borderBottom: "1px dashed",
                           borderColor: "divider",
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                          <AutoAwesome sx={{ fontSize: 16, color: "primary.main" }} />
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              fontWeight: 700,
-                              color: "primary.main",
-                              fontFamily: "Cairo, sans-serif",
-                            }}
-                          >
-                            AI Copilot
-                          </Typography>
-                        </Box>
-
-                        <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleCopy(msg.id, msg.content)}
-                            sx={{
-                              p: 0.5,
-                              color: isCopied ? "success.main" : "text.secondary",
-                            }}
-                          >
-                            {isCopied ? (
-                              <Check sx={{ fontSize: 16 }} />
-                            ) : (
-                              <ContentCopy sx={{ fontSize: 16 }} />
-                            )}
-                          </IconButton>
-                        </Tooltip>
+                        <AutoAwesome sx={{ fontSize: 16, color: "primary.main" }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 700,
+                            color: "primary.main",
+                            fontFamily: "Cairo, sans-serif",
+                          }}
+                        >
+                          AI Copilot
+                        </Typography>
                       </Box>
                     )}
 
                     {/* Markdown rendering with Cairo font & RTL/LTR support */}
                     <MarkdownViewer content={msg.content} isUser={isUser} />
+
+                    {/* Assistant message action footer (Copy response) */}
+                    {!isUser && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: isRtl ? "flex-start" : "flex-end",
+                          alignItems: "center",
+                          mt: 1.5,
+                          pt: 0.75,
+                          borderTop: "1px dashed",
+                          borderColor: "divider",
+                        }}
+                      >
+                        <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
+                          <Button
+                            size="small"
+                            variant="text"
+                            startIcon={
+                              isCopied ? (
+                                <Check sx={{ fontSize: 16 }} />
+                              ) : (
+                                <ContentCopy sx={{ fontSize: 16 }} />
+                              )
+                            }
+                            onClick={() => handleCopy(msg.id, msg.content)}
+                            sx={{
+                              color: isCopied ? "success.main" : "text.secondary",
+                              fontSize: "0.78rem",
+                              py: 0.25,
+                              px: 1,
+                              borderRadius: 1.5,
+                              textTransform: "none",
+                              "&:hover": {
+                                color: "text.primary",
+                                bgcolor: "action.hover",
+                              },
+                            }}
+                          >
+                            {isCopied ? t("common.copied") : t("ai.copyResponse")}
+                          </Button>
+                        </Tooltip>
+                      </Box>
+                    )}
 
                     {/* Quick switch to backup button on capacity error */}
                     {msg.content.includes(t("ai.highDemandNotice")) && currentSettings.backupEnabled && currentSettings.backupModel && (
