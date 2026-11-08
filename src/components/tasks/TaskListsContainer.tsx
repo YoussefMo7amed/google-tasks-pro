@@ -39,6 +39,7 @@ import TaskListCard from "./TaskListCard";
 import SortableTaskCard from "./SortableTaskCard";
 import StarredTasksCard from "./StarredTasksCard";
 import TaskListItem from "./TaskListItem";
+import TaskFilterBar from "./TaskFilterBar";
 import { useTranslation } from "../../i18n";
 
 export default function TaskListsContainer() {
@@ -260,24 +261,6 @@ export default function TaskListsContainer() {
     );
   }
 
-  // Show StarredTasksCard when in starred view
-  if (viewState.view === "starred") {
-    return (
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          py: 2,
-          px: { xs: 1.5, sm: 4 },
-        }}
-      >
-        <StarredTasksCard />
-      </Box>
-    );
-  }
-
   return (
     <Box
       sx={{
@@ -286,9 +269,40 @@ export default function TaskListsContainer() {
         height: "100%",
         overflow: "hidden",
         display: "flex",
-        alignItems: "stretch",
+        flexDirection: "column",
       }}
     >
+      {/* Top Filter Bar */}
+      <Box sx={{ px: { xs: 1.5, sm: 3, md: 6 }, pt: 2, pb: 0.5, flexShrink: 0 }}>
+        <TaskFilterBar />
+      </Box>
+
+      {/* Main Content Area */}
+      {viewState.view === "starred" ? (
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            py: 2,
+            px: { xs: 1.5, sm: 4 },
+            overflowY: "auto",
+          }}
+        >
+          <StarredTasksCard />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            position: "relative",
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "stretch",
+          }}
+        >
       {/* Banner when viewing cached tasks during session expiration or offline */}
       {error && !isGuest && (
         <Box sx={{ position: "absolute", top: 8, left: 60, right: 60, zIndex: 12 }}>
@@ -464,6 +478,8 @@ export default function TaskListsContainer() {
           <ChevronRight />
         </IconButton>
       </Tooltip>
+        </Box>
+      )}
     </Box>
   );
 }

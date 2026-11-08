@@ -13,9 +13,10 @@ import {
 } from "@mui/material";
 import { Star } from "@mui/icons-material";
 import { useRecoilValue } from "recoil";
-import { taskListsAtom, starredTaskIdsAtom } from "../../store";
+import { taskListsAtom, starredTaskIdsAtom, taskFilterAtom } from "../../store";
 import { useTasks } from "../../hooks";
 import { AppTask } from "../../types/app";
+import { matchesTaskFilter } from "../../helpers/taskFilter";
 import TaskListItem from "./TaskListItem";
 import { useTranslation } from "../../i18n";
 
@@ -23,6 +24,7 @@ export default function StarredTasksCard() {
   const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
+  const filter = useRecoilValue(taskFilterAtom);
   const { toggleTaskComplete, toggleTaskStar, deleteTask, moveTaskToList } = useTasks();
 
   // Get all starred tasks from all lists
@@ -30,7 +32,7 @@ export default function StarredTasksCard() {
   
   taskLists.forEach(list => {
     list.tasks.forEach(task => {
-      if (starredIds.has(task.id)) {
+      if (starredIds.has(task.id) && matchesTaskFilter(task, filter, isRtl)) {
         starredTasks.push({ ...task, isStarred: true, listName: list.title });
       }
     });

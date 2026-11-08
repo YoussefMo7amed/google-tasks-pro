@@ -39,7 +39,7 @@ import {
   SubdirectoryArrowRight,
 } from "@mui/icons-material";
 import { useRecoilValue } from "recoil";
-import { taskListsAtom } from "../../store";
+import { taskListsAtom, taskFilterAtom } from "../../store";
 import { useTasks } from "../../hooks";
 import { AppTask } from "../../types/app";
 import {
@@ -48,8 +48,10 @@ import {
   applyQuadrantToTitle,
   cleanTitleFromQuadrant,
 } from "../../services/history.service";
+import { matchesTaskFilter } from "../../helpers/taskFilter";
 import TaskListItem from "./TaskListItem";
 import TaskDetailModal from "./TaskDetailModal";
+import TaskFilterBar from "./TaskFilterBar";
 import { useTranslation } from "../../i18n";
 
 interface QuadrantConfig {
@@ -99,6 +101,7 @@ const QUADRANTS: QuadrantConfig[] = [
 export default function EisenhowerMatrixView() {
   const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
+  const filter = useRecoilValue(taskFilterAtom);
   const {
     createTask,
     updateTask,
@@ -122,11 +125,11 @@ export default function EisenhowerMatrixView() {
     }
   }
 
-  // Flatten active tasks
+  // Flatten active tasks matching filter
   const allTasks: { task: AppTask; listTitle: string }[] = [];
   for (const list of taskLists) {
     for (const t of list.tasks) {
-      if (t.status === "needsAction") {
+      if (matchesTaskFilter(t, filter, isRtl)) {
         allTasks.push({ task: t, listTitle: list.title });
       }
     }
@@ -216,6 +219,11 @@ export default function EisenhowerMatrixView() {
           variant="outlined"
           sx={{ fontWeight: 600 }}
         />
+      </Box>
+
+      {/* Filter Bar */}
+      <Box sx={{ mb: 2.5 }}>
+        <TaskFilterBar />
       </Box>
 
       {/* Unassigned Tasks Drawer (shown only in 2x2 grid mode) */}

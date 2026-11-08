@@ -13,7 +13,6 @@ import {
   Typography,
   Paper,
   TextField,
-  InputAdornment,
   Chip,
   IconButton,
   Checkbox,
@@ -26,7 +25,6 @@ import {
   Tooltip,
 } from "@mui/material";
 import {
-  Search,
   Star,
   StarBorder,
   CalendarToday,
@@ -34,18 +32,19 @@ import {
   DeleteOutline,
   FolderOutlined,
   Add,
-  Clear,
   SubdirectoryArrowRight,
   KeyboardArrowDown,
   KeyboardArrowRight,
   UnfoldMore,
   UnfoldLess,
 } from "@mui/icons-material";
-import { useRecoilValue } from "recoil";
-import { taskListsAtom } from "../../store/atoms";
+import { useRecoilValue, useRecoilState } from "recoil";
+import { taskListsAtom, taskFilterAtom } from "../../store";
 import { useTasks } from "../../hooks";
 import { AppTask, AppTaskList } from "../../types/app";
 import { extractQuadrant, cleanTitleFromQuadrant } from "../../services/history.service";
+import { formatDateKey, parseDueDate, matchesTaskFilter } from "../../helpers/taskFilter";
+import TaskFilterBar from "./TaskFilterBar";
 import TaskDetailModal from "./TaskDetailModal";
 import { useTranslation } from "../../i18n";
 
@@ -57,41 +56,11 @@ const QUADRANT_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 type GroupByOption = "list" | "quadrant" | "dueDate";
-type StatusFilter = "all" | "pending" | "completed" | "overdue";
-type DateFilter = "all" | "today" | "thisWeek" | "thisMonth";
-
-function formatDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function parseDueDate(dueStr?: string | null): string | null {
-  if (!dueStr) return null;
-  return dueStr.substring(0, 10);
-}
-
-function getWeekBounds(isRtl: boolean, refDate: Date = new Date()): { startStr: string; endStr: string } {
-  const d = new Date(refDate);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
-  // In RTL / Arabic: Saturday (6) to Friday (5)
-  // In LTR: Sunday (0) to Saturday (6)
-  const diffToStart = isRtl ? (day === 6 ? 0 : day + 1) : day;
-  const start = new Date(d);
-  start.setDate(d.getDate() - diffToStart);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  return {
-    startStr: formatDateKey(start),
-    endStr: formatDateKey(end),
-  };
-}
 
 export default function UnifiedListView() {
   const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
+  const [filter] = useRecoilState(taskFilterAtom);
   const {
     toggleTaskComplete,
     toggleTaskStar,
@@ -102,10 +71,7 @@ export default function UnifiedListView() {
     moveTaskToList,
   } = useTasks();
 
-  const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupByOption>("list");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [detailTask, setDetailTask] = useState<AppTask | null>(null);
 
   // Quick action menu state
@@ -180,40 +146,8 @@ export default function UnifiedListView() {
 
   // Filter tasks
   const filteredItems = useMemo(() => {
-    const today = formatDateKey(new Date());
-    const currentMonth = today.substring(0, 7);
-    const bounds = getWeekBounds(isRtl);
-
-    return allTasksWithList.filter(({ task }) => {
-      const taskDue = parseDueDate(task.due);
-      const isCompleted = task.status === "completed";
-      const isOverdue = !isCompleted && !!taskDue && taskDue < today;
-
-      // Status filter
-      if (statusFilter === "pending" && isCompleted) return false;
-      if (statusFilter === "completed" && !isCompleted) return false;
-      if (statusFilter === "overdue" && !isOverdue) return false;
-
-      // Date filter
-      if (dateFilter === "today") {
-        if (!taskDue || taskDue !== today) return false;
-      } else if (dateFilter === "thisWeek") {
-        if (!taskDue || taskDue < bounds.startStr || taskDue > bounds.endStr) return false;
-      } else if (dateFilter === "thisMonth") {
-        if (!taskDue || taskDue.substring(0, 7) !== currentMonth) return false;
-      }
-
-      // Search filter
-      if (search.trim()) {
-        const query = search.toLowerCase();
-        const matchesTitle = task.title.toLowerCase().includes(query);
-        const matchesNotes = task.notes?.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesNotes) return false;
-      }
-
-      return true;
-    });
-  }, [allTasksWithList, statusFilter, dateFilter, search, isRtl]);
+    return allTasksWithList.filter(({ task }) => matchesTaskFilter(task, filter, isRtl));
+  }, [allTasksWithList, filter, isRtl]);
 
   // Group filtered tasks
   const groupedTasks = useMemo(() => {
@@ -374,181 +308,43 @@ export default function UnifiedListView() {
       }}
     >
       {/* Top Filter Bar */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 1.75,
-          mb: 2.5,
-          borderRadius: 3,
-          border: 1,
-          borderColor: "divider",
-          bgcolor: "background.paper",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 1.5,
-        }}
-      >
-        {/* Search Input */}
-        <TextField
-          placeholder={`${t("common.search")}...`}
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{
-            minWidth: 200,
-            flex: { xs: "1 1 100%", sm: "0 1 240px" },
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 2,
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search fontSize="small" sx={{ color: "text.secondary" }} />
-              </InputAdornment>
-            ),
-            endAdornment: search ? (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearch("")}>
-                  <Clear fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ) : null,
-          }}
-        />
-
-        {/* Group By selector */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            {t("tasks.sortBy")}:
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Chip
-              size="small"
-              label={t("navigation.lists")}
-              clickable
-              color={groupBy === "list" ? "primary" : "default"}
-              onClick={() => setGroupBy("list")}
-              sx={{ fontSize: "0.8rem", fontWeight: 600 }}
-            />
-            <Chip
-              size="small"
-              label={t("navigation.eisenhowerView")}
-              clickable
-              color={groupBy === "quadrant" ? "primary" : "default"}
-              onClick={() => setGroupBy("quadrant")}
-              sx={{ fontSize: "0.8rem", fontWeight: 600 }}
-            />
-            <Chip
-              size="small"
-              label={t("tasks.dueDate")}
-              clickable
-              color={groupBy === "dueDate" ? "primary" : "default"}
-              onClick={() => setGroupBy("dueDate")}
-              sx={{ fontSize: "0.8rem", fontWeight: 600 }}
-            />
+      <TaskFilterBar
+        sx={{ mb: 2.5 }}
+        middleContent={
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              {t("tasks.sortBy")}:
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Chip
+                size="small"
+                label={t("navigation.lists")}
+                clickable
+                color={groupBy === "list" ? "primary" : "default"}
+                onClick={() => setGroupBy("list")}
+                sx={{ fontSize: "0.8rem", fontWeight: 600 }}
+              />
+              <Chip
+                size="small"
+                label={t("navigation.eisenhowerView")}
+                clickable
+                color={groupBy === "quadrant" ? "primary" : "default"}
+                onClick={() => setGroupBy("quadrant")}
+                sx={{ fontSize: "0.8rem", fontWeight: 600 }}
+              />
+              <Chip
+                size="small"
+                label={t("tasks.dueDate")}
+                clickable
+                color={groupBy === "dueDate" ? "primary" : "default"}
+                onClick={() => setGroupBy("dueDate")}
+                sx={{ fontSize: "0.8rem", fontWeight: 600 }}
+              />
+            </Box>
           </Box>
-        </Box>
-
-        {/* Date Filter selector */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            {t("tasks.filterByDate")}:
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Chip
-              size="small"
-              label={t("tasks.allDates")}
-              variant={dateFilter === "all" ? "filled" : "outlined"}
-              color={dateFilter === "all" ? "primary" : "default"}
-              clickable
-              onClick={() => setDateFilter("all")}
-              sx={{ fontSize: "0.75rem", fontWeight: dateFilter === "all" ? 600 : 400 }}
-            />
-            <Chip
-              size="small"
-              label={t("tasks.today")}
-              variant={dateFilter === "today" ? "filled" : "outlined"}
-              color={dateFilter === "today" ? "primary" : "default"}
-              clickable
-              onClick={() => setDateFilter("today")}
-              sx={{ fontSize: "0.75rem", fontWeight: dateFilter === "today" ? 600 : 400 }}
-            />
-            <Chip
-              size="small"
-              label={t("tasks.thisWeek")}
-              variant={dateFilter === "thisWeek" ? "filled" : "outlined"}
-              color={dateFilter === "thisWeek" ? "primary" : "default"}
-              clickable
-              onClick={() => setDateFilter("thisWeek")}
-              sx={{ fontSize: "0.75rem", fontWeight: dateFilter === "thisWeek" ? 600 : 400 }}
-            />
-            <Chip
-              size="small"
-              label={t("tasks.thisMonth")}
-              variant={dateFilter === "thisMonth" ? "filled" : "outlined"}
-              color={dateFilter === "thisMonth" ? "primary" : "default"}
-              clickable
-              onClick={() => setDateFilter("thisMonth")}
-              sx={{ fontSize: "0.75rem", fontWeight: dateFilter === "thisMonth" ? 600 : 400 }}
-            />
-          </Box>
-        </Box>
-
-        {/* Status filter & Collapse All */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            {t("tasks.status")}:
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <Chip
-              size="small"
-              label={t("tasks.pending")}
-              variant={statusFilter === "pending" ? "filled" : "outlined"}
-              color={statusFilter === "pending" ? "primary" : "default"}
-              clickable
-              onClick={() => setStatusFilter("pending")}
-              sx={{ fontSize: "0.75rem", fontWeight: statusFilter === "pending" ? 600 : 400 }}
-            />
-            <Chip
-              size="small"
-              label={t("tasks.overdue")}
-              variant={statusFilter === "overdue" ? "filled" : "outlined"}
-              color={statusFilter === "overdue" ? "error" : "default"}
-              clickable
-              onClick={() => setStatusFilter("overdue")}
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: statusFilter === "overdue" ? 600 : 400,
-                ...(statusFilter === "overdue" && {
-                  bgcolor: "error.main",
-                  color: "#fff",
-                }),
-              }}
-            />
-            <Chip
-              size="small"
-              label={t("tasks.completed")}
-              variant={statusFilter === "completed" ? "filled" : "outlined"}
-              color={statusFilter === "completed" ? "success" : "default"}
-              clickable
-              onClick={() => setStatusFilter("completed")}
-              sx={{ fontSize: "0.75rem", fontWeight: statusFilter === "completed" ? 600 : 400 }}
-            />
-            <Chip
-              size="small"
-              label={t("common.all")}
-              variant={statusFilter === "all" ? "filled" : "outlined"}
-              clickable
-              onClick={() => setStatusFilter("all")}
-              sx={{ fontSize: "0.75rem", fontWeight: statusFilter === "all" ? 600 : 400 }}
-            />
-          </Box>
-
-          {/* Expand / Collapse All Toggle Button */}
-          {(() => {
+        }
+        endContent={
+          (() => {
             const allGroupKeys = Object.keys(groupedTasks);
             const isAllCollapsed = allGroupKeys.length > 0 && allGroupKeys.every((k) => collapsedGroups.has(k));
             return (
@@ -571,9 +367,9 @@ export default function UnifiedListView() {
                 </IconButton>
               </Tooltip>
             );
-          })()}
-        </Box>
-      </Paper>
+          })()
+        }
+      />
 
       {/* Task Groups */}
       {Object.entries(groupedTasks).map(([groupTitle, items]) => {

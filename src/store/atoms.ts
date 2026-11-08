@@ -80,6 +80,28 @@ export const taskViewModeAtom = atom<TaskViewMode>({
 });
 
 // =============================================================================
+// Task Filter State (Shared across Board, List, and Eisenhower views)
+// =============================================================================
+
+export type TaskStatusFilter = "all" | "pending" | "completed" | "overdue";
+export type TaskDateFilter = "all" | "today" | "thisWeek" | "thisMonth";
+
+export interface TaskFilterState {
+  status: TaskStatusFilter;
+  date: TaskDateFilter;
+  search: string;
+}
+
+export const taskFilterAtom = atom<TaskFilterState>({
+  key: "taskFilterState",
+  default: {
+    status: "pending",
+    date: "all",
+    search: "",
+  },
+});
+
+// =============================================================================
 // UI State
 // =============================================================================
 
