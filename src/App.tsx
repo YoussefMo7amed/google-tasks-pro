@@ -53,7 +53,7 @@ import { trashService, historyService, syncQueueService } from "./services";
 loadContextmenu();
 
 function App() {
-  const { t } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const [loading, setLoading] = useRecoilState<boolean>(authLoadingState);
   const activeCategoryValue = useRecoilValue(activeTaskCategoryState);
   const loggedIn = useRecoilValue(loggedInSelector);
@@ -144,8 +144,8 @@ function App() {
               setLoading(false);
               const detail = err instanceof Error ? err.message : String(err || "");
               setToastMessage({
-                title: "Error",
-                body: detail ? `Could not retrieve access token: ${detail}` : "Could not retrieve access token. Please try again.",
+                title: t("common.error"),
+                body: detail ? `${t("auth.couldNotRetrieveToken")}: ${detail}` : t("auth.couldNotRetrieveToken"),
                 type: "error",
               });
             });
@@ -156,8 +156,8 @@ function App() {
         setLoading(false);
         const detail = err instanceof Error ? err.message : String(err || "");
         setToastMessage({
-          title: "Error",
-          body: detail ? `Error signing in: ${detail}` : "Error signing in",
+          title: t("common.error"),
+          body: detail ? `${t("auth.errorSigningIn")}: ${detail}` : t("auth.errorSigningIn"),
           type: "error",
         });
       },
@@ -186,8 +186,8 @@ function App() {
   useEffect(() => {
     const handleOnline = () => {
       setToastMessage({
-        title: "Network Changed",
-        body: "Internet restored - syncing changes",
+        title: t("sync.networkChanged"),
+        body: t("sync.internetRestored"),
         type: "success",
       });
       refreshIsOnline();
@@ -195,8 +195,8 @@ function App() {
 
     const handleOffline = () => {
       setToastMessage({
-        title: "Network Changed",
-        body: "Working offline - changes will sync when reconnected",
+        title: t("sync.networkChanged"),
+        body: t("sync.workingOffline"),
         type: "info",
       });
       refreshIsOnline();
@@ -247,7 +247,7 @@ function App() {
             </>
           ) : loading ? (
             <SplashScreen
-              message="Connecting to Google"
+              message={t("auth.connectingToGoogle")}
               onCancel={() => {
                 cancelLoginSession();
                 setLoading(false);
@@ -323,7 +323,7 @@ function App() {
         open={!!toastMessage}
         autoHideDuration={6000}
         onClose={handleCloseToast}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
       >
         <Alert
           onClose={handleCloseToast}
@@ -339,7 +339,7 @@ function App() {
           {toastMessage && toastMessage.body && (
             <>
               <br />
-              {toastMessage.body}
+              <bdi style={{ unicodeBidi: "plaintext", display: "inline-block" }}>{toastMessage.body}</bdi>
             </>
           )}
         </Alert>

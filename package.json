@@ -1,7 +1,7 @@
 {
   "name": "google-tasks-pro",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,7 @@
     "launch:dev": "tauri dev",
     "build:app": "tauri build --bundles app",
     "build:apk": "JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ANDROID_HOME=$HOME/Library/Android/sdk NDK_HOME=$HOME/Library/Android/sdk/ndk/26.3.11579264 tauri android build --apk --target aarch64 --target armv7",
-    "build:dmg": "tauri build --bundles app && mkdir -p src-tauri/target/release/bundle/dmg && hdiutil create -volname 'Google Tasks Pro' -srcfolder 'src-tauri/target/release/bundle/macos/Google Tasks Pro.app' -ov -format UDZO 'src-tauri/target/release/bundle/dmg/Google Tasks Pro_2.1.0_aarch64.dmg'",
+    "build:dmg": "tauri build --bundles app && mkdir -p src-tauri/target/release/bundle/dmg && hdiutil create -volname 'Google Tasks Pro' -srcfolder 'src-tauri/target/release/bundle/macos/Google Tasks Pro.app' -ov -format UDZO 'src-tauri/target/release/bundle/dmg/Google Tasks Pro_2.2.0_aarch64.dmg'",
     "screenshot": "bash scripts/capture.sh",
     "screenshot:showcase": "node scripts/generate-showcase.mjs"
   },

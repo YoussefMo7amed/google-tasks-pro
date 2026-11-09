@@ -856,7 +856,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
                     ? `${t("sync.syncing")} (${t("sync.pendingChanges", { count: pendingCount })}) - ${t("sync.clickToSync")}`
                     : `${t("sync.online")} - ${t("sync.allChangesSynced")}`
                 }
-                placement="right"
+                placement={isRtl ? "left" : "right"}
               >
                 <IconButton size="small" sx={{ p: 0.5 }}>
                   {isGuest || !taskListService ? (
@@ -1008,7 +1008,7 @@ export default function Sidebar({ onViewChange }: SidebarProps) {
       {isMobileViewport ? (
         <Drawer
           variant="temporary"
-          anchor="left"
+          anchor={isRtl ? "right" : "left"}
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           ModalProps={{ keepMounted: true }}

@@ -1,6 +1,6 @@
 [package]
 name = "google-task"
-version = "2.1.0"
+version = "2.2.0"
 description = "Google Tasks Pro by Youssef Mohamed"
 authors = ["Youssef Mohamed"]
 license = ""

@@ -22,6 +22,7 @@ import { accessTokenAtom, viewStateAtom, taskViewModeAtom, isGuestModeAtom } fro
 import { useTaskLists } from "../hooks";
 import { handleLogin } from "../helpers/auth";
 import { TaskListsContainer } from "./tasks";
+import { useTranslation } from "../i18n";
 
 // Lazy-loaded secondary views for code-splitting & faster initial load
 const EisenhowerMatrixView = lazy(() => import("./tasks/EisenhowerMatrixView"));
@@ -31,6 +32,7 @@ const CalendarTasksView = lazy(() => import("./tasks/CalendarTasksView"));
 const TrashTasksView = lazy(() => import("./tasks/TrashTasksView"));
 
 export default function TaskPage() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -90,7 +92,7 @@ export default function TaskPage() {
   if (!access_token && !isGuestMode) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
-        <Typography>Not logged in</Typography>
+        <Typography>{t("auth.notLoggedIn")}</Typography>
       </Box>
     );
   }
@@ -100,7 +102,7 @@ export default function TaskPage() {
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" gap={2} flex={1}>
         <CircularProgress size={48} />
         <Typography variant="body2" color="text.secondary">
-          Loading your tasks...
+          {t("tasks.loadingTasks")}
         </Typography>
       </Box>
     );
@@ -141,10 +143,10 @@ export default function TaskPage() {
               <LockOutlined sx={{ fontSize: 32, color: "error.main" }} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
-              انتهت جلسة تسجيل الدخول
+              {t("auth.sessionExpiredTitle")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              انتهت صلاحية جلسة Google Tasks. يرجى إعادة تسجيل الدخول لمزامنة مهامك وتحديثها.
+              {t("auth.sessionExpiredDescription")}
             </Typography>
             <Button
               variant="contained"
@@ -153,14 +155,14 @@ export default function TaskPage() {
               onClick={() => handleLogin(true)}
               sx={{ mt: 1, borderRadius: 2 }}
             >
-              تسجيل الدخول مع Google
+              {t("auth.signInWithGoogle")}
             </Button>
           </Paper>
         ) : (
           <>
             <Typography color="error">{error}</Typography>
             <Button variant="outlined" onClick={() => fetchTaskLists(true)}>
-              Retry
+              {t("common.retry")}
             </Button>
           </>
         )}

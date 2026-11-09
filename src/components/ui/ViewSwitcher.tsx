@@ -78,7 +78,6 @@ export default function ViewSwitcher() {
             py: 0.4,
             textTransform: "none",
             color: "text.secondary",
-            fontFamily: "Cairo, sans-serif",
             fontSize: "0.82rem",
             fontWeight: 600,
             transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",

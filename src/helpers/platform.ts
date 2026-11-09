@@ -8,6 +8,11 @@ import { platform as osPlatform } from '@tauri-apps/plugin-os';
 
 export type AppPlatform = 'android' | 'ios' | 'macos' | 'windows' | 'linux' | 'unknown';
 
+export function isTauri(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__);
+}
+
 export function getPlatform(): AppPlatform {
   try {
     if (typeof window !== 'undefined' && (window as any).__TAURI_OS_PLUGIN_INTERNALS__?.platform) {

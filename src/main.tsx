@@ -39,6 +39,7 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
 
   render() {
     if (this.state.hasError) {
+      const lang = I18nService.loadLanguage();
       return (
         <Box
           sx={{
@@ -56,13 +57,13 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
           }}
         >
           <Typography variant="h5" fontWeight={600} color="error">
-            Application Error
+            {I18nService.translate(lang, "common.appError")}
           </Typography>
           <Typography variant="body2" sx={{ maxWidth: 600, wordBreak: "break-word", opacity: 0.8 }}>
-            {this.state.error?.message || "An unexpected error occurred."}
+            {this.state.error?.message || I18nService.translate(lang, "common.unexpectedError")}
           </Typography>
           <Button variant="contained" color="primary" onClick={this.handleReload} sx={{ mt: 2 }}>
-            Reload
+            {I18nService.translate(lang, "common.reload")}
           </Button>
         </Box>
       );

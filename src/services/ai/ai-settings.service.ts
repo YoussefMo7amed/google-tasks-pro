@@ -221,11 +221,13 @@ export class AISettingsService {
         providers[settings.provider] = {
           ...primary,
           provider: settings.provider,
-          apiKey: settings.apiKey,
-          apiKeys: settings.apiKeys && settings.apiKeys.length > 0 ? settings.apiKeys : (settings.apiKey ? [settings.apiKey] : []),
-          model: settings.model,
-          baseUrl: settings.baseUrl,
-          temperature: settings.temperature,
+          apiKey: settings.apiKey || primary.apiKey || "",
+          apiKeys: settings.apiKeys && settings.apiKeys.length > 0 
+            ? settings.apiKeys 
+            : (settings.apiKey ? [settings.apiKey] : (primary.apiKeys || [])),
+          model: settings.model || primary.model || DEFAULT_MODELS[settings.provider],
+          baseUrl: settings.baseUrl || primary.baseUrl || DEFAULT_BASE_URLS[settings.provider],
+          temperature: settings.temperature ?? primary.temperature ?? 0.7,
           enableThinking: settings.enableThinking ?? primary.enableThinking ?? true,
         };
       }
@@ -241,13 +243,24 @@ export class AISettingsService {
             apiKey: settings.backupApiKey || backup.apiKey || "",
             apiKeys: settings.backupApiKeys && settings.backupApiKeys.length > 0
               ? settings.backupApiKeys
-              : (settings.backupApiKey ? [settings.backupApiKey] : backup.apiKeys),
+              : (settings.backupApiKey ? [settings.backupApiKey] : (backup.apiKeys || [])),
             // DO NOT overwrite provider's primary model if backup is the same provider
-            model: isSameProvider ? backup.model : (settings.backupModel || backup.model),
-            baseUrl: settings.backupBaseUrl || backup.baseUrl,
+            model: isSameProvider ? backup.model : (settings.backupModel || backup.model || DEFAULT_MODELS[settings.backupProvider]),
+            baseUrl: settings.backupBaseUrl || backup.baseUrl || DEFAULT_BASE_URLS[settings.backupProvider],
             enableThinking: isSameProvider ? (backup.enableThinking ?? true) : (settings.backupEnableThinking ?? backup.enableThinking ?? true),
           };
         }
+      }
+
+      // Ensure top-level properties reflect active primary provider
+      const effectivePrimary = providers[settings.provider];
+      if (effectivePrimary) {
+        settings.apiKey = effectivePrimary.apiKey;
+        settings.apiKeys = effectivePrimary.apiKeys;
+        settings.model = effectivePrimary.model;
+        settings.baseUrl = effectivePrimary.baseUrl;
+        settings.temperature = effectivePrimary.temperature;
+        settings.enableThinking = effectivePrimary.enableThinking;
       }
 
       settings.providers = providers;

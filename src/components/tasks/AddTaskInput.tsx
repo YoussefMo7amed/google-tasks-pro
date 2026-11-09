@@ -22,7 +22,7 @@ import {
   Repeat,
 } from "@mui/icons-material";
 import { useTranslation } from "../../i18n";
-import { formatLocalizedDueDate } from "../../i18n/dateUtils";
+import { formatLocalizedDueDate, getWeekdayInitials } from "../../i18n/dateUtils";
 import { applyQuadrantToTitle, QuadrantType } from "../../services/history.service";
 import { RecurrenceRule, RecurrenceFrequency, RecurrenceEndType } from "../../types/app";
 
@@ -35,9 +35,6 @@ interface AddTaskInputProps {
     recurrence?: RecurrenceRule
   ) => void;
 }
-
-const DAYS_SHORT = ["S", "M", "T", "W", "T", "F", "S"];
-const DAYS_SHORT_AR = ["ح", "ن", "ث", "ر", "خ", "ج", "س"];
 
 export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
   const { t, language, isRtl } = useTranslation();
@@ -212,7 +209,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         InputProps={{
           disableUnderline: true,
           startAdornment: (
-            <Box sx={{ mr: 1, color: "text.secondary", display: "flex", alignItems: "center" }}>
+            <Box sx={{ marginInlineEnd: 1, color: "text.secondary", display: "flex", alignItems: "center" }}>
               ≡
             </Box>
           ),
@@ -388,7 +385,8 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         open={Boolean(dateAnchorEl)}
         anchorEl={dateAnchorEl}
         onClose={() => setDateAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2, minWidth: 200 }}>
           <TextField
@@ -414,7 +412,8 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         open={Boolean(timeAnchorEl)}
         anchorEl={timeAnchorEl}
         onClose={() => setTimeAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5, minWidth: 220 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -446,7 +445,8 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
         open={Boolean(repeatAnchorEl)}
         anchorEl={repeatAnchorEl}
         onClose={() => setRepeatAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2.5, width: 300, display: "flex", flexDirection: "column", gap: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
@@ -483,7 +483,7 @@ export default function AddTaskInput({ onAdd }: AddTaskInputProps) {
           {repeatFreq === "weekly" && (
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", gap: 0.5, mt: 0.5 }}>
-                {(language === "ar" ? DAYS_SHORT_AR : DAYS_SHORT).map((dayName, index) => {
+                {getWeekdayInitials(language).map((dayName, index) => {
                   const isSelected = repeatDays.includes(index);
                   return (
                     <Button

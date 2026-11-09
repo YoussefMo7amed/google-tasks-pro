@@ -41,6 +41,14 @@ export interface TranslationSchema {
     clear: string;
     add: string;
     or: string;
+    disclaimer: string;
+    viewOnGitHub: string;
+    user: string;
+    appError: string;
+    unexpectedError: string;
+    reload: string;
+    am: string;
+    pm: string;
   };
   navigation: {
     allTasks: string;
@@ -58,6 +66,8 @@ export interface TranslationSchema {
     collapseSidebar: string;
     tasks: string;
     trash: string;
+    previousLists: string;
+    nextLists: string;
   };
   sync: {
     offlineMode: string;
@@ -68,6 +78,10 @@ export interface TranslationSchema {
     queuedChanges: string;
     pendingChanges: string;
     clickToSync: string;
+    networkChanged: string;
+    internetRestored: string;
+    workingOffline: string;
+    syncedOfflineChanges: string;
   };
   tasks: {
     addTask: string;
@@ -80,6 +94,13 @@ export interface TranslationSchema {
     today: string;
     tomorrow: string;
     nextWeek: string;
+    thisWeek: string;
+    thisMonth: string;
+    allDates: string;
+    filterByDate: string;
+    filterOptions: string;
+    resetFilters: string;
+    status: string;
     noTasks: string;
     noPendingTasks: string;
     pending: string;
@@ -114,6 +135,8 @@ export interface TranslationSchema {
     noTaskAboveToIndent: string;
     completedClearedToast: string;
     subtaskOf: string;
+    expandAll: string;
+    collapseAll: string;
     moveToList: string;
     noOtherLists: string;
     starredTasks: string;
@@ -166,6 +189,32 @@ export interface TranslationSchema {
     q2: string;
     q3: string;
     q4: string;
+    loadingTasks: string;
+    noLists: string;
+    defaultListName: string;
+    failedToLoadLists: string;
+    listCreatedOfflineToast: string;
+    listCreatedToast: string;
+    listRenamedToast: string;
+    failedToRenameList: string;
+    listDeletedToast: string;
+    failedToDeleteList: string;
+    newList: string;
+    failedToClearTasks: string;
+    failedToUnindent: string;
+    failedToIndent: string;
+    taskCountZero: string;
+    taskCountOne: string;
+    taskCountTwo: string;
+    taskCountFew: string;
+    taskCountMany: string;
+    actionCreate: string;
+    actionDelete: string;
+    actionComplete: string;
+    actionUncomplete: string;
+    actionStar: string;
+    actionUnstar: string;
+    actionEdit: string;
   };
   eisenhower: {
     title: string;
@@ -260,6 +309,7 @@ export interface TranslationSchema {
     copyResponse: string;
     processingRequest: string;
     switchModel: string;
+    configureApiKey: string;
     quickSwitchToBackup: string;
     highDemandNotice: string;
     connectionSuccessWithModel: string;
@@ -307,10 +357,12 @@ export interface TranslationSchema {
       mistralDesc: string;
       lmStudioAutoDesc: string;
     };
+    initialWelcomeMessage: string;
   };
   settings: {
     title: string;
     saveChanges: string;
+    savedSuccessfully: string;
     generalTab: string;
     aiTab: string;
     language: string;
@@ -373,6 +425,9 @@ export interface TranslationSchema {
     customClientId: string;
     customClientSecret: string;
     customOAuthNotice: string;
+    switchLanguage: string;
+    testNotificationBody: string;
+    testNotificationBtn: string;
   };
   auth: {
     signIn: string;
@@ -401,6 +456,23 @@ export interface TranslationSchema {
     addAccount: string;
     activeAccountBadge: string;
     removeAccountTooltip: string;
+    notLoggedIn: string;
+    cancelReturnToLogin: string;
+    havingTroubleRedirect: string;
+    pasteAuthCodeTitle: string;
+    pasteAuthCodeDesc: string;
+    pasteAuthCodePlaceholder: string;
+    signingIn: string;
+    connectingToGoogle: string;
+    couldNotRetrieveToken: string;
+    errorSigningIn: string;
+    loginSuccessful: string;
+    authErrorTitle: string;
+    invalidAuthCode: string;
+    chooseAccount: string;
+    loginRequired: string;
+    desktopAppRequired: string;
+    browserNotice: string;
   };
   calendar: {
     today: string;
@@ -409,6 +481,25 @@ export interface TranslationSchema {
     day: string;
     noTasksOnDate: string;
     tasksCount: string;
+    prevMonth: string;
+    nextMonth: string;
+    overdueTasksTooltip: string;
+    overdueBadge: string;
+    todayBadge: string;
+    showingBadge: string;
+    allLists: string;
+    completedShown: string;
+    completedHidden: string;
+    todayWithDate: string;
+    addTaskForDate: string;
+    weekdaySat: string;
+    weekdaySun: string;
+    weekdayMon: string;
+    weekdayTue: string;
+    weekdayWed: string;
+    weekdayThu: string;
+    weekdayFri: string;
+    daysInitials: string;
   };
   analytics: {
     title: string;
@@ -504,5 +595,14 @@ export interface TranslationSchema {
     movedToTrash: string;
     originalList: string;
     activeTasksCount: string;
+    moments: string;
+    hourSingular: string;
+    hoursPlural: string;
+    daySingular: string;
+    daysPlural: string;
+  };
+  notifications: {
+    dueToday: string;
+    dueTodayAt: string;
   };
 }

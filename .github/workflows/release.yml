@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag (e.g. v2.1.0)"
+        description: "Release tag (e.g. v2.2.0)"
         required: false
-        default: "v2.1.0"
+        default: "v2.2.0"
 
 jobs:
   release:
@@ -70,20 +70,21 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.VITE_GOOGLE_CLIENT_SECRET }}
         with:
-          tagName: ${{ github.ref_name || inputs.release_tag || 'v2.1.0' }}
-          releaseName: "Google Tasks Pro ${{ github.ref_name || inputs.release_tag || 'v2.1.0' }}"
+          tagName: ${{ github.ref_name || inputs.release_tag || 'v2.2.0' }}
+          releaseName: "Google Tasks Pro ${{ github.ref_name || inputs.release_tag || 'v2.2.0' }}"
           args: --target ${{ matrix.target }}
           releaseBody: |
-            ## 🚀 Google Tasks Pro v2.1.0 Release
+            ## 🚀 Google Tasks Pro v2.2.0 Release
 
-            ### ✨ What's New in v2.1.0:
-            * **📱 Native Android Mobile App Support:** First-class Android client powered by Tauri v2 with responsive mobile layouts, bottom navigation, and full notch/safe-area support.
-            * **⚡ Tauri v2 Migration:** Complete upgrade to Tauri v2 for Desktop (macOS, Windows, Linux) and Mobile (Android) with enhanced IPC security, faster startup, and modern plugins.
-            * **🌐 Enhanced Arabic & English Internationalization:** Completely refined RTL layout mirroring, proper bidirectional subtask hierarchies, and auto-flipping navigation drawers.
-            * **🔐 Mobile & Desktop Google OAuth:** Seamless Google sign-in with mobile deep linking (`googletaskspro://oauth/callback`) and desktop local callback server.
-            * **🎨 Brand New Android Adaptive Icons:** Clean Google Tasks Pro logo branding across all screen densities.
-            * **🤖 Multi-Model AI Copilot:** Integrated Gemini 3.8/3.5, Claude 3.7 Sonnet, o3-mini, and DeepSeek R1 with thinking controls and automated failover.
-            * **📋 Full Offline-First Sync:** Local snapshots and automatic mutation queue with background sync.
+            ### ✨ What's New in v2.2.0:
+            * **🔍 Universal Date & Status Filtering Across All Tabs:** Filter tasks by due date (All Dates, Today, This Week, This Month) and status (Pending, Overdue, Completed, All) seamlessly synchronized across Board, List, and Eisenhower views.
+            * **🎛️ Ultra-Compact Toolbar & Options Popover:** Redesigned filter toolbar into a sleek, 1-line search bar saving over 100px of vertical height on mobile and desktop, with a dedicated filter popover and removable active filter pills.
+            * **📂 Collapsible Lists & Accordions:** Smooth animated collapsing/expanding for individual lists with persistent localStorage state and a global Expand/Collapse All toggle in List view.
+            * **⏰ Overdue Task Highlighting:** Overdue tasks are prominently badged in error-red across cards, columns, and matrix quadrants.
+            * **🧩 Smarter Eisenhower Matrix:** Clean parent context headers for cross-quadrant subtasks and automatic quadrant inheritance for untagged subtasks.
+            * **🔐 Rock-Solid AI Settings Persistence:** Direct encryption to local CryptoVault with localStorage fallback ensuring API keys and model choices are never lost across restarts.
+            * **💬 AI Copilot UX Enhancements:** Optimized copy button in assistant message footer and interactive Retry recovery buttons for failed requests.
+            * **🌐 Full Bilingual Internationalization:** 100% dictionary coverage with zero hardcoded strings, supporting seamless English and Arabic toggling.
 
             ### 🍏 macOS Installation Note:
             If macOS shows *"Google Tasks Pro is damaged and can't be opened"*, run this one-time command in your Terminal:
@@ -146,7 +147,7 @@ jobs:
 
       - name: Prepare APK Asset
         run: |
-          TAG="${{ github.ref_name || inputs.release_tag || 'v2.1.0' }}"
+          TAG="${{ github.ref_name || inputs.release_tag || 'v2.2.0' }}"
           mkdir -p release-apk
           cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "release-apk/GoogleTasksPro_${TAG}_universal.apk"
           ls -la release-apk/
@@ -155,7 +156,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
         with:
-          tag_name: ${{ github.ref_name || inputs.release_tag || 'v2.1.0' }}
+          tag_name: ${{ github.ref_name || inputs.release_tag || 'v2.2.0' }}
           files: release-apk/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

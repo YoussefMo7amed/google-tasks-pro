@@ -132,7 +132,7 @@ export default function AddTaskFab() {
     <>
       <Fab
         color="primary"
-        aria-label="add task"
+        aria-label={t("tasks.addTask")}
         onClick={handleOpen}
         sx={{
           position: "fixed",

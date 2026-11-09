@@ -51,6 +51,8 @@ import {
   ShieldOutlined,
   Psychology,
   MoreVert,
+  Refresh,
+  VpnKeyOutlined,
 } from "@mui/icons-material";
 import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
 import { taskListsAtom, viewStateAtom, toastAtom, settingsActiveTabAtom, aiCopilotMinimizedAtom, aiSettingsAtom } from "../../store";
@@ -161,10 +163,13 @@ export default function AICopilotModal({
   const [modelMenuAnchor, setModelMenuAnchor] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      const fresh = AISettingsService.load();
+      setCurrentSettings(fresh);
+    } else {
       setIsMinimized(false);
     }
-  }, [open, setIsMinimized]);
+  }, [open, setCurrentSettings, setIsMinimized]);
 
   const isLocalProvider = currentSettings.provider === "ollama" || currentSettings.provider === "lm_studio";
   const hasKey = Boolean(currentSettings.apiKey && currentSettings.apiKey.trim().length > 0);
@@ -467,6 +472,9 @@ export default function AICopilotModal({
             ? `⚠️ ${friendlyError}\n\n💡 *${t("ai.highDemandNotice")}*`
             : `⚠️ ${friendlyError}`,
         timestamp: Date.now(),
+        isError: true,
+        errorType: parsed.type,
+        retryPrompt: trimmed,
       };
       const finalMessages = [...newMessages, errorMessage];
       setMessages(finalMessages);
@@ -483,6 +491,28 @@ export default function AICopilotModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetry = (msgToRetry?: AICopilotMessage) => {
+    let textToRetry = msgToRetry?.retryPrompt;
+    if (!textToRetry) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "user") {
+          textToRetry = messages[i].content;
+          break;
+        }
+      }
+    }
+    if (!textToRetry) return;
+
+    if (msgToRetry) {
+      const filtered = messages.filter((m) => m.id !== msgToRetry.id);
+      setMessages(filtered);
+      AIChatHistoryService.updateSession(activeSessionId, filtered);
+      setSessions(AIChatHistoryService.loadSessions());
+    }
+
+    handleSend(textToRetry);
   };
 
   // Granular Action Selection Helpers
@@ -951,10 +981,10 @@ export default function AICopilotModal({
                         }
                         color={currentSettings.enableThinking !== false && (activeModelOption.tag === "thinking" || activeModelOption.tag === "deep_thinking") ? "primary" : "default"}
                         variant={currentSettings.enableThinking === false ? "outlined" : "filled"}
-                        sx={{ height: 16, fontSize: '0.6rem', ml: 0.3 }}
+                        sx={{ height: 16, fontSize: '0.6rem', marginInlineStart: 0.3 }}
                       />
                     )}
-                    <KeyboardArrowDown sx={{ fontSize: 14, ml: 0.2, opacity: 0.7 }} />
+                    <KeyboardArrowDown sx={{ fontSize: 14, marginInlineStart: 0.2, opacity: 0.7 }} />
                   </Box>
                 }
                 sx={{
@@ -1213,7 +1243,8 @@ export default function AICopilotModal({
             <Box
               sx={{
                 width: 270,
-                borderRight: 1,
+                borderRight: isRtl ? 0 : 1,
+                borderLeft: isRtl ? 1 : 0,
                 borderColor: "divider",
                 bgcolor: "action.hover",
                 display: "flex",
@@ -1277,7 +1308,8 @@ export default function AICopilotModal({
                         sx={{
                           borderRadius: 2,
                           py: 1,
-                          pr: 4,
+                          paddingInlineEnd: 4,
+                          paddingInlineStart: 1.5,
                           "&.Mui-selected": {
                             bgcolor: "primary.main",
                             color: "primary.contrastText",
@@ -1290,7 +1322,7 @@ export default function AICopilotModal({
                         <ChatBubbleOutline
                           sx={{
                             fontSize: 16,
-                            mr: 1,
+                            marginInlineEnd: 1,
                             opacity: isActive ? 1 : 0.6,
                           }}
                         />
@@ -1434,6 +1466,8 @@ export default function AICopilotModal({
                 pendingIndices.length > 0 &&
                 pendingIndices.every((i) => currentSelected.has(i));
 
+              const isErrorMessage = !isUser && (Boolean(msg.isError) || msg.id.startsWith("error_") || msg.content.startsWith("⚠️"));
+
               return (
                 <Box
                   key={msg.id}
@@ -1454,75 +1488,194 @@ export default function AICopilotModal({
                       bgcolor: isUser ? "primary.main" : "background.paper",
                       color: isUser ? "primary.contrastText" : "text.primary",
                       border: isUser ? "none" : "1px solid",
-                      borderColor: "divider",
+                      borderColor: isErrorMessage ? "warning.main" : "divider",
                       position: "relative",
                     }}
                   >
-                    {/* Top row inside assistant bubble: label and copy button */}
+                    {/* Top row inside assistant bubble: label */}
                     {!isUser && (
                       <Box
                         sx={{
                           display: "flex",
-                          justifyContent: "space-between",
                           alignItems: "center",
+                          gap: 0.75,
                           mb: 1,
                           pb: 0.75,
                           borderBottom: "1px dashed",
                           borderColor: "divider",
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                          <AutoAwesome sx={{ fontSize: 16, color: "primary.main" }} />
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              fontWeight: 700,
-                              color: "primary.main",
-                              fontFamily: "Cairo, sans-serif",
-                            }}
-                          >
-                            AI Copilot
-                          </Typography>
-                        </Box>
-
-                        <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleCopy(msg.id, msg.content)}
-                            sx={{
-                              p: 0.5,
-                              color: isCopied ? "success.main" : "text.secondary",
-                            }}
-                          >
-                            {isCopied ? (
-                              <Check sx={{ fontSize: 16 }} />
-                            ) : (
-                              <ContentCopy sx={{ fontSize: 16 }} />
-                            )}
-                          </IconButton>
-                        </Tooltip>
+                        <AutoAwesome sx={{ fontSize: 16, color: isErrorMessage ? "warning.main" : "primary.main" }} />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 700,
+                            color: isErrorMessage ? "warning.main" : "primary.main",
+                            fontFamily: "Cairo, sans-serif",
+                          }}
+                        >
+                          AI Copilot
+                        </Typography>
                       </Box>
                     )}
 
                     {/* Markdown rendering with Cairo font & RTL/LTR support */}
                     <MarkdownViewer content={msg.content} isUser={isUser} />
 
-                    {/* Quick switch to backup button on capacity error */}
-                    {msg.content.includes(t("ai.highDemandNotice")) && currentSettings.backupEnabled && currentSettings.backupModel && (
-                      <Box sx={{ mt: 1.5, pt: 1, borderTop: '1px dashed', borderColor: 'divider', display: 'flex', gap: 1 }}>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="secondary"
-                          startIcon={<ShieldOutlined sx={{ fontSize: 16 }} />}
-                          onClick={() => {
-                            handleQuickSwitchToBackup();
+                    {/* Assistant message action footer */}
+                    {!isUser && (
+                      isErrorMessage ? (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            mt: 1.5,
+                            pt: 1,
+                            borderTop: "1px dashed",
+                            borderColor: "divider",
                           }}
-                          sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.78rem' }}
                         >
-                          {t("ai.quickSwitchToBackup")} ({currentSettings.backupModel})
-                        </Button>
-                      </Box>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                            {/* Retry Button */}
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="primary"
+                              startIcon={<Refresh sx={{ fontSize: 16 }} />}
+                              onClick={() => handleRetry(msg)}
+                              disabled={loading}
+                              sx={{
+                                borderRadius: 2,
+                                fontSize: "0.78rem",
+                                fontWeight: 600,
+                                textTransform: "none",
+                                py: 0.4,
+                                px: 1.5,
+                              }}
+                            >
+                              {t("common.retry")}
+                            </Button>
+
+                            {/* Configure Key (if auth/permission error) */}
+                            {(msg.errorType === "auth_failed" || msg.content.includes("API key") || msg.content.includes("مفتاح")) && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="warning"
+                                startIcon={<VpnKeyOutlined sx={{ fontSize: 16 }} />}
+                                onClick={handleOpenAISettings}
+                                sx={{
+                                  borderRadius: 2,
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  textTransform: "none",
+                                  py: 0.4,
+                                  px: 1.5,
+                                }}
+                              >
+                                {t("ai.configureApiKey")}
+                              </Button>
+                            )}
+
+                            {/* Switch to Backup (if configured and capacity error) */}
+                            {currentSettings.backupEnabled && currentSettings.backupModel ? (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="secondary"
+                                startIcon={<ShieldOutlined sx={{ fontSize: 16 }} />}
+                                onClick={handleQuickSwitchToBackup}
+                                sx={{
+                                  borderRadius: 2,
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  textTransform: "none",
+                                  py: 0.4,
+                                  px: 1.5,
+                                }}
+                              >
+                                {t("ai.quickSwitchToBackup", { model: currentSettings.backupModel })}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<Tune sx={{ fontSize: 16 }} />}
+                                onClick={(e) => setModelMenuAnchor(e.currentTarget)}
+                                sx={{
+                                  borderRadius: 2,
+                                  fontSize: "0.78rem",
+                                  fontWeight: 600,
+                                  textTransform: "none",
+                                  py: 0.4,
+                                  px: 1.5,
+                                }}
+                              >
+                                {t("ai.switchModel")}
+                              </Button>
+                            )}
+                          </Box>
+
+                          {/* Copy Error Message */}
+                          <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCopy(msg.id, msg.content)}
+                              sx={{
+                                p: 0.6,
+                                color: isCopied ? "success.main" : "text.secondary",
+                                "&:hover": {
+                                  color: "text.primary",
+                                  bgcolor: "action.hover",
+                                },
+                              }}
+                            >
+                              {isCopied ? (
+                                <Check sx={{ fontSize: 16 }} />
+                              ) : (
+                                <ContentCopy sx={{ fontSize: 16 }} />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "flex-start",
+                            alignItems: "center",
+                            gap: 1,
+                            mt: 1.5,
+                            pt: 0.75,
+                            borderTop: "1px dashed",
+                            borderColor: "divider",
+                          }}
+                        >
+                          <Tooltip title={isCopied ? t("common.copied") : t("ai.copyResponse")}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCopy(msg.id, msg.content)}
+                              sx={{
+                                p: 0.6,
+                                color: isCopied ? "success.main" : "text.secondary",
+                                "&:hover": {
+                                  color: "text.primary",
+                                  bgcolor: "action.hover",
+                                },
+                              }}
+                            >
+                              {isCopied ? (
+                                <Check sx={{ fontSize: 16 }} />
+                              ) : (
+                                <ContentCopy sx={{ fontSize: 16 }} />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      )
                     )}
                   </Paper>
 
@@ -1976,7 +2129,7 @@ export default function AICopilotModal({
               disabled={loading || !input.trim()}
               sx={{ minWidth: 48, height: 40, px: 2 }}
             >
-              {loading ? <CircularProgress size={20} color="inherit" /> : <Send />}
+              {loading ? <CircularProgress size={20} color="inherit" /> : <Send sx={{ transform: isRtl ? "scaleX(-1)" : "none" }} />}
             </Button>
           </DialogActions>
         </Box>

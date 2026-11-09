@@ -58,43 +58,13 @@ const QUADRANT_COLORS: Record<string, { bg: string; color: string; label: string
 };
 
 const WEEKDAYS = [
-  { key: 6, ar: "السبت", en: "Sat" },
-  { key: 0, ar: "الأحد", en: "Sun" },
-  { key: 1, ar: "الإثنين", en: "Mon" },
-  { key: 2, ar: "الثلاثاء", en: "Tue" },
-  { key: 3, ar: "الأربعاء", en: "Wed" },
-  { key: 4, ar: "الخميس", en: "Thu" },
-  { key: 5, ar: "الجمعة", en: "Fri" },
-];
-
-const MONTH_NAMES_AR = [
-  "يناير",
-  "فبراير",
-  "مارس",
-  "أبريل",
-  "مايو",
-  "يونيو",
-  "يوليو",
-  "أغسطس",
-  "سبتمبر",
-  "أكتوبر",
-  "نوفمبر",
-  "ديسمبر",
-];
-
-const MONTH_NAMES_EN = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  { key: 6, labelKey: "calendar.weekdaySat" as const },
+  { key: 0, labelKey: "calendar.weekdaySun" as const },
+  { key: 1, labelKey: "calendar.weekdayMon" as const },
+  { key: 2, labelKey: "calendar.weekdayTue" as const },
+  { key: 3, labelKey: "calendar.weekdayWed" as const },
+  { key: 4, labelKey: "calendar.weekdayThu" as const },
+  { key: 5, labelKey: "calendar.weekdayFri" as const },
 ];
 
 function formatDateKey(date: Date): string {
@@ -111,7 +81,7 @@ function parseDueDate(dueStr?: string | null): string | null {
 }
 
 export default function CalendarTasksView() {
-  const { t, language } = useTranslation();
+  const { t, language, isRtl } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const taskLists = useRecoilValue(taskListsAtom);
@@ -142,6 +112,13 @@ export default function CalendarTasksView() {
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
+
+  const currentMonthName = useMemo(() => {
+    return new Date(currentYear, currentMonth, 1).toLocaleDateString(
+      language === "ar" ? "ar-EG" : "en-US",
+      { month: "long" }
+    );
+  }, [currentYear, currentMonth, language]);
 
   const todayStr = useMemo(() => formatDateKey(new Date()), []);
 
@@ -290,7 +267,6 @@ export default function CalendarTasksView() {
         overflowY: "auto",
         overflowX: "hidden",
         bgcolor: "background.default",
-        fontFamily: "Cairo, sans-serif",
         boxSizing: "border-box",
       }}
     >
@@ -307,8 +283,8 @@ export default function CalendarTasksView() {
       >
         {/* Month Navigation & Title */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconButton size="small" onClick={handlePrevMonth} sx={{ border: 1, borderColor: "divider" }} title={language === "ar" ? "الشهر السابق" : "Previous month"}>
-            <ChevronLeft />
+          <IconButton size="small" onClick={handlePrevMonth} sx={{ border: 1, borderColor: "divider" }} title={t("calendar.prevMonth")}>
+            {isRtl ? <ChevronRight /> : <ChevronLeft />}
           </IconButton>
           
           <Typography
@@ -319,11 +295,11 @@ export default function CalendarTasksView() {
               textAlign: "center",
             }}
           >
-            {language === "ar" ? MONTH_NAMES_AR[currentMonth] : MONTH_NAMES_EN[currentMonth]} {currentYear}
+            {currentMonthName} {currentYear}
           </Typography>
 
-          <IconButton size="small" onClick={handleNextMonth} sx={{ border: 1, borderColor: "divider" }} title={language === "ar" ? "الشهر التالي" : "Next month"}>
-            <ChevronRight />
+          <IconButton size="small" onClick={handleNextMonth} sx={{ border: 1, borderColor: "divider" }} title={t("calendar.nextMonth")}>
+            {isRtl ? <ChevronLeft /> : <ChevronRight />}
           </IconButton>
 
           <Button
@@ -332,7 +308,7 @@ export default function CalendarTasksView() {
             startIcon={<Today sx={{ fontSize: 16 }} />}
             onClick={handleGoToday}
             sx={{
-              ml: 1,
+              marginInlineStart: 1,
               borderRadius: "10px",
               textTransform: "none",
               fontWeight: 600,
@@ -346,16 +322,15 @@ export default function CalendarTasksView() {
         {/* Metrics Badges */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           {overdueTasks.length > 0 && (
-            <Tooltip title={language === "ar" ? "مهام فات موعد استحقاقها" : "Overdue tasks"}>
+            <Tooltip title={t("calendar.overdueTasksTooltip")}>
               <Chip
                 icon={<WarningAmber sx={{ fontSize: 16, color: "#dc2626 !important" }} />}
-                label={`${overdueTasks.length} ${language === "ar" ? "متأخرة" : "Overdue"}`}
+                label={`${overdueTasks.length} ${t("calendar.overdueBadge")}`}
                 size="small"
                 sx={{
                   bgcolor: "#fee2e2",
                   color: "#dc2626",
                   fontWeight: 700,
-                  fontFamily: "Cairo, sans-serif",
                 }}
               />
             </Tooltip>
@@ -363,29 +338,28 @@ export default function CalendarTasksView() {
 
           <Chip
             icon={<EventNote sx={{ fontSize: 16, color: "#2563eb !important" }} />}
-            label={`${todayTasks.length} ${language === "ar" ? "مهام اليوم" : "Today"}`}
+            label={`${todayTasks.length} ${t("calendar.todayBadge")}`}
             size="small"
             sx={{
               bgcolor: "#dbeafe",
               color: "#1d4ed8",
               fontWeight: 600,
-              fontFamily: "Cairo, sans-serif",
             }}
           />
 
           <Chip
             icon={<CheckCircleOutline sx={{ fontSize: 16 }} />}
-            label={`${allTasksWithList.length} ${language === "ar" ? "مهام معروضة" : "Showing"}`}
+            label={`${allTasksWithList.length} ${t("calendar.showingBadge")}`}
             size="small"
             variant="outlined"
-            sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 600 }}
+            sx={{ fontWeight: 600 }}
           />
         </Box>
 
         {/* Filters */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, width: { xs: "100%", sm: "auto" }, mt: { xs: 0.5, sm: 0 } }}>
           <FormControl size="small" sx={{ minWidth: 140, flex: { xs: 1, sm: "initial" } }}>
-            <InputLabel id="calendar-list-select-label" sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.85rem" }}>
+            <InputLabel id="calendar-list-select-label" sx={{ fontSize: "0.85rem" }}>
               {t("tasks.list")}
             </InputLabel>
             <Select
@@ -393,13 +367,13 @@ export default function CalendarTasksView() {
               value={selectedListId}
               label={t("tasks.list")}
               onChange={(e) => setSelectedListId(e.target.value)}
-              sx={{ borderRadius: "10px", fontSize: "0.85rem", fontFamily: "Cairo, sans-serif" }}
+              sx={{ borderRadius: "10px", fontSize: "0.85rem" }}
             >
-              <MenuItem value="all" sx={{ fontFamily: "Cairo, sans-serif" }}>
-                {language === "ar" ? "جميع القوائم" : "All lists"}
+              <MenuItem value="all">
+                {t("calendar.allLists")}
               </MenuItem>
               {allLists.map((list) => (
-                <MenuItem key={list.id} value={list.id} sx={{ fontFamily: "Cairo, sans-serif" }}>
+                <MenuItem key={list.id} value={list.id}>
                   {list.title}
                 </MenuItem>
               ))}
@@ -412,7 +386,6 @@ export default function CalendarTasksView() {
             color={showCompleted ? "primary" : "inherit"}
             onClick={() => setShowCompleted(!showCompleted)}
             sx={{
-              fontFamily: "Cairo, sans-serif",
               borderRadius: "10px",
               textTransform: "none",
               fontSize: "0.78rem",
@@ -420,8 +393,8 @@ export default function CalendarTasksView() {
             }}
           >
             {showCompleted
-              ? (language === "ar" ? "المكتملة: ظاهرة" : "Completed: Shown")
-              : (language === "ar" ? "المكتملة: مخفية" : "Completed: Hidden")}
+              ? t("calendar.completedShown")
+              : t("calendar.completedHidden")}
           </Button>
         </Box>
       </Box>
@@ -453,7 +426,7 @@ export default function CalendarTasksView() {
             }}
           >
             <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary", fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
-              {language === "ar" ? wd.ar : wd.en}
+              {t(wd.labelKey)}
             </Typography>
           </Paper>
         ))}
@@ -711,7 +684,6 @@ export default function CalendarTasksView() {
                             sx={{
                               flex: 1,
                               minWidth: 0,
-                              fontFamily: "Cairo, sans-serif",
                               fontWeight: 500,
                               fontSize: "0.76rem",
                               textDecoration: isDone ? "line-through" : "none",
@@ -753,9 +725,9 @@ export default function CalendarTasksView() {
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <EventNote sx={{ fontSize: 20, color: "primary.main" }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontFamily: "Cairo, sans-serif" }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                 {selectedDateKey === todayStr
-                  ? (language === "ar" ? `اليوم (${selectedDateKey})` : `Today (${selectedDateKey})`)
+                  ? t("calendar.todayWithDate", { date: selectedDateKey })
                   : selectedDateKey}
               </Typography>
               <Chip
@@ -777,7 +749,7 @@ export default function CalendarTasksView() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 0.5 }}>
             {(tasksByDate.get(selectedDateKey) || []).length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ py: 1.5, textAlign: "center", fontStyle: "italic" }}>
-                {language === "ar" ? "لا توجد مهام في هذا التاريخ" : "No tasks scheduled for this date"}
+                {t("calendar.noTasksOnDate")}
               </Typography>
             ) : (
               (tasksByDate.get(selectedDateKey) || []).map(({ task }) => {
@@ -858,8 +830,8 @@ export default function CalendarTasksView() {
         fullWidth
         PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}
       >
-        <DialogTitle sx={{ fontFamily: "Cairo, sans-serif", fontWeight: 700, pb: 1 }}>
-          {language === "ar" ? `إضافة مهمة بتاريخ ${quickAddDate}` : `Add task for ${quickAddDate}`}
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+          {t("calendar.addTaskForDate", { date: quickAddDate || "" })}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
           <TextField
@@ -874,13 +846,11 @@ export default function CalendarTasksView() {
               }
             }}
             size="small"
-            InputProps={{ sx: { fontFamily: "Cairo, sans-serif" } }}
-            InputLabelProps={{ sx: { fontFamily: "Cairo, sans-serif" } }}
             inputProps={{ dir: "auto" }}
           />
 
           <FormControl fullWidth size="small">
-            <InputLabel id="quick-add-list-label" sx={{ fontFamily: "Cairo, sans-serif" }}>
+            <InputLabel id="quick-add-list-label">
               {t("tasks.list")}
             </InputLabel>
             <Select
@@ -888,10 +858,9 @@ export default function CalendarTasksView() {
               value={quickAddListId}
               label={t("tasks.list")}
               onChange={(e) => setQuickAddListId(e.target.value)}
-              sx={{ fontFamily: "Cairo, sans-serif" }}
             >
               {allLists.map((l) => (
-                <MenuItem key={l.id} value={l.id} sx={{ fontFamily: "Cairo, sans-serif" }}>
+                <MenuItem key={l.id} value={l.id}>
                   {l.title}
                 </MenuItem>
               ))}
@@ -899,14 +868,14 @@ export default function CalendarTasksView() {
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setQuickAddDate(null)} sx={{ fontFamily: "Cairo, sans-serif" }}>
+          <Button onClick={() => setQuickAddDate(null)}>
             {t("common.cancel")}
           </Button>
           <Button
             variant="contained"
             onClick={handleSaveQuickAdd}
             disabled={!quickAddTitle.trim()}
-            sx={{ fontFamily: "Cairo, sans-serif", borderRadius: "8px" }}
+            sx={{ borderRadius: "8px" }}
           >
             {t("tasks.addTask")}
           </Button>

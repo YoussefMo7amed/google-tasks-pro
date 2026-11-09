@@ -17,6 +17,7 @@ import {
   keyframes,
 } from "@mui/material";
 import { TaskAlt } from "@mui/icons-material";
+import { useTranslation } from "../../i18n";
 
 // Pulse animation for the icon
 const pulse = keyframes`
@@ -62,10 +63,12 @@ interface SplashScreenProps {
 }
 
 export default function SplashScreen({
-  message = "Loading",
+  message,
   onCancel,
   onManualCode,
 }: SplashScreenProps) {
+  const { t } = useTranslation();
+  const displayMessage = message ?? t("common.loading");
   const [showCancel, setShowCancel] = useState(false);
   const [showManualDialog, setShowManualDialog] = useState(false);
   const [manualInput, setManualInput] = useState("");
@@ -133,7 +136,7 @@ export default function SplashScreen({
           },
         }}
       >
-        {message}
+        {displayMessage}
       </Typography>
 
       {/* Cancel button & Manual Code Fallback if loading takes time */}
@@ -155,7 +158,7 @@ export default function SplashScreen({
                 },
               }}
             >
-              Cancel and return to login
+              {t("auth.cancelReturnToLogin")}
             </Button>
           )}
 
@@ -172,7 +175,7 @@ export default function SplashScreen({
                 "&:hover": { opacity: 1, textDecoration: "underline" },
               }}
             >
-              Having trouble with browser redirect? Paste code or link
+              {t("auth.havingTroubleRedirect")}
             </Button>
           )}
         </Box>
@@ -185,16 +188,16 @@ export default function SplashScreen({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ fontWeight: 600 }}>Paste Authorization Code or URL</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>{t("auth.pasteAuthCodeTitle")}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            If your browser shows <code>ERR_CONNECTION_REFUSED</code> or didn't redirect automatically, copy the entire URL from your browser address bar (or just the <code>code=</code> parameter) and paste it below:
+            {t("auth.pasteAuthCodeDesc")}
           </Typography>
           <TextField
             autoFocus
             fullWidth
             size="small"
-            placeholder="http://localhost:49968/?code=4/0AX... or 4/0AX..."
+            placeholder={t("auth.pasteAuthCodePlaceholder")}
             value={manualInput}
             onChange={(e) => setManualInput(e.target.value)}
             disabled={submitting}
@@ -202,7 +205,7 @@ export default function SplashScreen({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowManualDialog(false)} disabled={submitting}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="contained"
@@ -217,7 +220,7 @@ export default function SplashScreen({
               }
             }}
           >
-            {submitting ? "Signing in..." : "Sign In"}
+            {submitting ? t("auth.signingIn") : t("auth.signIn")}
           </Button>
         </DialogActions>
       </Dialog>

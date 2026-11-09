@@ -10,7 +10,7 @@
  */
 
 import { useRef, useState, useEffect } from "react";
-import { Box, IconButton, Typography, CircularProgress, Paper, Button, Alert } from "@mui/material";
+import { Box, IconButton, Typography, CircularProgress, Paper, Button, Alert, Tooltip } from "@mui/material";
 import { ChevronLeft, ChevronRight, LockOutlined, Google, Close } from "@mui/icons-material";
 import { handleLogin } from "../../helpers/auth";
 import {
@@ -39,10 +39,11 @@ import TaskListCard from "./TaskListCard";
 import SortableTaskCard from "./SortableTaskCard";
 import StarredTasksCard from "./StarredTasksCard";
 import TaskListItem from "./TaskListItem";
+import TaskFilterBar from "./TaskFilterBar";
 import { useTranslation } from "../../i18n";
 
 export default function TaskListsContainer() {
-  const { t } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const { taskLists, loading, error, fetchTaskLists, reorderTaskLists } = useTaskLists();
   const { moveTaskToList, reorderTasksLocally } = useTasks();
@@ -228,10 +229,10 @@ export default function TaskListsContainer() {
               <LockOutlined sx={{ fontSize: 32, color: "error.main" }} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
-              انتهت جلسة تسجيل الدخول
+              {t("auth.sessionExpiredTitle")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              انتهت صلاحية جلسة Google Tasks. يرجى تسجيل الدخول مرة أخرى لمزامنة مهامك وتحديثها.
+              {t("auth.sessionExpiredDescription")}
             </Typography>
             <Button
               variant="contained"
@@ -240,7 +241,7 @@ export default function TaskListsContainer() {
               onClick={() => handleLogin(true)}
               sx={{ mt: 1, borderRadius: 2 }}
             >
-              تسجيل الدخول مع Google
+              {t("auth.signInWithGoogle")}
             </Button>
           </Paper>
         ) : (
@@ -254,26 +255,8 @@ export default function TaskListsContainer() {
     return (
       <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Typography color="text.secondary">
-          No task lists yet. Create one to get started!
+          {t("tasks.noLists")}
         </Typography>
-      </Box>
-    );
-  }
-
-  // Show StarredTasksCard when in starred view
-  if (viewState.view === "starred") {
-    return (
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          py: 2,
-          px: { xs: 1.5, sm: 4 },
-        }}
-      >
-        <StarredTasksCard />
       </Box>
     );
   }
@@ -286,9 +269,40 @@ export default function TaskListsContainer() {
         height: "100%",
         overflow: "hidden",
         display: "flex",
-        alignItems: "stretch",
+        flexDirection: "column",
       }}
     >
+      {/* Top Filter Bar */}
+      <Box sx={{ px: { xs: 1.5, sm: 3, md: 6 }, pt: { xs: 1, sm: 1.5 }, pb: 0.5, flexShrink: 0 }}>
+        <TaskFilterBar />
+      </Box>
+
+      {/* Main Content Area */}
+      {viewState.view === "starred" ? (
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            py: 2,
+            px: { xs: 1.5, sm: 4 },
+            overflowY: "auto",
+          }}
+        >
+          <StarredTasksCard />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            position: "relative",
+            flex: 1,
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "stretch",
+          }}
+        >
       {/* Banner when viewing cached tasks during session expiration or offline */}
       {error && !isGuest && (
         <Box sx={{ position: "absolute", top: 8, left: 60, right: 60, zIndex: 12 }}>
@@ -309,7 +323,7 @@ export default function TaskListsContainer() {
                 <IconButton
                   size="small"
                   color="inherit"
-                  aria-label="close"
+                  aria-label={t("common.close")}
                   onClick={() => setListsError(null)}
                   sx={{ p: 0.5 }}
                 >
@@ -326,29 +340,32 @@ export default function TaskListsContainer() {
       )}
 
       {/* Left scroll button */}
-      <IconButton
-        onClick={() => scroll("left")}
-        sx={{
-          position: "absolute",
-          left: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 10,
-          bgcolor: "background.paper",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          border: 1,
-          borderColor: "divider",
-          opacity: 0.85,
-          display: { xs: "none", md: "inline-flex" },
-          "&:hover": {
-            opacity: 1,
+      <Tooltip title={isRtl ? t("navigation.nextLists") : t("navigation.previousLists")}>
+        <IconButton
+          aria-label={isRtl ? t("navigation.nextLists") : t("navigation.previousLists")}
+          onClick={() => scroll("left")}
+          sx={{
+            position: "absolute",
+            left: 10,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
             bgcolor: "background.paper",
-          },
-        }}
-        size="small"
-      >
-        <ChevronLeft />
-      </IconButton>
+            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+            border: 1,
+            borderColor: "divider",
+            opacity: 0.85,
+            display: { xs: "none", md: "inline-flex" },
+            "&:hover": {
+              opacity: 1,
+              bgcolor: "background.paper",
+            },
+          }}
+          size="small"
+        >
+          <ChevronLeft />
+        </IconButton>
+      </Tooltip>
 
       <DndContext
         sensors={sensors}
@@ -435,29 +452,34 @@ export default function TaskListsContainer() {
       </DndContext>
 
       {/* Right scroll button */}
-      <IconButton
-        onClick={() => scroll("right")}
-        sx={{
-          position: "absolute",
-          right: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 10,
-          bgcolor: "background.paper",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          border: 1,
-          borderColor: "divider",
-          opacity: 0.85,
-          display: { xs: "none", md: "inline-flex" },
-          "&:hover": {
-            opacity: 1,
+      <Tooltip title={isRtl ? t("navigation.previousLists") : t("navigation.nextLists")}>
+        <IconButton
+          aria-label={isRtl ? t("navigation.previousLists") : t("navigation.nextLists")}
+          onClick={() => scroll("right")}
+          sx={{
+            position: "absolute",
+            right: 10,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
             bgcolor: "background.paper",
-          },
-        }}
-        size="small"
-      >
-        <ChevronRight />
-      </IconButton>
+            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+            border: 1,
+            borderColor: "divider",
+            opacity: 0.85,
+            display: { xs: "none", md: "inline-flex" },
+            "&:hover": {
+              opacity: 1,
+              bgcolor: "background.paper",
+            },
+          }}
+          size="small"
+        >
+          <ChevronRight />
+        </IconButton>
+      </Tooltip>
+        </Box>
+      )}
     </Box>
   );
 }

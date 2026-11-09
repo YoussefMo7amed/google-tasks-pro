@@ -42,8 +42,7 @@ import { useTranslation } from "../../i18n";
 import { TrashRetention, TrashedTask } from "../../services/trash.service";
 
 export default function TrashTasksView() {
-  const { t, language } = useTranslation();
-  const isRtl = language === "ar";
+  const { t, language, isRtl } = useTranslation();
   const {
     items,
     count,
@@ -88,21 +87,17 @@ export default function TrashTasksView() {
   const formatExpiresIn = (expiresAt: string | null) => {
     if (!expiresAt) return t("trash.neverExpires");
     const diffMs = new Date(expiresAt).getTime() - Date.now();
-    if (diffMs <= 0) return t("trash.expiresIn", { time: isRtl ? "لحظات" : "moments" });
+    if (diffMs <= 0) return t("trash.expiresIn", { time: t("trash.moments") });
 
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     if (diffHours < 24) {
-      const hoursText = isRtl
-        ? `${diffHours} ${diffHours === 1 ? "ساعة" : "ساعات"}`
-        : `${diffHours} ${diffHours === 1 ? "hour" : "hours"}`;
-      return t("trash.expiresIn", { time: hoursText });
+      const unit = diffHours === 1 ? t("trash.hourSingular") : t("trash.hoursPlural");
+      return t("trash.expiresIn", { time: `${diffHours} ${unit}` });
     }
 
     const diffDays = Math.ceil(diffHours / 24);
-    const daysText = isRtl
-      ? `${diffDays} ${diffDays === 1 ? "يوم" : "أيام"}`
-      : `${diffDays} ${diffDays === 1 ? "day" : "days"}`;
-    return t("trash.expiresIn", { time: daysText });
+    const unit = diffDays === 1 ? t("trash.daySingular") : t("trash.daysPlural");
+    return t("trash.expiresIn", { time: `${diffDays} ${unit}` });
   };
 
   const formatDeletedDate = (isoString: string) => {

@@ -5,6 +5,8 @@
  */
 
 import { Store } from '@tauri-apps/plugin-store';
+import { I18nService, LanguageCode } from '../i18n';
+import { isTauri } from '../helpers/platform';
 
 const SETTINGS_STORE = '.settings.dat';
 const SETTINGS_KEY = 'appSettings';
@@ -40,44 +42,77 @@ async function getStore(): Promise<Store> {
 }
 
 /**
- * Load settings from store
+ * Load settings from store with resilient local storage fallback
  */
 export async function loadSettings(): Promise<AppSettings> {
   if (cachedSettings) {
     return cachedSettings;
   }
 
-  try {
-    const s = await getStore();
-    const saved = await s.get<AppSettings>(SETTINGS_KEY);
-    const resolved = saved ? { ...DEFAULT_SETTINGS, ...saved } : DEFAULT_SETTINGS;
-    cachedSettings = resolved;
-    return resolved;
-  } catch (error) {
-    console.error('Failed to load settings:', error);
-    return DEFAULT_SETTINGS;
+  // 1. Try Tauri store if running in desktop environment
+  if (isTauri()) {
+    try {
+      const s = await getStore();
+      const saved = await s.get<AppSettings>(SETTINGS_KEY);
+      if (saved) {
+        const resolved = { ...DEFAULT_SETTINGS, ...saved };
+        cachedSettings = resolved;
+        return resolved;
+      }
+    } catch (error) {
+      console.warn('Failed to load settings from Tauri store, trying localStorage fallback:', error);
+    }
   }
+
+  // 2. Resilient fallback to localStorage
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const local = window.localStorage.getItem(SETTINGS_KEY);
+      if (local) {
+        const parsed = JSON.parse(local);
+        const resolved = { ...DEFAULT_SETTINGS, ...parsed };
+        cachedSettings = resolved;
+        return resolved;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load settings from localStorage fallback:', err);
+  }
+
+  cachedSettings = DEFAULT_SETTINGS;
+  return DEFAULT_SETTINGS;
 }
 
 /**
- * Save settings to store
+ * Save settings to store with resilient local storage fallback
  */
 export async function saveSettings(settings: Partial<AppSettings>): Promise<AppSettings> {
+  const current = await loadSettings();
+  const updated = { ...current, ...settings };
+  cachedSettings = updated;
+
+  // 1. Always save to localStorage first for instant durability & web/offline compatibility
   try {
-    const current = await loadSettings();
-    const updated = { ...current, ...settings };
-    
-    const s = await getStore();
-    await s.set(SETTINGS_KEY, updated);
-    await s.save();
-    
-    cachedSettings = updated;
-    console.debug('Settings saved:', updated);
-    return updated;
-  } catch (error) {
-    console.error('Failed to save settings:', error);
-    throw error;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+    }
+  } catch (err) {
+    console.warn('Failed to save settings to localStorage fallback:', err);
   }
+
+  // 2. Persist to Tauri store if in desktop environment
+  if (isTauri()) {
+    try {
+      const s = await getStore();
+      await s.set(SETTINGS_KEY, updated);
+      await s.save();
+      console.debug('Settings saved to Tauri store:', updated);
+    } catch (error) {
+      console.warn('Failed to save settings to Tauri store:', error);
+    }
+  }
+
+  return updated;
 }
 
 /**
@@ -108,10 +143,10 @@ export function formatHour(
 ): string {
   const pad = (n: number) => n.toString().padStart(2, '0');
   const time24 = `${pad(hour)}:00`;
-  const isAr = language === 'ar';
+  const lang: LanguageCode = language === 'ar' ? 'ar' : 'en';
   
   // Localized AM/PM
-  const period = hour >= 12 ? (isAr ? 'م' : 'PM') : (isAr ? 'ص' : 'AM');
+  const period = I18nService.translate(lang, hour >= 12 ? 'common.pm' : 'common.am');
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   const time12 = `${displayHour}:00 ${period}`;
 

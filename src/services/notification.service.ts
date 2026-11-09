@@ -23,6 +23,7 @@ import {
 import { getPlatform, isMobile } from '../helpers/platform';
 import { AppTask } from '../types/app';
 import { getNotificationHour } from './settings.service';
+import { I18nService } from '../i18n';
 
 /**
  * Track scheduled task IDs to prevent duplicates
@@ -152,10 +153,14 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
     return false;
   }
 
+  const lang = I18nService.loadLanguage();
+  const title = `📋 ${task.title}`;
+  const body = task.exactTime
+    ? I18nService.translate(lang, "notifications.dueTodayAt", { time: task.exactTime })
+    : I18nService.translate(lang, "notifications.dueToday");
+
   if (isMobile()) {
     const notifId = hashTaskIdToNotificationId(task.id);
-    const title = `📋 ${task.title}`;
-    const body = task.exactTime ? `Due today at ${task.exactTime}` : 'Due today';
 
     if (notifyAt.getTime() <= Date.now() + 5000) {
       try {
@@ -192,8 +197,8 @@ export async function scheduleTaskNotification(task: AppTask): Promise<boolean> 
   try {
     await invoke('schedule_notification', {
       taskId: task.id,
-      title: `📋 ${task.title}`,
-      body: task.exactTime ? `Due today at ${task.exactTime}` : `Due today`,
+      title,
+      body,
       notifyAtIso: notifyAt.toISOString(),
     });
     

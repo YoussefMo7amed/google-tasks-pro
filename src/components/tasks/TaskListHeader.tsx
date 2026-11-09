@@ -156,7 +156,7 @@ export default function TaskListHeader({
         <IconButton
           size="small"
           onClick={handleMenuClick}
-          sx={{ ml: 1, opacity: 0.7, "&:hover": { opacity: 1 } }}
+          sx={{ marginInlineStart: 1, opacity: 0.7, "&:hover": { opacity: 1 } }}
         >
           <MoreVert fontSize="small" />
         </IconButton>
@@ -166,8 +166,8 @@ export default function TaskListHeader({
           anchorEl={anchorEl}
           open={open}
           onClose={handleClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "left" : "right" }}
+          transformOrigin={{ vertical: "top", horizontal: isRtl ? "left" : "right" }}
           PaperProps={{
             sx: { minWidth: 220 },
           }}
@@ -227,10 +227,10 @@ export default function TaskListHeader({
           anchorEl={sortAnchorEl}
           open={sortOpen}
           onClose={() => setSortAnchorEl(null)}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          anchorOrigin={{ vertical: "top", horizontal: isRtl ? "left" : "right" }}
+          transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
           PaperProps={{
-            sx: { minWidth: 180, ml: 0.5 },
+            sx: { minWidth: 180, marginInlineStart: 0.5 },
           }}
         >
           {sortOptions.map((option) => (

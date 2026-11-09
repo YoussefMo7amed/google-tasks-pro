@@ -13,16 +13,18 @@ import {
 } from "@mui/material";
 import { Star } from "@mui/icons-material";
 import { useRecoilValue } from "recoil";
-import { taskListsAtom, starredTaskIdsAtom } from "../../store";
+import { taskListsAtom, starredTaskIdsAtom, taskFilterAtom } from "../../store";
 import { useTasks } from "../../hooks";
 import { AppTask } from "../../types/app";
+import { matchesTaskFilter } from "../../helpers/taskFilter";
 import TaskListItem from "./TaskListItem";
 import { useTranslation } from "../../i18n";
 
 export default function StarredTasksCard() {
-  const { t, language, isRtl } = useTranslation();
+  const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
   const starredIds = useRecoilValue(starredTaskIdsAtom);
+  const filter = useRecoilValue(taskFilterAtom);
   const { toggleTaskComplete, toggleTaskStar, deleteTask, moveTaskToList } = useTasks();
 
   // Get all starred tasks from all lists
@@ -30,21 +32,18 @@ export default function StarredTasksCard() {
   
   taskLists.forEach(list => {
     list.tasks.forEach(task => {
-      if (starredIds.has(task.id)) {
+      if (starredIds.has(task.id) && matchesTaskFilter(task, filter, isRtl)) {
         starredTasks.push({ ...task, isStarred: true, listName: list.title });
       }
     });
   });
 
   const getTasksCountLabel = (count: number) => {
-    if (language === "ar") {
-      if (count === 0) return "لا توجد مهام";
-      if (count === 1) return "مهمة واحدة";
-      if (count === 2) return "مهمتان";
-      if (count >= 3 && count <= 10) return `${count} مهام`;
-      return `${count} مهمة`;
-    }
-    return `${count} ${count === 1 ? "task" : "tasks"}`;
+    if (count === 0) return t("tasks.noTasks");
+    if (count === 1) return t("tasks.taskCountOne");
+    if (count === 2) return t("tasks.taskCountTwo");
+    if (count >= 3 && count <= 10) return t("tasks.taskCountFew", { count });
+    return t("tasks.taskCountMany", { count });
   };
 
   const handleTaskToggle = async (task: AppTask) => {

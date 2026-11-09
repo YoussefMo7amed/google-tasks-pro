@@ -60,6 +60,7 @@ import {
 } from "../../services/history.service";
 import { recurrenceService } from "../../services/recurrence.service";
 import { useTranslation } from "../../i18n";
+import { getWeekdayInitials } from "../../i18n/dateUtils";
 import { isMobile } from "../../helpers/platform";
 
 interface TaskDetailModalProps {
@@ -92,7 +93,7 @@ export default function TaskDetailModal({
   onMove,
   onAddSubtask,
 }: TaskDetailModalProps) {
-  const { t, language } = useTranslation();
+  const { t, language, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
 
   const [title, setTitle] = useState("");
@@ -673,7 +674,8 @@ export default function TaskDetailModal({
         open={Boolean(timeAnchorEl)}
         anchorEl={timeAnchorEl}
         onClose={() => setTimeAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5, minWidth: 220 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -705,7 +707,8 @@ export default function TaskDetailModal({
         open={Boolean(repeatAnchorEl)}
         anchorEl={repeatAnchorEl}
         onClose={() => setRepeatAnchorEl(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: isRtl ? "right" : "left" }}
+        transformOrigin={{ vertical: "top", horizontal: isRtl ? "right" : "left" }}
       >
         <Box sx={{ p: 2.5, width: 300, display: "flex", flexDirection: "column", gap: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
@@ -740,7 +743,7 @@ export default function TaskDetailModal({
           {repeatFreq === "weekly" && (
             <Box>
               <Box sx={{ display: "flex", justifyContent: "space-between", gap: 0.5, mt: 0.5 }}>
-                {(language === "ar" ? ["ح", "ن", "ث", "ر", "خ", "ج", "س"] : ["S", "M", "T", "W", "T", "F", "S"]).map((dayName, index) => {
+                {getWeekdayInitials(language).map((dayName, index) => {
                   const isSelected = repeatDays.includes(index);
                   return (
                     <Button

@@ -12,7 +12,8 @@ import { setRecoil } from "recoil-nexus";
 import { accessTokenState, activeCategoryTasksState, activeTaskCategoryState, authLoadingState, messageState, userProfileState } from "../config/states";
 import { pushNotification } from "./windowhelper";
 import { cancelAllNotifications } from "../services/notification.service";
-import { isMobile } from "./platform";
+import { isMobile, isTauri } from "./platform";
+import { I18nService } from "../i18n";
 
 const DEFAULT_DIRECTORY = settings.fs.DEFAULT_DIRECTORY;
 const GOOGLE_OAUTH_ENDPOINT = settings.auth.GOOGLE_OAUTH_ENDPOINT;
@@ -218,6 +219,11 @@ export async function fetchUserProfile(accessToken : string) : Promise<UserProfi
 
  // to handle login to get auth
 export async function openAuthWindow() {
+    if (!isTauri()) {
+        const lang = I18nService.loadLanguage();
+        throw new Error(I18nService.translate(lang, "auth.desktopAppRequired"));
+    }
+
     // Platform branch point: Android / Mobile OAuth with PKCE & Deep-Link Redirect
     if (isMobile()) {
         const verifier = generateCodeVerifier();
@@ -363,14 +369,16 @@ export async function handleManualAuthCode(input: string): Promise<boolean> {
 
         const accessTokenBody = await getAccessToken(code, portOverride);
         await handleLoadFrom(accessTokenBody);
-        pushNotification("Login Successful");
+        const lang = I18nService.loadLanguage();
+        pushNotification(I18nService.translate(lang, "auth.loginSuccessful"));
         return true;
     } catch (err) {
         console.error("Failed to sign in with manual authorization code:", err);
         setRecoil(authLoadingState, false);
+        const lang = I18nService.loadLanguage();
         setRecoil(messageState, {
-            title: "Authentication Error",
-            body: "Invalid or expired authorization code. Please try again.",
+            title: I18nService.translate(lang, "auth.authErrorTitle"),
+            body: I18nService.translate(lang, "auth.invalidAuthCode"),
             type: "error",
         });
         throw err;
@@ -518,7 +526,7 @@ export async function handleLogin(forceNew: boolean = false) {
         } catch {
           // Tokens might not exist, that's fine
         }
-        pushNotification('Choose an account');
+        pushNotification(I18nService.translate(I18nService.loadLanguage(), "auth.chooseAccount"));
         await openAuthWindow();
         return;
       }
@@ -526,18 +534,21 @@ export async function handleLogin(forceNew: boolean = false) {
       const storedAccessToken = await getAccessTokenFromStorage();
       if (storedAccessToken) {
         handleLoadFrom(storedAccessToken);
-        pushNotification('Login Successful')
+        pushNotification(I18nService.translate(I18nService.loadLanguage(), "auth.loginSuccessful"));
         return;
       }
-      pushNotification('login required')
+      pushNotification(I18nService.translate(I18nService.loadLanguage(), "auth.loginRequired"));
       await openAuthWindow();
     } catch (error) {
       console.error("handleLogin error:", error);
       setRecoil(authLoadingState, false);
       const detail = error instanceof Error ? error.message : String(error || "");
+      const lang = I18nService.loadLanguage();
+      const errTitle = I18nService.translate(lang, "common.error");
+      const errBody = I18nService.translate(lang, "auth.errorSigningIn");
       setRecoil(messageState, {
-        title: "Error",
-        body: detail ? `Error signing in: ${detail}` : "Error signing in",
+        title: errTitle,
+        body: detail ? `${errBody}: ${detail}` : errBody,
         type: "error"
       });
     }
@@ -570,9 +581,12 @@ export async function handleLoadFrom(accessTokenBody: AccessToken) {
       console.error("handleLoadFrom error:", err);
       await handleLogout();
       const detail = err instanceof Error ? err.message : String(err || "");
+      const lang = I18nService.loadLanguage();
+      const errTitle = I18nService.translate(lang, "common.error");
+      const errBody = I18nService.translate(lang, "auth.errorSigningIn");
       setRecoil(messageState, {
-        title: "Error",
-        body: detail ? `Error signing in: ${detail}` : "Error signing in",
+        title: errTitle,
+        body: detail ? `${errBody}: ${detail}` : errBody,
         type: "error"
       });
     }

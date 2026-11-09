@@ -21,6 +21,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useRecoilValue } from "recoil";
+import { taskFilterAtom } from "../../store";
+import { matchesTaskFilter } from "../../helpers/taskFilter";
 import { AppTaskList, AppTask, RecurrenceRule } from "../../types/app";
 import { useTasks } from "../../hooks";
 import TaskListHeader from "./TaskListHeader";
@@ -43,7 +46,8 @@ export default function TaskListCard({
   isDragOverlay = false,
   dragHandleProps,
 }: TaskListCardProps) {
-  const { t } = useTranslation();
+  const { t, isRtl } = useTranslation();
+  const filter = useRecoilValue(taskFilterAtom);
   const [showCompleted, setShowCompleted] = useState(false);
   const [sortBy, setSortBy] = useState<string>("my_order");
   const [detailTask, setDetailTask] = useState<AppTask | null>(null);
@@ -145,15 +149,17 @@ export default function TaskListCard({
 
   // Separate and sort tasks
   const incompleteTasks = useMemo(() => {
+    const matching = taskList.tasks.filter((task) => matchesTaskFilter(task, filter, isRtl));
     return sortTasks(
-      taskList.tasks.filter((task) => task.status === "needsAction"),
+      matching.filter((task) => task.status === "needsAction"),
       sortBy
     );
-  }, [taskList.tasks, sortBy]);
+  }, [taskList.tasks, sortBy, filter, isRtl]);
 
   const completedTasks = useMemo(() => {
-    return taskList.tasks.filter((task) => task.status === "completed");
-  }, [taskList.tasks]);
+    const matching = taskList.tasks.filter((task) => matchesTaskFilter(task, filter, isRtl));
+    return matching.filter((task) => task.status === "completed");
+  }, [taskList.tasks, filter, isRtl]);
 
   // Create a map of task IDs to titles for parent lookup
   const taskTitleMap = useMemo(() => {
@@ -347,7 +353,7 @@ export default function TaskListCard({
                 <ExpandMore fontSize="small" />
               )}
             </ListItemButton>
-            <Collapse in={showCompleted} timeout="auto" unmountOnExit>
+            <Collapse in={showCompleted || filter.status === "completed"} timeout="auto" unmountOnExit>
               {completedTasks.map((task) => (
                 <TaskListItem
                   key={`completed-${task.id}`}

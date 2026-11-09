@@ -21,6 +21,7 @@ import { syncQueueService } from "../services/sync-queue.service";
 import { historyService } from "../services/history.service";
 import { useServices } from "./useServices";
 import { AppTaskList, AppTask } from "../types/app";
+import { useTranslation } from "../i18n";
 
 /**
  * Defensive sanitizer: cleans up orphan subtasks whose parents do not exist in the list
@@ -42,6 +43,7 @@ function sanitizeSubtasks(lists: AppTaskList[]): AppTaskList[] {
 }
 
 export function useTaskLists() {
+  const { t } = useTranslation();
   const { taskLists: service, tasks: taskService, starred } = useServices();
   const [taskLists, setTaskLists] = useRecoilState(taskListsAtom);
   const [loading, setLoading] = useRecoilState(taskListsLoadingAtom);
@@ -80,7 +82,7 @@ export function useTaskLists() {
           id: `local_list_${Date.now()}`,
           etag: "",
           selfLink: "",
-          title: "My Tasks",
+          title: t("tasks.defaultListName"),
           updated: new Date().toISOString(),
           tasks: [],
           incompleteCount: 0,
@@ -136,8 +138,8 @@ export function useTaskLists() {
           const { syncedCount } = await syncQueueService.drainQueue(taskService);
           if (syncedCount > 0) {
             setToast({
-              title: "Synced with Google Tasks",
-              body: `Synced ${syncedCount} offline change${syncedCount > 1 ? "s" : ""}`,
+              title: t("sync.syncedWithGoogle"),
+              body: t("sync.syncedOfflineChanges", { count: syncedCount }),
               type: "success",
             });
           }
@@ -189,8 +191,8 @@ export function useTaskLists() {
         if (cached || taskListsRef.current.length > 0) {
           setError(null);
           setToast({
-            title: "Offline Mode",
-            body: "Viewing cached tasks. Changes will sync when online.",
+            title: t("sync.offlineMode"),
+            body: t("sync.workingOffline"),
             type: "info",
           });
           return;
@@ -202,23 +204,23 @@ export function useTaskLists() {
         if (cached && taskListsRef.current.length === 0) {
           setTaskLists(cached);
         }
-        setError("Session expired. Please sign in again.");
+        setError(t("auth.sessionExpiredDescription"));
         setToast({
-          title: "Session Expired",
-          body: "Your Google session has expired. Please sign in again to sync tasks.",
+          title: t("auth.sessionExpiredTitle"),
+          body: t("auth.sessionExpiredDescription"),
           type: "warning",
         });
         return;
       }
 
-      const message = err instanceof Error ? err.message : "Failed to load task lists";
+      const message = err instanceof Error ? err.message : t("tasks.failedToLoadLists");
       setError(message);
-      setToast({ title: "Error", body: message, type: "error" });
+      setToast({ title: t("common.error"), body: message, type: "error" });
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [service, taskService, starred, setTaskLists, setLoading, setError, setToast, setStarredIds, setIsOnline]);
+  }, [service, taskService, starred, setTaskLists, setLoading, setError, setToast, setStarredIds, setIsOnline, t]);
 
   /**
    * Create a new task list
@@ -242,7 +244,7 @@ export function useTaskLists() {
         offlineCacheService.saveSnapshot(next);
         return next;
       });
-      setToast({ title: "List created (saved offline 💾)", type: "info" });
+      setToast({ title: t("tasks.listCreatedOfflineToast"), type: "info" });
       return offlineList;
     };
 
@@ -257,13 +259,13 @@ export function useTaskLists() {
         offlineCacheService.saveSnapshot(next);
         return next;
       });
-      setToast({ title: "List created", type: "success" });
+      setToast({ title: t("tasks.listCreatedToast"), type: "success" });
       return newList;
     } catch (err) {
       console.warn("Failed to create list online, saving offline:", err);
       return createLocallyOffline();
     }
-  }, [service, setTaskLists, setToast]);
+  }, [service, setTaskLists, setToast, t]);
 
   /**
    * Rename a task list
@@ -275,21 +277,21 @@ export function useTaskLists() {
         offlineCacheService.saveSnapshot(next);
         return next;
       });
-      setToast({ title: "List renamed", type: "success" });
+      setToast({ title: t("tasks.listRenamedToast"), type: "success" });
       return true;
     }
 
     try {
       const updated = await service.rename(id, newTitle);
       setTaskLists(prev => prev.map(list => list.id === id ? updated : list));
-      setToast({ title: "List renamed", type: "success" });
+      setToast({ title: t("tasks.listRenamedToast"), type: "success" });
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to rename list";
-      setToast({ title: "Error", body: message, type: "error" });
+      const message = err instanceof Error ? err.message : t("tasks.failedToRenameList");
+      setToast({ title: t("common.error"), body: message, type: "error" });
       return false;
     }
-  }, [service, setTaskLists, setToast]);
+  }, [service, setTaskLists, setToast, t]);
 
   /**
    * Delete a task list
@@ -301,21 +303,21 @@ export function useTaskLists() {
         offlineCacheService.saveSnapshot(next);
         return next;
       });
-      setToast({ title: "List deleted", type: "warning" });
+      setToast({ title: t("tasks.listDeletedToast"), type: "warning" });
       return true;
     }
 
     try {
       await service.delete(id);
       setTaskLists(prev => prev.filter(list => list.id !== id));
-      setToast({ title: "List deleted", type: "warning" });
+      setToast({ title: t("tasks.listDeletedToast"), type: "warning" });
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete list";
-      setToast({ title: "Error", body: message, type: "error" });
+      const message = err instanceof Error ? err.message : t("tasks.failedToDeleteList");
+      setToast({ title: t("common.error"), body: message, type: "error" });
       return false;
     }
-  }, [service, setTaskLists, setToast]);
+  }, [service, setTaskLists, setToast, t]);
 
   /**
    * Reorder task lists (local only)

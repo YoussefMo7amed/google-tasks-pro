@@ -111,6 +111,83 @@ export function buildTheme(direction: "ltr" | "rtl"): Theme {
             : {},
         },
       },
+      MuiInputAdornment: {
+        styleOverrides: {
+          positionStart: isRtl
+            ? {
+                marginLeft: 8,
+                marginRight: 0,
+              }
+            : {},
+          positionEnd: isRtl
+            ? {
+                marginRight: 8,
+                marginLeft: 0,
+              }
+            : {},
+        },
+      },
+      MuiDialogActions: {
+        styleOverrides: {
+          root: isRtl
+            ? {
+                "& > :not(style) ~ :not(style)": {
+                  marginRight: 8,
+                  marginLeft: 0,
+                },
+              }
+            : {},
+        },
+      },
+      MuiAlert: {
+        styleOverrides: {
+          icon: isRtl
+            ? {
+                marginLeft: 12,
+                marginRight: 0,
+              }
+            : {},
+          action: isRtl
+            ? {
+                padding: "4px 16px 0 0",
+                marginRight: "auto",
+                marginLeft: -8,
+              }
+            : {},
+        },
+      },
+      MuiFormControlLabel: {
+        styleOverrides: {
+          root: isRtl
+            ? {
+                marginLeft: 16,
+                marginRight: -11,
+              }
+            : {},
+          labelPlacementStart: isRtl
+            ? {
+                marginLeft: -11,
+                marginRight: 16,
+              }
+            : {},
+        },
+      },
+      MuiListItemSecondaryAction: {
+        styleOverrides: {
+          root: isRtl
+            ? {
+                right: "auto",
+                left: 16,
+              }
+            : {},
+          disableGutters: isRtl
+            ? {
+                right: "auto",
+                left: 0,
+              }
+            : {},
+        },
+      },
     },
   });
 }
@@ -118,3 +195,11 @@ export function buildTheme(direction: "ltr" | "rtl"): Theme {
 // Pre-cached static instances (Singletons)
 export const ltrTheme: Theme = buildTheme("ltr");
 export const rtlTheme: Theme = buildTheme("rtl");
+
+// Static theme accessors adhering to AGENTS.md & PROJECT.md contracts
+export const darkLtrTheme: Theme = ltrTheme;
+export const darkRtlTheme: Theme = rtlTheme;
+
+export function getStaticTheme(_mode?: "dark" | "light", direction: "ltr" | "rtl" = "ltr"): Theme {
+  return direction === "rtl" ? rtlTheme : ltrTheme;
+}

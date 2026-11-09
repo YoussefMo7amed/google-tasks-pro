@@ -12,9 +12,11 @@ import {
   Avatar,
   Paper,
   Divider,
+  Alert,
 } from "@mui/material";
 import { Google, CloudOffOutlined } from "@mui/icons-material";
 import { getUserProfileFromStorage, deleteAccessToken } from "../../helpers/auth";
+import { isTauri } from "../../helpers/platform";
 import { UserProfile } from "../../types/googleapis";
 import { useTranslation } from "../../i18n";
 
@@ -180,6 +182,22 @@ export default function LoginChoice({
           {t("auth.guestModeDesc")}
         </Typography>
       </Box>
+
+      {!isTauri() && (
+        <Alert
+          severity="info"
+          variant="outlined"
+          sx={{
+            maxWidth: 340,
+            textAlign: "start",
+            fontSize: "0.82rem",
+            borderRadius: 2,
+            py: 0.5,
+          }}
+        >
+          {t("auth.browserNotice")}
+        </Alert>
+      )}
 
       <Box display="flex" flexDirection="column" gap={1.5} width="100%" maxWidth={320}>
         <Button

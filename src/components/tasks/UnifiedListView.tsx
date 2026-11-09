@@ -13,7 +13,6 @@ import {
   Typography,
   Paper,
   TextField,
-  InputAdornment,
   Chip,
   IconButton,
   Checkbox,
@@ -22,9 +21,10 @@ import {
   ListItemIcon,
   ListItemText,
   Button,
+  Collapse,
+  Tooltip,
 } from "@mui/material";
 import {
-  Search,
   Star,
   StarBorder,
   CalendarToday,
@@ -32,14 +32,19 @@ import {
   DeleteOutline,
   FolderOutlined,
   Add,
-  Clear,
   SubdirectoryArrowRight,
+  KeyboardArrowDown,
+  KeyboardArrowRight,
+  UnfoldMore,
+  UnfoldLess,
 } from "@mui/icons-material";
-import { useRecoilValue } from "recoil";
-import { taskListsAtom } from "../../store/atoms";
+import { useRecoilValue, useRecoilState } from "recoil";
+import { taskListsAtom, taskFilterAtom } from "../../store";
 import { useTasks } from "../../hooks";
 import { AppTask, AppTaskList } from "../../types/app";
 import { extractQuadrant, cleanTitleFromQuadrant } from "../../services/history.service";
+import { formatDateKey, parseDueDate, matchesTaskFilter } from "../../helpers/taskFilter";
+import TaskFilterBar from "./TaskFilterBar";
 import TaskDetailModal from "./TaskDetailModal";
 import { useTranslation } from "../../i18n";
 
@@ -51,11 +56,11 @@ const QUADRANT_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 type GroupByOption = "list" | "quadrant" | "dueDate";
-type StatusFilter = "all" | "pending" | "completed";
 
 export default function UnifiedListView() {
   const { t, isRtl } = useTranslation();
   const taskLists = useRecoilValue(taskListsAtom);
+  const [filter] = useRecoilState(taskFilterAtom);
   const {
     toggleTaskComplete,
     toggleTaskStar,
@@ -66,9 +71,7 @@ export default function UnifiedListView() {
     moveTaskToList,
   } = useTasks();
 
-  const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupByOption>("list");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("pending");
   const [detailTask, setDetailTask] = useState<AppTask | null>(null);
 
   // Quick action menu state
@@ -78,6 +81,56 @@ export default function UnifiedListView() {
   // Quick add input state per group
   const [quickAddGroup, setQuickAddGroup] = useState<string | null>(null);
   const [quickAddText, setQuickAddText] = useState("");
+
+  const COLLAPSED_GROUPS_STORAGE_KEY = "unified_list_collapsed_groups";
+
+  // Collapsed groups state with localStorage persistence
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const saved = window.localStorage.getItem(COLLAPSED_GROUPS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return new Set(parsed);
+        }
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+    return new Set<string>();
+  });
+
+  const toggleGroupCollapse = (groupKey: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem(COLLAPSED_GROUPS_STORAGE_KEY, JSON.stringify(Array.from(next)));
+        }
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const handleToggleAllCollapse = (allKeys: string[]) => {
+    const isAllCollapsed = allKeys.length > 0 && allKeys.every((k) => collapsedGroups.has(k));
+    const next = isAllCollapsed ? new Set<string>() : new Set(allKeys);
+    setCollapsedGroups(next);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(COLLAPSED_GROUPS_STORAGE_KEY, JSON.stringify(Array.from(next)));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  };
 
   // Flatten all tasks with their list info
   const allTasksWithList = useMemo(() => {
@@ -93,22 +146,8 @@ export default function UnifiedListView() {
 
   // Filter tasks
   const filteredItems = useMemo(() => {
-    return allTasksWithList.filter(({ task }) => {
-      // Status filter
-      if (statusFilter === "pending" && task.status === "completed") return false;
-      if (statusFilter === "completed" && task.status !== "completed") return false;
-
-      // Search filter
-      if (search.trim()) {
-        const query = search.toLowerCase();
-        const matchesTitle = task.title.toLowerCase().includes(query);
-        const matchesNotes = task.notes?.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesNotes) return false;
-      }
-
-      return true;
-    });
-  }, [allTasksWithList, statusFilter, search]);
+    return allTasksWithList.filter(({ task }) => matchesTaskFilter(task, filter, isRtl));
+  }, [allTasksWithList, filter, isRtl]);
 
   // Group filtered tasks
   const groupedTasks = useMemo(() => {
@@ -173,7 +212,7 @@ export default function UnifiedListView() {
         else groups[unassignedKey].push(item);
       }
     } else if (groupBy === "dueDate") {
-      const today = new Date().toISOString().split("T")[0];
+      const today = formatDateKey(new Date());
       const overdueKey = t("tasks.overdue");
       const todayKey = t("tasks.today");
       const upcomingKey = t("tasks.upcoming");
@@ -188,9 +227,9 @@ export default function UnifiedListView() {
         if (!item.task.due) {
           groups[noDueDateKey].push(item);
         } else {
-          const dueDay = item.task.due.split("T")[0];
-          if (dueDay < today) groups[overdueKey].push(item);
-          else if (dueDay === today) groups[todayKey].push(item);
+          const dueDay = parseDueDate(item.task.due);
+          if (dueDay && dueDay < today) groups[overdueKey].push(item);
+          else if (dueDay && dueDay === today) groups[todayKey].push(item);
           else groups[upcomingKey].push(item);
         }
       }
@@ -269,120 +308,80 @@ export default function UnifiedListView() {
       }}
     >
       {/* Top Filter Bar */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 1.75,
-          mb: 2.5,
-          borderRadius: 3,
-          border: 1,
-          borderColor: "divider",
-          bgcolor: "background.paper",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 1.5,
-        }}
-      >
-        {/* Search Input */}
-        <TextField
-          placeholder={`${t("common.search")}...`}
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{
-            width: 280,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 2,
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search fontSize="small" sx={{ color: "text.secondary" }} />
-              </InputAdornment>
-            ),
-            endAdornment: search ? (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearch("")}>
-                  <Clear fontSize="small" />
+      <TaskFilterBar
+        sx={{ mb: 2.5 }}
+        popoverContent={
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mb: 0.75, display: "block" }}>
+              {t("tasks.sortBy")}
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+              <Chip
+                size="small"
+                label={t("navigation.lists")}
+                clickable
+                color={groupBy === "list" ? "primary" : "default"}
+                onClick={() => setGroupBy("list")}
+                sx={{ fontSize: "0.75rem", fontWeight: 600 }}
+              />
+              <Chip
+                size="small"
+                label={t("navigation.eisenhowerView")}
+                clickable
+                color={groupBy === "quadrant" ? "primary" : "default"}
+                onClick={() => setGroupBy("quadrant")}
+                sx={{ fontSize: "0.75rem", fontWeight: 600 }}
+              />
+              <Chip
+                size="small"
+                label={t("tasks.dueDate")}
+                clickable
+                color={groupBy === "dueDate" ? "primary" : "default"}
+                onClick={() => setGroupBy("dueDate")}
+                sx={{ fontSize: "0.75rem", fontWeight: 600 }}
+              />
+            </Box>
+          </Box>
+        }
+        endContent={
+          (() => {
+            const allGroupKeys = Object.keys(groupedTasks);
+            const isAllCollapsed = allGroupKeys.length > 0 && allGroupKeys.every((k) => collapsedGroups.has(k));
+            return (
+              <Tooltip title={isAllCollapsed ? t("tasks.expandAll") : t("tasks.collapseAll")}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleToggleAllCollapse(allGroupKeys)}
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: "divider",
+                    color: "text.secondary",
+                    "&:hover": {
+                      color: "text.primary",
+                      bgcolor: "action.hover",
+                    },
+                  }}
+                >
+                  {isAllCollapsed ? <UnfoldMore sx={{ fontSize: 20 }} /> : <UnfoldLess sx={{ fontSize: 20 }} />}
                 </IconButton>
-              </InputAdornment>
-            ) : null,
-          }}
-        />
-
-        {/* Group By selector */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            {t("tasks.sortBy")}:
-          </Typography>
-          <Chip
-            size="small"
-            label={t("navigation.lists")}
-            clickable
-            color={groupBy === "list" ? "primary" : "default"}
-            onClick={() => setGroupBy("list")}
-            sx={{ fontSize: "0.8rem", fontWeight: 600 }}
-          />
-          <Chip
-            size="small"
-            label={t("navigation.eisenhowerView")}
-            clickable
-            color={groupBy === "quadrant" ? "primary" : "default"}
-            onClick={() => setGroupBy("quadrant")}
-            sx={{ fontSize: "0.8rem", fontWeight: 600 }}
-          />
-          <Chip
-            size="small"
-            label={t("tasks.dueDate")}
-            clickable
-            color={groupBy === "dueDate" ? "primary" : "default"}
-            onClick={() => setGroupBy("dueDate")}
-            sx={{ fontSize: "0.8rem", fontWeight: 600 }}
-          />
-        </Box>
-
-        {/* Status filter */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-          <Chip
-            size="small"
-            label={t("tasks.pending")}
-            variant={statusFilter === "pending" ? "filled" : "outlined"}
-            color={statusFilter === "pending" ? "primary" : "default"}
-            clickable
-            onClick={() => setStatusFilter("pending")}
-            sx={{ fontSize: "0.75rem" }}
-          />
-          <Chip
-            size="small"
-            label={t("tasks.completed")}
-            variant={statusFilter === "completed" ? "filled" : "outlined"}
-            color={statusFilter === "completed" ? "success" : "default"}
-            clickable
-            onClick={() => setStatusFilter("completed")}
-            sx={{ fontSize: "0.75rem" }}
-          />
-          <Chip
-            size="small"
-            label={t("common.all")}
-            variant={statusFilter === "all" ? "filled" : "outlined"}
-            clickable
-            onClick={() => setStatusFilter("all")}
-            sx={{ fontSize: "0.75rem" }}
-          />
-        </Box>
-      </Paper>
+              </Tooltip>
+            );
+          })()
+        }
+      />
 
       {/* Task Groups */}
       {Object.entries(groupedTasks).map(([groupTitle, items]) => {
         if (items.length === 0 && groupBy !== "list") return null;
 
         const isAddingInThisGroup = quickAddGroup === groupTitle;
+        const isCollapsed = collapsedGroups.has(groupTitle);
 
         return (
-          <Box key={groupTitle} sx={{ mb: 3 }}>
+          <Box key={groupTitle} sx={{ mb: 2.5 }}>
             {/* Group Header */}
             <Box
               sx={{
@@ -393,12 +392,45 @@ export default function UnifiedListView() {
                 px: 1,
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                onClick={() => toggleGroupCollapse(groupTitle)}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  cursor: "pointer",
+                  userSelect: "none",
+                  py: 0.5,
+                  px: 0.75,
+                  borderRadius: 2,
+                  transition: "background-color 0.15s ease",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleGroupCollapse(groupTitle);
+                  }}
+                  sx={{
+                    p: 0.25,
+                    color: "text.secondary",
+                  }}
+                >
+                  {isCollapsed ? (
+                    <KeyboardArrowRight sx={{ fontSize: 20, transform: isRtl ? "scaleX(-1)" : "none" }} />
+                  ) : (
+                    <KeyboardArrowDown sx={{ fontSize: 20 }} />
+                  )}
+                </IconButton>
                 <FolderOutlined fontSize="small" sx={{ color: "primary.main" }} />
                 <Typography
                   variant="subtitle1"
                   fontWeight={700}
-                  sx={{ fontFamily: "Cairo, sans-serif", fontSize: "0.98rem" }}
+                  sx={{ fontSize: "0.98rem" }}
                 >
                   {groupTitle}
                 </Typography>
@@ -415,6 +447,7 @@ export default function UnifiedListView() {
                 onClick={() => {
                   setQuickAddGroup(groupTitle);
                   setQuickAddText("");
+                  if (isCollapsed) toggleGroupCollapse(groupTitle);
                 }}
                 sx={{
                   fontSize: "0.75rem",
@@ -424,6 +457,9 @@ export default function UnifiedListView() {
                 {t("tasks.addTask")}
               </Button>
             </Box>
+
+            {/* Collapsible Group Content */}
+            <Collapse in={!isCollapsed} timeout="auto">
 
             {/* Quick Add Bar */}
             {isAddingInThisGroup && (
@@ -572,7 +608,6 @@ export default function UnifiedListView() {
                             variant="body2"
                             title={cleanTitle}
                             sx={{
-                              fontFamily: "Cairo, sans-serif",
                               fontSize: "0.92rem",
                               fontWeight: 600,
                               textDecoration: isCompleted ? "line-through" : "none",
@@ -591,7 +626,6 @@ export default function UnifiedListView() {
                               color="text.secondary"
                               title={cleanNotes}
                               sx={{
-                                fontFamily: "Cairo, sans-serif",
                                 display: "-webkit-box",
                                 WebkitLineClamp: 1,
                                 WebkitBoxOrient: "vertical",
@@ -608,7 +642,7 @@ export default function UnifiedListView() {
                       </Box>
 
                       {/* Right side: badges & actions */}
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, ml: 1.5 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, marginInlineStart: 1.5 }}>
                         {/* List Name Badge (if not grouped by list) */}
                         {groupBy !== "list" && (
                           <Chip
@@ -618,7 +652,6 @@ export default function UnifiedListView() {
                             sx={{
                               height: 22,
                               fontSize: "0.72rem",
-                              fontFamily: "Cairo, sans-serif",
                             }}
                           />
                         )}
@@ -645,6 +678,7 @@ export default function UnifiedListView() {
                             icon={<CalendarToday sx={{ fontSize: "0.75rem !important" }} />}
                             label={task.due.split("T")[0]}
                             variant="outlined"
+                            color={!isCompleted && task.due.substring(0, 10) < formatDateKey(new Date()) ? "error" : "default"}
                             sx={{ height: 22, fontSize: "0.72rem" }}
                           />
                         )}
@@ -663,6 +697,7 @@ export default function UnifiedListView() {
                 })
               )}
             </Paper>
+            </Collapse>
           </Box>
         );
       })}

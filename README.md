@@ -6,7 +6,7 @@
 
 Built with **Tauri v2 (Rust)** • **React 18** • **TypeScript** • **Material UI (MUI v7)** • **Recoil**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/YoussefMo7amed/google-tasks-pro/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/YoussefMo7amed/google-tasks-pro/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-orange.svg)](https://tauri.app)
 [![Platforms](https://img.shields.io/badge/Platforms-macOS%20%7C%20Windows%20%7C%20Linux%20%7C%20Android-blueviolet.svg)](https://github.com/YoussefMo7amed/google-tasks-pro/releases)
@@ -210,11 +210,11 @@ Built with **Tauri v2 (Rust)** • **React 18** • **TypeScript** • **Materia
 ### 🚀 Download & Install (Pre-built Apps)
 
 Get the latest official installer for your operating system or mobile device from the **[Releases](https://github.com/YoussefMo7amed/google-tasks-pro/releases)** page:
-* 📱 **Android Universal APK (arm64 & armv7):** `GoogleTasksPro_v2.1.0_universal.apk`
-* 🍏 **macOS Apple Silicon (M1/M2/M3/M4):** `Google Tasks Pro_2.1.0_aarch64.dmg`
-* 🍎 **macOS Intel (x86_64):** `Google Tasks Pro_2.1.0_x64.dmg`
-* 🪟 **Windows (x64):** `Google Tasks Pro_2.1.0_x64-setup.exe` or `.msi`
-* 🐧 **Linux (x64):** `google-tasks-pro_2.1.0_amd64.deb` or `.AppImage`
+* 📱 **Android Universal APK (arm64 & armv7):** `GoogleTasksPro_v2.2.0_universal.apk`
+* 🍏 **macOS Apple Silicon (M1/M2/M3/M4):** `Google Tasks Pro_2.2.0_aarch64.dmg`
+* 🍎 **macOS Intel (x86_64):** `Google Tasks Pro_2.2.0_x64.dmg`
+* 🪟 **Windows (x64):** `Google Tasks Pro_2.2.0_x64-setup.exe` or `.msi`
+* 🐧 **Linux (x64):** `google-tasks-pro_2.2.0_amd64.deb` or `.AppImage`
 
 > [!TIP]
 > **macOS Gatekeeper Note:** Since this is an open-source project without a \$99/yr Apple Developer certificate, macOS Gatekeeper may show: *"Google Tasks Pro is damaged and can't be opened"*.
