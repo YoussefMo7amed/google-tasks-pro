@@ -83,6 +83,8 @@ export const ar: TranslationSchema = {
     thisMonth: "هذا الشهر",
     allDates: "كل التواريخ",
     filterByDate: "التاريخ",
+    filterOptions: "خيارات الفلترة والترتيب",
+    resetFilters: "إعادة ضبط الفلاتر",
     status: "الحالة",
     noTasks: "لا توجد مهام",
     noPendingTasks: "لا توجد مهام معلقة",

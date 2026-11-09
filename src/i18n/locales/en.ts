@@ -83,6 +83,8 @@ export const en: TranslationSchema = {
     thisMonth: "This Month",
     allDates: "All Dates",
     filterByDate: "Date",
+    filterOptions: "Filter & Sort",
+    resetFilters: "Reset filters",
     status: "Status",
     noTasks: "No tasks",
     noPendingTasks: "No pending tasks",

@@ -310,19 +310,19 @@ export default function UnifiedListView() {
       {/* Top Filter Bar */}
       <TaskFilterBar
         sx={{ mb: 2.5 }}
-        middleContent={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              {t("tasks.sortBy")}:
+        popoverContent={
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, mb: 0.75, display: "block" }}>
+              {t("tasks.sortBy")}
             </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
               <Chip
                 size="small"
                 label={t("navigation.lists")}
                 clickable
                 color={groupBy === "list" ? "primary" : "default"}
                 onClick={() => setGroupBy("list")}
-                sx={{ fontSize: "0.8rem", fontWeight: 600 }}
+                sx={{ fontSize: "0.75rem", fontWeight: 600 }}
               />
               <Chip
                 size="small"
@@ -330,7 +330,7 @@ export default function UnifiedListView() {
                 clickable
                 color={groupBy === "quadrant" ? "primary" : "default"}
                 onClick={() => setGroupBy("quadrant")}
-                sx={{ fontSize: "0.8rem", fontWeight: 600 }}
+                sx={{ fontSize: "0.75rem", fontWeight: 600 }}
               />
               <Chip
                 size="small"
@@ -338,7 +338,7 @@ export default function UnifiedListView() {
                 clickable
                 color={groupBy === "dueDate" ? "primary" : "default"}
                 onClick={() => setGroupBy("dueDate")}
-                sx={{ fontSize: "0.8rem", fontWeight: 600 }}
+                sx={{ fontSize: "0.75rem", fontWeight: 600 }}
               />
             </Box>
           </Box>
@@ -353,7 +353,9 @@ export default function UnifiedListView() {
                   size="small"
                   onClick={() => handleToggleAllCollapse(allGroupKeys)}
                   sx={{
-                    p: 0.75,
+                    width: 38,
+                    height: 38,
+                    borderRadius: 2,
                     border: 1,
                     borderColor: "divider",
                     color: "text.secondary",
@@ -363,7 +365,7 @@ export default function UnifiedListView() {
                     },
                   }}
                 >
-                  {isAllCollapsed ? <UnfoldMore fontSize="small" /> : <UnfoldLess fontSize="small" />}
+                  {isAllCollapsed ? <UnfoldMore sx={{ fontSize: 20 }} /> : <UnfoldLess sx={{ fontSize: 20 }} />}
                 </IconButton>
               </Tooltip>
             );

@@ -273,7 +273,7 @@ export default function TaskListsContainer() {
       }}
     >
       {/* Top Filter Bar */}
-      <Box sx={{ px: { xs: 1.5, sm: 3, md: 6 }, pt: 2, pb: 0.5, flexShrink: 0 }}>
+      <Box sx={{ px: { xs: 1.5, sm: 3, md: 6 }, pt: { xs: 1, sm: 1.5 }, pb: 0.5, flexShrink: 0 }}>
         <TaskFilterBar />
       </Box>
 

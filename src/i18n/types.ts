@@ -98,6 +98,8 @@ export interface TranslationSchema {
     thisMonth: string;
     allDates: string;
     filterByDate: string;
+    filterOptions: string;
+    resetFilters: string;
     status: string;
     noTasks: string;
     noPendingTasks: string;
