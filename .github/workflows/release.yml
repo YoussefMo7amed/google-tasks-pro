@@ -118,11 +118,9 @@ jobs:
           java-version: 17
 
       - name: Setup Android SDK & NDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK 26.3.11579264
-        run: |
-          sdkmanager --install "ndks;26.3.11579264"
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools ndk;26.3.11579264"
 
       - name: Install Rust Stable
         uses: dtolnay/rust-toolchain@stable
@@ -139,10 +137,14 @@ jobs:
 
       - name: Build Universal Android APK
         env:
-          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.3.11579264
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.VITE_GOOGLE_CLIENT_SECRET }}
         run: |
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export NDK_HOME="${ANDROID_HOME}/ndk/26.3.11579264"
+          echo "Using ANDROID_HOME=$ANDROID_HOME"
+          echo "Using NDK_HOME=$NDK_HOME"
+          ls -d "$NDK_HOME"
           npx tauri android build --apk --target aarch64 --target armv7
 
       - name: Prepare APK Asset
