@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-09
+
+### 🚀 Unified Date/Status Filtering, Compact Toolbar, and Smarter Task Organization
+
+### Added
+- **Unified Date & Status Filtering Across All Tabs**:
+  - Filter tasks by due date: **All Dates**, **Today**, **This Week** (locale-aware: Sat–Fri in RTL, Sun–Sat in LTR), and **This Month**.
+  - Filter tasks by completion status: **Pending**, **Overdue**, **Completed**, and **All**.
+  - Synchronized reactive state (`taskFilterAtom`) across Board (الأعمدة), List (القائمة), and Eisenhower (أيزنهاور) views.
+- **Ultra-Compact Single-Line Toolbar & Filter Popover**:
+  - Single-line search bar saving >100px of vertical screen real estate on mobile and desktop.
+  - Dedicated `TuneRounded` filter config button opening a sleek popover with all date, status, and sort controls.
+  - Active indicator badge on the button and removable quick-dismiss pills only when non-default filters are active.
+- **Collapsible Lists & Groups in Unified List View**:
+  - Smooth animated accordion collapse/expand for individual lists with persistent state saved in `localStorage`.
+  - Global Expand/Collapse All toggle button in the toolbar.
+- **Overdue Task Highlighting**:
+  - Highlighting overdue tasks with error-red due date badges across all views.
+  - Automatic expansion of completed tasks section when the "Completed" filter is chosen.
+- **Subtask Context Headers in Eisenhower Matrix**:
+  - Replaced dangling subtasks with clear parent context headers (`↳ subtask of: [Parent Title] [Quadrant Badge]`).
+  - Automatic quadrant inheritance for untagged subtasks from their parent tasks.
+- **AI Copilot Message Recovery & Error Handling**:
+  - Interactive **Retry** button for failed AI chat responses.
+  - Direct quick link to AI settings dialog upon API key errors or quota limits.
+
+### Fixed
+- **AI Settings Persistence**: Decoupled AI model selection and API keys persistence immediately to the local encrypted vault (`CryptoVaultService`) with `localStorage` resilience, ensuring settings are never lost on reload or modal reopen.
+- **AI Copilot Copy Button**: Relocated copy icon to the message footer for clean LLM chat ergonomics.
+- **Strict Internationalization (Zero Hardcoded Strings)**: Full dictionary synchronization across English and Arabic in `types.ts`, `en.ts`, `ar.ts`, and `template.json`.
+- **Browser Preview Fallback**: Graceful fallback and user-friendly notice when running outside of the Tauri runtime in a standard browser.
+
+---
+
+## [2.1.0] - 2026-11-01
+
+### 📱 Official Android Mobile Support & Tauri v2 Engine
+- Multi-target Universal Android APK (`arm64-v8a` + `armeabi-v7a`).
+- Native Tauri v2 migration across desktop and mobile platforms.
+- Deep-link OAuth redirect receiver (`googletaskspro://oauth/callback`).
+- Mobile bottom navigation bar (`MobileBottomNav.tsx`) with safe-area insets.
+- Automated GitHub Actions CI/CD release workflow for multi-platform binaries.
+
+---
+
 ## [1.0.0] - 2026-01-19
 
 ### 🎉 First Major Release
